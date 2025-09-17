@@ -1,0 +1,148 @@
+{
+  "category": "Men",
+  "competitors": [
+    {
+      "id": 1,
+      "rank": 1,
+      "name": "Gustav Bergman",
+      "country": "SWE",
+      "startTime": "10:00:00",
+      "splits": {
+        "control1": "00:08:23",
+        "control2": "00:15:47",
+        "control3": "00:24:12",
+        "control4": "00:31:45"
+      },
+      "finalTime": "00:42:18",
+      "status": "finished"
+    },
+    {
+      "id": 2,
+      "rank": 2,
+      "name": "Matthias Kyburz",
+      "country": "SUI",
+      "startTime": "10:02:00",
+      "splits": {
+        "control1": "00:08:45",
+        "control2": "00:16:12",
+        "control3": "00:24:38",
+        "control4": "00:32:15"
+      },
+      "finalTime": "00:42:54",
+      "status": "finished"
+    },
+    {
+      "id": 3,
+      "rank": 3,
+      "name": "Kasper Fosser",
+      "country": "NOR",
+      "startTime": "10:04:00",
+      "splits": {
+        "control1": "00:08:56",
+        "control2": "00:16:34",
+        "control3": "00:25:02",
+        "control4": "00:32:48"
+      },
+      "finalTime": "00:43:21",
+      "status": "finished"
+    },
+    {
+      "id": 4,
+      "rank": 4,
+      "name": "Miika Kirmula",
+      "country": "FIN",
+      "startTime": "10:06:00",
+      "splits": {
+        "control1": "00:09:12",
+        "control2": "00:17:05",
+        "control3": "00:25:33",
+        "control4": "00:33:21"
+      },
+      "finalTime": "00:44:02",
+      "status": "finished"
+    },
+    {
+      "id": 5,
+      "rank": 5,
+      "name": "Daniel Hubmann",
+      "country": "SUI",
+      "startTime": "10:08:00",
+      "splits": {
+        "control1": "00:09:23",
+        "control2": "00:17:28",
+        "control3": "00:25:56",
+        "control4": "00:33:52"
+      },
+      "finalTime": "00:44:35",
+      "status": "finished"
+    },
+    {
+      "id": 6,
+      "rank": 6,
+      "name": "Emil Svensk",
+      "country": "SWE",
+      "startTime": "10:10:00",
+      "splits": {
+        "control1": "00:09:45",
+        "control2": "00:17:52",
+        "control3": "00:26:21",
+        "control4": "00:34:18"
+      },
+      "finalTime": "00:45:12",
+      "status": "finished"
+    },
+    {
+      "id": 7,
+      "rank": 7,
+      "name": "Thierry Gueorgiou",
+      "country": "FRA",
+      "startTime": "10:12:00",
+      "splits": {
+        "control1": "00:10:02",
+        "control2": "00:18:15",
+        "control3": "00:26:48",
+        "control4": "00:34:52"
+      },
+      "finalTime": "00:45:48",
+      "status": "finished"
+    },
+    {
+      "id": 8,
+      "rank": 8,
+      "name": "Albin Ridefelt",
+      "country": "SWE",
+      "startTime": "10:14:00",
+      "splits": {
+        "control1": "00:10:18",
+        "control2": "00:18:42",
+        "control3": "00:27:15",
+        "control4": "00:35:23"
+      },
+      "finalTime": "00:46:21",
+      "status": "finished"
+    },
+    {
+      "id": 9,
+      "rank": null,
+      "name": "Ruslan Glibov",
+      "country": "UKR",
+      "startTime": "10:16:00",
+      "splits": {
+        "control1": "00:10:45",
+        "control2": "00:19:08"
+      },
+      "finalTime": null,
+      "status": "running"
+    },
+    {
+      "id": 10,
+      "rank": null,
+      "name": "Joey Hadorn",
+      "country": "SUI",
+      "startTime": "10:18:00",
+      "splits": {},
+      "finalTime": null,
+      "status": "not_started"
+    }
+  ]
+}
