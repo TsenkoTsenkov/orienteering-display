@@ -125,7 +125,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
             {[...Array(totalPages)].map((_, i) => (
               <span
                 key={i}
-                className={`page-dot ${i === pageToShow ? 'active' : ''}`}
+                className={`page-dot ${i === currentPage ? 'active' : ''}`}
               />
             ))}
           </div>
@@ -136,7 +136,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
         {totalPages > 1 && (
           <div className="page-info">
-            Page {pageToShow + 1} of {totalPages}
+            Page {currentPage + 1} of {totalPages}
           </div>
         )}
       </div>
