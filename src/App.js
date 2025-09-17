@@ -607,7 +607,7 @@ function App() {
                             disabled={isRefetching}
                             title="Refetch men's data only"
                           >
-                            {isRefetching && refetchCategory === 'men' ? '⏳' : '♂️'} Men
+                            {isRefetching && refetchCategory === 'men' ? '⏳ ' : ''}Men
                           </button>
                           <button
                             className="refetch-btn refetch-women"
@@ -615,7 +615,7 @@ function App() {
                             disabled={isRefetching}
                             title="Refetch women's data only"
                           >
-                            {isRefetching && refetchCategory === 'women' ? '⏳' : '♀️'} Women
+                            {isRefetching && refetchCategory === 'women' ? '⏳ ' : ''}Women
                           </button>
                         </div>
                         <span className="live-indicator">● LIVE</span>

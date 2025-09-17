@@ -95,9 +95,15 @@ class LiveResultsService {
           let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
           name = name.split('   ')[0].trim(); // Remove duplicate country info
 
+          // Clean up start time - remove timezone information
+          let startTime = comp.structured?.startTime || comp.cells?.[0] || null;
+          if (startTime) {
+            startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+          }
+
           return {
             id: `comp_${index}`,
-            startTime: comp.structured?.startTime || comp.cells?.[0] || null,
+            startTime: startTime,
             name: name,
             club: comp.structured?.club || comp.cells?.[2] || '',
             country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
@@ -126,12 +132,41 @@ class LiveResultsService {
     try {
       const encodedClass = encodeURIComponent(classId);
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/results`;
-      const response = await this.makeProxiedRequest(url);
+      console.log('Fetching results from:', url);
 
-      return this.parseCompetitorData(response.data, 'results');
+      // Use Puppeteer scraping for SPA content
+      const scrapedData = await this.scrapeSPAContent(url);
+      console.log('Scraped results data:', scrapedData.rowCount, 'rows found');
+
+      if (scrapedData.competitors && scrapedData.competitors.length > 0) {
+        // Parse scraped data
+        const competitors = scrapedData.competitors.map((comp, index) => {
+          // Clean up the name (remove duplicate country info)
+          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
+          name = name.split('   ')[0].trim();
+
+          return {
+            id: `comp_${index}`,
+            rank: parseInt(comp.cells?.[0]) || index + 1,
+            name: name,
+            club: comp.structured?.club || comp.cells?.[2] || '',
+            country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
+            finalTime: comp.cells?.[3] || comp.cells?.[4] || null,
+            startTime: null, // Results don't have start time
+            bib: comp.structured?.bib || comp.cells?.[5] || '',
+            card: comp.structured?.card || comp.cells?.[6] || '',
+            status: 'finished'
+          };
+        });
+        console.log(`Parsed ${competitors.length} competitors from results`);
+        return competitors;
+      }
+
+      console.log('No results data found, returning empty array');
+      return []; // Return empty array so it falls back to start list
     } catch (error) {
       console.error('Error fetching results:', error);
-      return this.getMockCompetitors('results');
+      return []; // Return empty array so it falls back to start list
     }
   }
 
@@ -140,9 +175,36 @@ class LiveResultsService {
     try {
       const encodedClass = encodeURIComponent(classId);
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/splits`;
-      const response = await this.makeProxiedRequest(url);
+      console.log('Fetching splits from:', url);
 
-      return this.parseCompetitorData(response.data, 'splits');
+      // Use Puppeteer scraping for SPA content
+      const scrapedData = await this.scrapeSPAContent(url);
+      console.log('Scraped splits data:', scrapedData.rowCount, 'rows found');
+
+      if (scrapedData.competitors && scrapedData.competitors.length > 0) {
+        // Parse scraped data
+        const competitors = scrapedData.competitors.map((comp, index) => {
+          // Clean up the name (remove duplicate country info)
+          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
+          name = name.split('   ')[0].trim();
+
+          return {
+            id: `comp_${index}`,
+            name: name,
+            club: comp.structured?.club || comp.cells?.[2] || '',
+            country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
+            splits: comp.cells?.slice(3) || [], // Split times are typically after name/club
+            bib: comp.structured?.bib || '',
+            card: comp.structured?.card || '',
+            status: 'running'
+          };
+        });
+        console.log(`Parsed ${competitors.length} competitors from splits`);
+        return competitors;
+      }
+
+      console.log('No splits data found');
+      return [];
     } catch (error) {
       console.error('Error fetching splits:', error);
       return [];
@@ -198,9 +260,15 @@ class LiveResultsService {
                                 cells[1]?.match(/\(([A-Z]{2,3})\)/) ||
                                 rowHtml.match(/flag-([a-z]{2})/i);
 
+            // Clean up start time - remove timezone information
+            let cleanStartTime = cells[0] || null;
+            if (cleanStartTime) {
+              cleanStartTime = cleanStartTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+            }
+
             competitor = {
               id: `comp_${competitors.length}`,
-              startTime: cells[0] || null,
+              startTime: cleanStartTime,
               name: cells[1] || 'Unknown',
               club: cells[2] || '',
               country: countryMatch ? countryMatch[1].toUpperCase() : 'UNK',
@@ -374,13 +442,26 @@ class LiveResultsService {
     try {
       console.log(`Fetching competitors for event ${eventId}, competition ${competitionId}, class ${classId}`);
 
-      // Try to fetch results first (most complete data)
-      let competitors = await this.fetchResults(eventId, competitionId, classId);
+      // First fetch the start list which has start times and card numbers
+      let competitors = await this.fetchStartList(eventId, competitionId, classId);
 
-      if (competitors.length === 0 || competitors.every(c => c.id.startsWith('mock_'))) {
-        console.log('No results found or mock data returned, trying start list...');
-        // Fall back to start list if no results yet
-        competitors = await this.fetchStartList(eventId, competitionId, classId);
+      // Then try to fetch results to merge with final times if available
+      const results = await this.fetchResults(eventId, competitionId, classId);
+
+      if (results.length > 0) {
+        // Merge results data with start list data
+        competitors = competitors.map(comp => {
+          const result = results.find(r => r.name === comp.name || r.bib === comp.bib);
+          if (result) {
+            return {
+              ...comp,
+              rank: result.rank,
+              finalTime: result.finalTime,
+              status: result.status
+            };
+          }
+          return comp;
+        });
       }
 
       // Try to fetch splits for additional timing data
@@ -429,16 +510,25 @@ class LiveResultsService {
 
   // Transform competitor data
   transformCompetitor(competitor, category, index) {
+    // Clean up start time - remove timezone information
+    let startTime = competitor.startTime || competitor.start || competitor.starttime || '00:00:00';
+    if (startTime && typeof startTime === 'string') {
+      startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+    }
+
     return {
       id: competitor.id || `${category}_${index}_${Math.random().toString(36).substr(2, 9)}`,
       name: competitor.name || 'Unknown',
-      country: this.extractCountry(competitor),
-      startTime: competitor.start || competitor.starttime || '00:00:00',
-      finalTime: competitor.time || competitor.result || null,
-      status: this.determineStatus(competitor),
-      rank: competitor.place ? parseInt(competitor.place) : null,
+      country: competitor.country || this.extractCountry(competitor),
+      startTime: startTime,
+      finalTime: competitor.finalTime || competitor.time || competitor.result || null,
+      status: competitor.status || this.determineStatus(competitor),
+      rank: competitor.rank || (competitor.place ? parseInt(competitor.place) : null),
       splits: this.transformSplits(competitor.splits || competitor.controls),
-      category: category
+      category: category,
+      bib: competitor.bib || '',
+      card: competitor.card || '',
+      club: competitor.club || ''
     };
   }
 
