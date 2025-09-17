@@ -110,6 +110,7 @@ function App() {
       timestamp: Date.now()
     };
 
+    console.log('[Control] Saving to Firebase, pageIndex:', livePageIndex);
     saveData('liveState', liveState);
   }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, isDisplayMode]);
 
@@ -132,11 +133,19 @@ function App() {
   useEffect(() => {
     if (!autoRotate || rotationPaused || isDisplayMode) return;
 
+    console.log('[Control] Starting auto-rotation, interval:', rotationInterval);
     const interval = setInterval(() => {
-      setLivePageIndex(prev => prev + 1);
+      setLivePageIndex(prev => {
+        const next = prev + 1;
+        console.log('[Control] Rotating page from', prev, 'to', next);
+        return next;
+      });
     }, rotationInterval);
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log('[Control] Stopping auto-rotation');
+      clearInterval(interval);
+    };
   }, [autoRotate, rotationPaused, rotationInterval, isDisplayMode]);
 
   // Pass page rotation state to components
