@@ -244,25 +244,19 @@ function App() {
 
   // Handle project creation
   const handleProjectCreated = async (project) => {
-    // Make sure project has unique ID
-    const uniqueProject = {
-      ...project,
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
-
-    setCurrentProject(uniqueProject);
+    setCurrentProject(project);
     setShowProjectCreator(false);
 
     // Save to localStorage
-    localStorage.setItem('currentProject', JSON.stringify(uniqueProject));
+    localStorage.setItem('currentProject', JSON.stringify(project));
 
     // Save project to Firebase
-    await saveData(`projects/${uniqueProject.id}`, uniqueProject);
+    await saveData(`projects/${project.id}`, project);
 
     // Add to local projects list (check for duplicates)
     setProjects(prev => {
-      const filtered = prev.filter(p => p.id !== uniqueProject.id);
-      const updated = [...filtered, uniqueProject];
+      const filtered = prev.filter(p => p.id !== project.id);
+      const updated = [...filtered, project];
       localStorage.setItem('projects', JSON.stringify(updated));
       return updated;
     });

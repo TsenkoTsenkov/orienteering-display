@@ -45,7 +45,7 @@ const ProjectCreator = ({ onProjectCreated, onCancel }) => {
     }
 
     const project = {
-      id: Date.now().toString(),
+      id: `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: projectName || eventData?.eventName || 'Untitled Project',
       dataSource,
       eventUrl: dataSource === 'liveresults' ? eventUrl : null,

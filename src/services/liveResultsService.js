@@ -3,9 +3,14 @@ import axios from 'axios';
 // LiveResults.it API service
 class LiveResultsService {
   constructor() {
-    // For development, we'll use a simple proxy approach
-    // In production, you should set up your own proxy server
-    this.proxyUrl = 'https://api.allorigins.win/get?url=';
+    // IMPORTANT: Due to CORS restrictions, you need to set up your own backend proxy
+    // For now, we'll use mock data for development
+    // Options for production:
+    // 1. Set up your own Node.js/Express proxy server
+    // 2. Use a serverless function (Netlify, Vercel, AWS Lambda)
+    // 3. Configure nginx as a reverse proxy
+    this.useMockData = true; // Set to false when you have a working proxy
+    this.proxyUrl = ''; // Add your proxy URL here when available
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
   }
 
@@ -274,20 +279,30 @@ class LiveResultsService {
   }
 
   getMockCompetitors(type) {
+    // Mock data based on the actual SEEMOC 2025 structure
     const baseCompetitors = [
-      { id: 'mock_1', name: 'John Smith', country: 'NOR', club: 'Halden SK' },
-      { id: 'mock_2', name: 'Emma Wilson', country: 'SWE', club: 'OK Linné' },
-      { id: 'mock_3', name: 'Pierre Dubois', country: 'FRA', club: 'CO Liège' },
-      { id: 'mock_4', name: 'Maria Garcia', country: 'ESP', club: 'ADOL' },
-      { id: 'mock_5', name: 'Hans Mueller', country: 'GER', club: 'OLG Bonn' }
+      { id: 'mock_1', name: 'Gabriel Sljivanac', country: 'CRO', club: 'NT Croatia', bib: '1101', card: '8208231' },
+      { id: 'mock_2', name: 'Stefan Yordanov', country: 'BUL', club: 'NT Bulgaria', bib: '1102', card: '8581023' },
+      { id: 'mock_3', name: 'Aleksa Franjkovic', country: 'SRB', club: 'NT Serbia', bib: '1103', card: '8002494', year: '2001' },
+      { id: 'mock_4', name: 'Josip Vujanic', country: 'CRO', club: 'NT Croatia', bib: '1104', card: '8183010' },
+      { id: 'mock_5', name: 'Sergiu Fala', country: 'MDA', club: 'NT Moldova', bib: '1105', card: '8522822' },
+      { id: 'mock_6', name: 'Lorand Vigh', country: 'ROU', club: 'NT Romania', bib: '1106', card: '8033157' },
+      { id: 'mock_7', name: 'Sabin Demir', country: 'TUR', club: 'NT Turkiye', bib: '1107', card: '8503745' },
+      { id: 'mock_8', name: 'Filip Vujanic', country: 'CRO', club: 'NT Croatia', bib: '1108', card: '8524116' },
+      { id: 'mock_9', name: 'Mihai Andrei Tintar', country: 'ROU', club: 'NT Romania', bib: '1109', card: '8500521' },
+      { id: 'mock_10', name: 'Koray Sahin', country: 'TUR', club: 'NT Turkiye', bib: '1110', card: '8519815' }
     ];
+
+    const startTimes = ['10:00:00', '10:02:00', '10:04:00', '10:06:00', '10:08:00',
+                       '10:10:00', '10:12:00', '10:14:00', '10:16:00', '10:18:00'];
 
     return baseCompetitors.map((comp, index) => ({
       ...comp,
       rank: type === 'results' ? index + 1 : null,
-      startTime: type === 'startlist' ? `10:${String(index * 2).padStart(2, '0')}:00` : null,
-      finalTime: type === 'results' ? `${45 + index}:${String(index * 3).padStart(2, '0')}` : null,
-      status: type === 'results' ? 'finished' : 'not_started'
+      startTime: type === 'startlist' ? startTimes[index] : null,
+      finalTime: type === 'results' ? `${35 + index * 2}:${String((index * 7) % 60).padStart(2, '0')}` : null,
+      status: type === 'results' ? 'finished' : 'not_started',
+      year: comp.year || ''
     }));
   }
 
