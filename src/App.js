@@ -336,6 +336,40 @@ function App() {
     }
   };
 
+  // Handle delete project
+  const handleDeleteProject = async (projectId) => {
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete this project?')) {
+      return;
+    }
+
+    // Remove from Firebase
+    await saveData(`projects/${projectId}`, null);
+
+    // Remove from local state and localStorage
+    setProjects(prev => {
+      const filtered = prev.filter(p => p.id !== projectId);
+      localStorage.setItem('projects', JSON.stringify(filtered));
+      return filtered;
+    });
+
+    // If this was the current project, clear it
+    if (currentProject && currentProject.id === projectId) {
+      setCurrentProject(null);
+      setCurrentCompetitionId(null);
+      setCompetitorsData({ men: [], women: [] });
+      localStorage.removeItem('currentProject');
+      localStorage.removeItem('currentCompetitionId');
+      localStorage.removeItem('competitorsData');
+
+      // Stop polling if active
+      if (pollingInterval) {
+        liveResultsService.stopPolling(pollingInterval);
+        setPollingInterval(null);
+      }
+    }
+  };
+
   // Load projects from Firebase on mount
   useEffect(() => {
     if (!isDisplayMode) {
@@ -497,6 +531,15 @@ function App() {
                   >
                     + New
                   </button>
+                  {currentProject && (
+                    <button
+                      className="delete-project-btn"
+                      onClick={() => handleDeleteProject(currentProject.id)}
+                      title="Delete current project"
+                    >
+                      🗑️ Delete
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button

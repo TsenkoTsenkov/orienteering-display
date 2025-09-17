@@ -282,13 +282,23 @@ class LiveResultsService {
       { id: 'mock_10', name: 'Koray Sahin', country: 'TUR', club: 'NT Turkiye', bib: '1110', card: '8519815' }
     ];
 
-    const startTimes = ['10:00:00', '10:02:00', '10:04:00', '10:06:00', '10:08:00',
-                       '10:10:00', '10:12:00', '10:14:00', '10:16:00', '10:18:00'];
+    // Generate realistic start times (2-minute intervals starting from 10:00)
+    const generateStartTime = (index) => {
+      const baseHour = 10;
+      const baseMinute = 0;
+      const intervalMinutes = 2;
+
+      const totalMinutes = baseMinute + (index * intervalMinutes);
+      const hours = baseHour + Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    };
 
     return baseCompetitors.map((comp, index) => ({
       ...comp,
       rank: type === 'results' ? index + 1 : null,
-      startTime: type === 'startlist' ? startTimes[index] : null,
+      startTime: type === 'startlist' || type === 'splits' ? generateStartTime(index) : null,
       finalTime: type === 'results' ? `${35 + index * 2}:${String((index * 7) % 60).padStart(2, '0')}` : null,
       status: type === 'results' ? 'finished' : 'not_started',
       year: comp.year || ''
