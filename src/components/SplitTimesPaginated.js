@@ -33,6 +33,11 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
   const totalPages = Math.ceil(competitorsWithSplits.length / itemsPerPage);
   const bestSplitTime = competitorsWithSplits[0]?.splitTime;
 
+  // Determine which page to show (use external control in live mode)
+  const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
+    ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
+    : currentPage;
+
   // Sync with external page control when in live mode
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
@@ -54,7 +59,7 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
     return () => clearInterval(interval);
   }, [totalPages, pageDuration, setCurrentPageIndex]);
 
-  const startIndex = currentPage * itemsPerPage;
+  const startIndex = pageToShow * itemsPerPage;
   const currentCompetitors = competitorsWithSplits.slice(startIndex, startIndex + itemsPerPage);
 
   const getTimeDifference = (time, bestTime) => {

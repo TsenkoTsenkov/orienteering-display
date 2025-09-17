@@ -12,6 +12,11 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
 
   const totalPages = Math.ceil(upcomingCompetitors.length / itemsPerPage);
 
+  // Determine which page to show (use external control in live mode)
+  const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
+    ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
+    : currentPage;
+
   // Sync with external page control when in live mode
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
@@ -33,7 +38,7 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
     return () => clearInterval(interval);
   }, [totalPages, pageDuration, setCurrentPageIndex]);
 
-  const startIndex = currentPage * itemsPerPage;
+  const startIndex = pageToShow * itemsPerPage;
   const currentCompetitors = upcomingCompetitors.slice(startIndex, startIndex + itemsPerPage);
 
   return (
@@ -54,7 +59,7 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
         <div className="page-transition">
           {currentCompetitors.map((competitor, index) => (
             <div
-              key={`${currentPage}-${competitor.id}`}
+              key={`${pageToShow}-${competitor.id}`}
               className={`competitor-row large-row ${index === 0 && currentPage === 0 ? 'next-starter' : ''}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >

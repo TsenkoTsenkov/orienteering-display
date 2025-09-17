@@ -14,6 +14,11 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
 
   const totalPages = Math.ceil(finishedCompetitors.length / itemsPerPage);
 
+  // Determine which page to show
+  const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
+    ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
+    : currentPage;
+
   // Sync with external page control when in live mode
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
@@ -36,9 +41,21 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
     return () => clearInterval(interval);
   }, [totalPages, pageDuration, setCurrentPageIndex]);
 
-  const startIndex = currentPage * itemsPerPage;
-  const currentCompetitors = finishedCompetitors.slice(startIndex, startIndex + itemsPerPage);
+  const startIndex = pageToShow * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCompetitors = finishedCompetitors.slice(startIndex, endIndex);
   const bestTime = finishedCompetitors[0]?.finalTime;
+
+  console.log('ResultsPaginated render:', {
+    pageToShow,
+    currentPage,
+    currentPageIndex,
+    startIndex,
+    endIndex,
+    totalCompetitors: finishedCompetitors.length,
+    showingCompetitors: currentCompetitors.length,
+    firstCompetitor: currentCompetitors[0]?.name
+  });
 
   const formatTime = (time) => {
     if (!time) return '--:--:--';
@@ -80,7 +97,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         <div className="page-transition">
           {currentCompetitors.map((competitor, index) => (
             <div
-              key={`${currentPage}-${competitor.id}`}
+              key={`${pageToShow}-${competitor.id}`}
               className={`competitor-row result-row large-row ${competitor.rank <= 3 ? `rank-${competitor.rank}` : ''}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
@@ -108,7 +125,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
             {[...Array(totalPages)].map((_, i) => (
               <span
                 key={i}
-                className={`page-dot ${i === currentPage ? 'active' : ''}`}
+                className={`page-dot ${i === pageToShow ? 'active' : ''}`}
               />
             ))}
           </div>
@@ -119,7 +136,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
         {totalPages > 1 && (
           <div className="page-info">
-            Page {currentPage + 1} of {totalPages}
+            Page {pageToShow + 1} of {totalPages}
           </div>
         )}
       </div>
