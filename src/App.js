@@ -158,10 +158,6 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
-    // Load initial state immediately
-    const initialState = loadLiveState();
-    console.log('Display mode initial state:', initialState);
-
     let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
 
     const handleStorageChange = () => {
@@ -205,6 +201,20 @@ function App() {
       clearInterval(interval);
     };
   }, [isDisplayMode]);
+
+  // Load initial state once when display mode starts
+  useEffect(() => {
+    if (!isDisplayMode) return;
+
+    const initialState = loadLiveState();
+    console.log('Display mode initial load:', initialState);
+    setLiveCategory(initialState.category);
+    setLiveScene(initialState.scene);
+    setLiveControlPoint(initialState.controlPoint);
+    setLivePageIndex(initialState.pageIndex || 0);
+    setLiveSceneConfig(initialState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+    setLiveTimestamp(initialState.timestamp || Date.now());
+  }, [isDisplayMode]); // Only run once when display mode changes
 
   // Auto-rotation effect for live pages
   useEffect(() => {
@@ -304,16 +314,26 @@ function App() {
   };
 
   if (isDisplayMode) {
+    // Convert center-relative position to absolute position
+    const displayWidth = liveSceneConfig?.size?.width || 1280;
+    const displayHeight = liveSceneConfig?.size?.height || 720;
+    const relativeX = liveSceneConfig?.position?.x || 0;
+    const relativeY = liveSceneConfig?.position?.y || 0;
+
+    // Calculate absolute position (center of screen + relative offset)
+    const absoluteX = (window.innerWidth / 2) - (displayWidth / 2) + relativeX;
+    const absoluteY = (window.innerHeight / 2) - (displayHeight / 2) + relativeY;
+
     return (
       <div className="app display-mode">
         <div
           className="display-output"
           style={{
-            width: `${liveSceneConfig?.size?.width || 1280}px`,
-            height: `${liveSceneConfig?.size?.height || 720}px`,
+            width: `${displayWidth}px`,
+            height: `${displayHeight}px`,
             position: 'absolute',
-            left: `${liveSceneConfig?.position?.x || 0}px`,
-            top: `${liveSceneConfig?.position?.y || 0}px`
+            left: `${absoluteX}px`,
+            top: `${absoluteY}px`
           }}
         >
           {renderScene(liveScene, liveCategory, liveControlPoint, true)}
