@@ -139,6 +139,7 @@ function App() {
     const updateTime = Date.now().toString();
     localStorage.setItem('orienteeringLiveUpdate', updateTime);
 
+
     // Dispatch storage event to notify other tabs/windows
     window.dispatchEvent(new Event('storage'));
 
@@ -162,20 +163,33 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
+
     // Use a ref to persist the last update time across closure calls
     const lastUpdateTimeRef = { current: localStorage.getItem('orienteeringLiveUpdate') || '0' };
+    const lastStateRef = { current: JSON.stringify(loadLiveState()) };
+
 
     const handleStorageChange = () => {
-      const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
-      if (currentUpdateTime !== lastUpdateTimeRef.current) {
-        lastUpdateTimeRef.current = currentUpdateTime;
+      try {
+        const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
         const liveState = loadLiveState();
-        setLiveCategory(liveState.category);
-        setLiveScene(liveState.scene);
-        setLiveControlPoint(liveState.controlPoint);
-        setLivePageIndex(liveState.pageIndex || 0);
-        setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
-        setLiveTimestamp(liveState.timestamp || Date.now());
+        const currentStateStr = JSON.stringify(liveState);
+
+        // Check both timestamp and actual state changes
+        if (currentUpdateTime !== lastUpdateTimeRef.current || currentStateStr !== lastStateRef.current) {
+
+          lastUpdateTimeRef.current = currentUpdateTime;
+          lastStateRef.current = currentStateStr;
+
+          setLiveCategory(liveState.category);
+          setLiveScene(liveState.scene);
+          setLiveControlPoint(liveState.controlPoint);
+          setLivePageIndex(liveState.pageIndex || 0);
+          setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+          setLiveTimestamp(liveState.timestamp || Date.now());
+
+        }
+      } catch (e) {
       }
     };
 
