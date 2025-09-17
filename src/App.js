@@ -5,14 +5,27 @@ import SplitTimesPaginated from './components/SplitTimesPaginated';
 import CurrentRunner from './components/CurrentRunner';
 import Controls from './components/Controls';
 import SimpleResizable from './components/SimpleResizable';
+import ProjectCreator from './components/ProjectCreator';
 import menData from './data/menData.json';
 import womenData from './data/womenData.json';
+import liveResultsService from './services/liveResultsService';
 import { saveData, listenToData } from './utils/firebaseConfig';
 import './App.css';
 
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const isDisplayMode = urlParams.get('display') === 'true';
+
+  // Project state
+  const [showProjectCreator, setShowProjectCreator] = useState(false);
+  const [currentProject, setCurrentProject] = useState(null);
+  const [currentCompetitionId, setCurrentCompetitionId] = useState(null);
+  const [competitorsData, setCompetitorsData] = useState({
+    men: menData.competitors,
+    women: womenData.competitors
+  });
+  const [pollingInterval, setPollingInterval] = useState(null);
+  const [projects, setProjects] = useState([]);
 
   // Preview state (what's being edited in control mode)
   const [previewCategory, setPreviewCategory] = useState('Men');
@@ -211,8 +224,103 @@ function App() {
     }));
   };
 
+  // Handle project creation
+  const handleProjectCreated = async (project) => {
+    setCurrentProject(project);
+    setShowProjectCreator(false);
+
+    // Save project to Firebase
+    await saveData(`projects/${project.id}`, project);
+
+    // Add to local projects list
+    setProjects(prev => [...prev, project]);
+
+    if (project.dataSource === 'liveresults' && project.eventData) {
+      // Set the first competition as current
+      const firstCompetition = project.eventData.competitions[0];
+      if (firstCompetition) {
+        setCurrentCompetitionId(firstCompetition.id);
+        setCompetitorsData({
+          men: firstCompetition.men || [],
+          women: firstCompetition.women || []
+        });
+
+        // Start polling for updates if we have a live event
+        if (project.eventUrl && pollingInterval) {
+          liveResultsService.stopPolling(pollingInterval);
+        }
+
+        const interval = liveResultsService.startPolling(
+          project.eventUrl,
+          firstCompetition.id,
+          (updatedData) => {
+            setCompetitorsData({
+              men: updatedData.men || [],
+              women: updatedData.women || []
+            });
+          },
+          30000 // Poll every 30 seconds
+        );
+        setPollingInterval(interval);
+      }
+    }
+  };
+
+  // Handle competition change
+  const handleCompetitionChange = (competitionId) => {
+    if (!currentProject || !currentProject.eventData) return;
+
+    const competition = currentProject.eventData.competitions.find(c => c.id === competitionId);
+    if (competition) {
+      setCurrentCompetitionId(competitionId);
+      setCompetitorsData({
+        men: competition.men || [],
+        women: competition.women || []
+      });
+
+      // Update polling for new competition
+      if (currentProject.eventUrl && pollingInterval) {
+        liveResultsService.stopPolling(pollingInterval);
+
+        const interval = liveResultsService.startPolling(
+          currentProject.eventUrl,
+          competitionId,
+          (updatedData) => {
+            setCompetitorsData({
+              men: updatedData.men || [],
+              women: updatedData.women || []
+            });
+          },
+          30000
+        );
+        setPollingInterval(interval);
+      }
+    }
+  };
+
+  // Load projects from Firebase on mount
+  useEffect(() => {
+    if (!isDisplayMode) {
+      listenToData('projects', (data) => {
+        if (data) {
+          const projectsList = Object.values(data);
+          setProjects(projectsList);
+        }
+      });
+    }
+  }, [isDisplayMode]);
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        liveResultsService.stopPolling(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
-    const competitors = categoryType === 'Men' ? menData.competitors : womenData.competitors;
+    const competitors = categoryType === 'Men' ? competitorsData.men : competitorsData.women;
     const rotationProps = isLive ? pageRotationState : { itemsPerPage };
     const sceneTitle = customSceneNames[sceneType];
 
@@ -293,10 +401,74 @@ function App() {
 
   return (
     <div className="app">
+      {showProjectCreator && (
+        <ProjectCreator
+          onProjectCreated={handleProjectCreated}
+          onCancel={() => setShowProjectCreator(false)}
+        />
+      )}
+
       <div className="main-container">
         <div className="broadcast-section">
           <div className="broadcast-header">
             <h1>Orienteering Broadcast Control</h1>
+            <div className="project-info">
+              {currentProject ? (
+                <div className="project-controls">
+                  <div className="current-project">
+                    <select
+                      className="project-selector"
+                      value={currentProject.id}
+                      onChange={(e) => {
+                        const project = projects.find(p => p.id === e.target.value);
+                        if (project) {
+                          setCurrentProject(project);
+                          if (project.eventData && project.eventData.competitions[0]) {
+                            handleCompetitionChange(project.eventData.competitions[0].id);
+                          }
+                        }
+                      }}
+                    >
+                      {projects.map(project => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {currentProject.dataSource === 'liveresults' && currentProject.eventData && (
+                      <>
+                        <select
+                          className="competition-selector"
+                          value={currentCompetitionId || ''}
+                          onChange={(e) => handleCompetitionChange(parseInt(e.target.value))}
+                        >
+                          {currentProject.eventData.competitions.map(comp => (
+                            <option key={comp.id} value={comp.id}>
+                              {comp.name} - {comp.date}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="live-indicator">● LIVE</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    className="new-project-btn"
+                    onClick={() => setShowProjectCreator(true)}
+                  >
+                    + New
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="create-project-btn"
+                  onClick={() => setShowProjectCreator(true)}
+                >
+                  + New Project
+                </button>
+              )}
+            </div>
             <div className="header-controls">
               {autoRotate && (
                 <div className="rotation-controls">

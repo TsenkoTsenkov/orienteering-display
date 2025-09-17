@@ -165,6 +165,109 @@ body {
     letter-spacing: 1px;
 }
 
+.project-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.current-project {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+}
+
+.project-label {
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.project-name {
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.live-indicator {
+    color: #10b981;
+    font-size: 12px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.create-project-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.create-project-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+.project-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.project-selector,
+.competition-selector {
+    padding: 8px 12px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 150px;
+}
+
+.project-selector:hover,
+.competition-selector:hover {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.project-selector:focus,
+.competition-selector:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.new-project-btn {
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    color: #93c5fd;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.new-project-btn:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
 .go-live-btn {
     display: flex;
     align-items: center;
