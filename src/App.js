@@ -217,7 +217,8 @@ function App() {
     setLivePageIndex(initialState.pageIndex || 0);
     setLiveSceneConfig(initialState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
     setLiveTimestamp(initialState.timestamp || Date.now());
-  }, [isDisplayMode]); // Only run once when display mode changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount, not when isDisplayMode changes
 
   // Auto-rotation effect for live pages
   useEffect(() => {

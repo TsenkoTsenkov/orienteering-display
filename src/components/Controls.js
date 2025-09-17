@@ -205,7 +205,7 @@ const Controls = ({
             <select
               value={rotationInterval / 1000}
               onChange={(e) => setRotationInterval(parseInt(e.target.value) * 1000)}
-              disabled={autoRotate}
+              disabled={!autoRotate}
             >
               <option value="5">5</option>
               <option value="10">10</option>
