@@ -108,7 +108,7 @@ app.get('/api/scrape', async (req, res) => {
         await page.waitForSelector('table, .competitor-row, .start-list-row', { timeout: 10000 });
       } catch (e) {
         console.log('No table found, trying to wait for any content...');
-        await page.waitForTimeout(5000); // Wait 5 seconds for content to load
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds for content to load
       }
 
       // Function to extract competitors from current page
@@ -277,7 +277,7 @@ app.get('/api/scrape', async (req, res) => {
             }
 
             // Wait for new content to load
-            await page.waitForTimeout(2000); // Wait for page transition
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page transition
 
             // Wait for table to reload
             try {
