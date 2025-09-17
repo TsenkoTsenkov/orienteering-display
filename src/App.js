@@ -28,16 +28,16 @@ function App() {
 
   // Scene configurations (size and position per scene)
   const [sceneConfigs, setSceneConfigs] = useState({
-    'results': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
-    'start-list': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
-    'current-runner': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
-    'split-1': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
-    'split-2': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
-    'split-3': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
-    'split-4': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } }
+    'results': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'start-list': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'current-runner': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'split-1': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'split-2': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'split-3': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'split-4': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } }
   });
 
-  const [liveSceneConfig, setLiveSceneConfig] = useState({ size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+  const [liveSceneConfig, setLiveSceneConfig] = useState({ size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
   const [autoRotate, setAutoRotate] = useState(true);
   const [rotationInterval, setRotationInterval] = useState(5000);
   const [rotationPaused, setRotationPaused] = useState(false);
@@ -53,7 +53,7 @@ function App() {
   });
 
   // Current preview size and position
-  const previewSize = sceneConfigs[previewScene]?.size || { width: 1280, height: 720 };
+  const previewSize = sceneConfigs[previewScene]?.size || { width: 1920, height: 1080 };
   const previewPosition = sceneConfigs[previewScene]?.position || { x: 0, y: 0 };
 
   // Listen to Firebase for live state updates (for display mode)
@@ -74,7 +74,7 @@ function App() {
           setLiveControlPoint(data.controlPoint || 1);
           setLivePageIndex(data.pageIndex || 0);
           setItemsPerPage(data.itemsPerPage || 10);
-          setLiveSceneConfig(data.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+          setLiveSceneConfig(data.sceneConfig || { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
         }
       })
     );
@@ -221,8 +221,8 @@ function App() {
   };
 
   if (isDisplayMode) {
-    const displayWidth = liveSceneConfig?.size?.width || 1280;
-    const displayHeight = liveSceneConfig?.size?.height || 720;
+    const displayWidth = liveSceneConfig?.size?.width || 1920;
+    const displayHeight = liveSceneConfig?.size?.height || 1080;
     const relativeX = liveSceneConfig?.position?.x || 0;
     const relativeY = liveSceneConfig?.position?.y || 0;
 
@@ -321,7 +321,7 @@ function App() {
                   onSizeChange={(newSize) => updateSceneConfig(previewScene, newSize, null)}
                   onPositionChange={(newPosition) => updateSceneConfig(previewScene, null, newPosition)}
                   isPreview={false}
-                  previewScale={previewSize.width > 1280 ? 0.4 : 0.5}
+                  previewScale={previewSize.width > 1920 ? 0.3 : 0.4}
                 >
                   {renderScene(previewScene, previewCategory, previewControlPoint, false)}
                 </SimpleResizable>
@@ -341,14 +341,14 @@ function App() {
               </div>
               <div className="display-wrapper">
                 <SimpleResizable
-                  initialWidth={liveSceneConfig?.size?.width || 1280}
-                  initialHeight={liveSceneConfig?.size?.height || 720}
+                  initialWidth={liveSceneConfig?.size?.width || 1920}
+                  initialHeight={liveSceneConfig?.size?.height || 1080}
                   initialX={liveSceneConfig?.position?.x || 0}
                   initialY={liveSceneConfig?.position?.y || 0}
                   onSizeChange={() => {}}
                   onPositionChange={() => {}}
                   isPreview={false}
-                  previewScale={(liveSceneConfig?.size?.width || 1280) > 1280 ? 0.4 : 0.5}
+                  previewScale={(liveSceneConfig?.size?.width || 1920) > 1920 ? 0.3 : 0.4}
                 >
                   {renderScene(liveScene, liveCategory, liveControlPoint, true)}
                 </SimpleResizable>
