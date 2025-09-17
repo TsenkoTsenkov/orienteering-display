@@ -18,14 +18,32 @@ function App() {
 
   // Project state
   const [showProjectCreator, setShowProjectCreator] = useState(false);
-  const [currentProject, setCurrentProject] = useState(null);
-  const [currentCompetitionId, setCurrentCompetitionId] = useState(null);
-  const [competitorsData, setCompetitorsData] = useState({
-    men: menData.competitors,
-    women: womenData.competitors
+  const [currentProject, setCurrentProject] = useState(() => {
+    // Load current project from localStorage
+    const saved = localStorage.getItem('currentProject');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [currentCompetitionId, setCurrentCompetitionId] = useState(() => {
+    const saved = localStorage.getItem('currentCompetitionId');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [competitorsData, setCompetitorsData] = useState(() => {
+    // Load saved competitor data or use defaults
+    const saved = localStorage.getItem('competitorsData');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return {
+      men: menData.competitors,
+      women: womenData.competitors
+    };
   });
   const [pollingInterval, setPollingInterval] = useState(null);
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState(() => {
+    // Load projects from localStorage
+    const saved = localStorage.getItem('projects');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Preview state (what's being edited in control mode)
   const [previewCategory, setPreviewCategory] = useState('Men');
@@ -226,24 +244,42 @@ function App() {
 
   // Handle project creation
   const handleProjectCreated = async (project) => {
-    setCurrentProject(project);
+    // Make sure project has unique ID
+    const uniqueProject = {
+      ...project,
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    };
+
+    setCurrentProject(uniqueProject);
     setShowProjectCreator(false);
 
-    // Save project to Firebase
-    await saveData(`projects/${project.id}`, project);
+    // Save to localStorage
+    localStorage.setItem('currentProject', JSON.stringify(uniqueProject));
 
-    // Add to local projects list
-    setProjects(prev => [...prev, project]);
+    // Save project to Firebase
+    await saveData(`projects/${uniqueProject.id}`, uniqueProject);
+
+    // Add to local projects list (check for duplicates)
+    setProjects(prev => {
+      const filtered = prev.filter(p => p.id !== uniqueProject.id);
+      const updated = [...filtered, uniqueProject];
+      localStorage.setItem('projects', JSON.stringify(updated));
+      return updated;
+    });
 
     if (project.dataSource === 'liveresults' && project.eventData) {
       // Set the first competition as current
       const firstCompetition = project.eventData.competitions[0];
       if (firstCompetition) {
         setCurrentCompetitionId(firstCompetition.id);
-        setCompetitorsData({
+        localStorage.setItem('currentCompetitionId', JSON.stringify(firstCompetition.id));
+
+        const newCompetitorsData = {
           men: firstCompetition.men || [],
           women: firstCompetition.women || []
-        });
+        };
+        setCompetitorsData(newCompetitorsData);
+        localStorage.setItem('competitorsData', JSON.stringify(newCompetitorsData));
 
         // Start polling for updates if we have a live event
         if (project.eventUrl && pollingInterval) {
@@ -254,10 +290,12 @@ function App() {
           project.eventUrl,
           firstCompetition.id,
           (updatedData) => {
-            setCompetitorsData({
+            const newData = {
               men: updatedData.men || [],
               women: updatedData.women || []
-            });
+            };
+            setCompetitorsData(newData);
+            localStorage.setItem('competitorsData', JSON.stringify(newData));
           },
           30000 // Poll every 30 seconds
         );
@@ -273,10 +311,14 @@ function App() {
     const competition = currentProject.eventData.competitions.find(c => c.id === competitionId);
     if (competition) {
       setCurrentCompetitionId(competitionId);
-      setCompetitorsData({
+      localStorage.setItem('currentCompetitionId', JSON.stringify(competitionId));
+
+      const newCompetitorsData = {
         men: competition.men || [],
         women: competition.women || []
-      });
+      };
+      setCompetitorsData(newCompetitorsData);
+      localStorage.setItem('competitorsData', JSON.stringify(newCompetitorsData));
 
       // Update polling for new competition
       if (currentProject.eventUrl && pollingInterval) {
@@ -286,10 +328,12 @@ function App() {
           currentProject.eventUrl,
           competitionId,
           (updatedData) => {
-            setCompetitorsData({
+            const newData = {
               men: updatedData.men || [],
               women: updatedData.women || []
-            });
+            };
+            setCompetitorsData(newData);
+            localStorage.setItem('competitorsData', JSON.stringify(newData));
           },
           30000
         );

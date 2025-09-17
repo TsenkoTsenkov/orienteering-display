@@ -75,10 +75,14 @@ class LiveResultsService {
     try {
       const encodedClass = encodeURIComponent(classId);
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/startlist`;
+      console.log('Fetching start list from:', url);
       const response = await this.makeProxiedRequest(url);
 
+      console.log('Response received, parsing HTML...');
       // Parse the HTML response to extract competitor data
-      return this.parseCompetitorData(response.data, 'startlist');
+      const competitors = this.parseCompetitorData(response.data, 'startlist');
+      console.log(`Parsed ${competitors.length} competitors from start list`);
+      return competitors;
     } catch (error) {
       console.error('Error fetching start list:', error);
       return this.getMockCompetitors('startlist');
@@ -232,7 +236,11 @@ class LiveResultsService {
         }
       }
 
-      console.log(`Parsed ${competitors.length} competitors from ${type}`);
+      // Log what we found
+      if (competitors.length > 0) {
+        console.log(`Successfully parsed ${competitors.length} competitors from ${type}:`);
+        console.log('First competitor:', competitors[0]);
+      }
 
       // If still no competitors found, return mock data
       if (competitors.length === 0) {
@@ -286,10 +294,13 @@ class LiveResultsService {
   // Fetch competitors for a class (combines all data)
   async fetchCompetitors(eventId, competitionId, classId) {
     try {
+      console.log(`Fetching competitors for event ${eventId}, competition ${competitionId}, class ${classId}`);
+
       // Try to fetch results first (most complete data)
       let competitors = await this.fetchResults(eventId, competitionId, classId);
 
-      if (competitors.length === 0) {
+      if (competitors.length === 0 || competitors.every(c => c.id.startsWith('mock_'))) {
+        console.log('No results found or mock data returned, trying start list...');
         // Fall back to start list if no results yet
         competitors = await this.fetchStartList(eventId, competitionId, classId);
       }
