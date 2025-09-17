@@ -124,58 +124,117 @@ class LiveResultsService {
         return this.getMockCompetitors(type);
       }
 
-      // Try to parse JSON data if present (some pages embed JSON)
-      const jsonMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.*?});/s);
-      if (jsonMatch) {
-        try {
-          const jsonData = JSON.parse(jsonMatch[1]);
-          // Extract competitors from JSON structure
-          if (jsonData.competitors || jsonData.results || jsonData.startList) {
-            const list = jsonData.competitors || jsonData.results || jsonData.startList || [];
-            return list.map((comp, index) => ({
-              id: `comp_${index}`,
-              rank: comp.rank || comp.position || null,
-              name: comp.name || comp.competitor || 'Unknown',
-              country: comp.country || comp.nation || 'UNK',
-              club: comp.club || '',
-              startTime: comp.startTime || comp.start || null,
-              finalTime: comp.finalTime || comp.time || null,
-              status: comp.status || (type === 'results' ? 'finished' : 'not_started')
-            }));
+      // Parse HTML table data
+      // Look for table rows containing competitor data
+      const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      const cellPattern = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+
+      // Extract all table rows
+      const rows = [...html.matchAll(rowPattern)];
+
+      for (const row of rows) {
+        const rowHtml = row[1];
+
+        // Skip header rows
+        if (rowHtml.includes('<th') || rowHtml.includes('Start') || rowHtml.includes('Competitor')) {
+          continue;
+        }
+
+        // Extract cells from the row
+        const cells = [...rowHtml.matchAll(cellPattern)].map(cell => {
+          // Remove HTML tags and clean up
+          return cell[1]
+            .replace(/<[^>]*>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        });
+
+        if (cells.length >= 2) {
+          // For start list: Start time, Competitor, Club, Year, Bib, Card
+          // For results: Rank, Competitor, Club, Time, Status
+
+          let competitor = {};
+
+          if (type === 'startlist' && cells.length >= 3) {
+            // Extract country from various possible formats
+            const countryMatch = cells[2]?.match(/([A-Z]{2,3})/) ||
+                                cells[1]?.match(/\(([A-Z]{2,3})\)/) ||
+                                rowHtml.match(/flag-([a-z]{2})/i);
+
+            competitor = {
+              id: `comp_${competitors.length}`,
+              startTime: cells[0] || null,
+              name: cells[1] || 'Unknown',
+              club: cells[2] || '',
+              country: countryMatch ? countryMatch[1].toUpperCase() : 'UNK',
+              year: cells[3] || '',
+              bib: cells[4] || '',
+              card: cells[5] || '',
+              status: 'not_started',
+              rank: null,
+              finalTime: null
+            };
+          } else if (type === 'results' && cells.length >= 2) {
+            const countryMatch = cells[2]?.match(/([A-Z]{2,3})/) ||
+                                cells[1]?.match(/\(([A-Z]{2,3})\)/) ||
+                                rowHtml.match(/flag-([a-z]{2})/i);
+
+            competitor = {
+              id: `comp_${competitors.length}`,
+              rank: parseInt(cells[0]) || null,
+              name: cells[1] || 'Unknown',
+              club: cells[2] || '',
+              country: countryMatch ? countryMatch[1].toUpperCase() : 'UNK',
+              finalTime: cells[3] || cells[4] || null,
+              status: cells[5] || 'finished',
+              startTime: null,
+              year: '',
+              bib: '',
+              card: ''
+            };
           }
-        } catch (e) {
-          console.log('JSON parsing failed, falling back to HTML parsing');
+
+          // Only add if we have a valid competitor with a name
+          if (competitor.name && competitor.name !== 'Unknown') {
+            competitors.push(competitor);
+          }
         }
       }
 
-      // Extract data from table structure
-      // Look for divs with class names that might contain competitor data
-      const namePattern = /class="[^"]*(?:name|athlete-name|competitor|runner)[^"]*"[^>]*>([^<]+)</gi;
-      const timePattern = /(?:\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2})/g;
-      const countryPattern = /\b[A-Z]{3}\b/g;
+      // If no competitors found, try alternative parsing
+      if (competitors.length === 0) {
+        // Try to find competitor data in div or span elements
+        const competitorDivPattern = /<div[^>]*class="[^"]*competitor[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+        const divMatches = [...html.matchAll(competitorDivPattern)];
 
-      // Try to extract structured data
-      const names = [...html.matchAll(namePattern)].map(m => m[1].trim());
-      const times = [...html.matchAll(timePattern)];
-      const countries = [...html.matchAll(countryPattern)];
+        for (const match of divMatches) {
+          const content = match[1];
+          const nameMatch = content.match(/>([^<]+)</);
+          const timeMatch = content.match(/(\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2})/);
+          const countryMatch = content.match(/([A-Z]{2,3})/);
 
-      // If we found names, create competitors from them
-      if (names.length > 0) {
-        for (let i = 0; i < names.length; i++) {
-          competitors.push({
-            id: `comp_${i}`,
-            rank: i + 1,
-            name: names[i],
-            country: countries[i] ? countries[i][0] : 'UNK',
-            club: '',
-            startTime: type === 'startlist' && times[i] ? times[i][0] : null,
-            finalTime: type === 'results' && times[i] ? times[i][0] : null,
-            status: type === 'results' ? 'finished' : 'not_started'
-          });
+          if (nameMatch) {
+            competitors.push({
+              id: `comp_${competitors.length}`,
+              name: nameMatch[1].trim(),
+              country: countryMatch ? countryMatch[1] : 'UNK',
+              startTime: type === 'startlist' ? (timeMatch ? timeMatch[1] : null) : null,
+              finalTime: type === 'results' ? (timeMatch ? timeMatch[1] : null) : null,
+              status: type === 'results' ? 'finished' : 'not_started',
+              rank: type === 'results' ? competitors.length + 1 : null,
+              club: '',
+              year: '',
+              bib: '',
+              card: ''
+            });
+          }
         }
       }
 
-      // If no competitors found, return mock data
+      console.log(`Parsed ${competitors.length} competitors from ${type}`);
+
+      // If still no competitors found, return mock data
       if (competitors.length === 0) {
         console.log('No competitors parsed, using mock data for', type);
         return this.getMockCompetitors(type);
