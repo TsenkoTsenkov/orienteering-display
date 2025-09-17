@@ -10,16 +10,41 @@ import womenData from './data/womenData.json';
 import './App.css';
 
 function App() {
-  // Load saved settings from localStorage
+  // Load saved settings from localStorage - now per scene
   const loadSettings = () => {
     const saved = localStorage.getItem('orienteeringDisplaySettings');
     if (saved) {
       const settings = JSON.parse(saved);
+      // Migrate old format if needed
+      if (settings.displaySize && !settings.sceneConfigs) {
+        return {
+          sceneConfigs: {
+            'results': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
+            'start-list': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
+            'current-runner': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
+            'split-1': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
+            'split-2': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
+            'split-3': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
+            'split-4': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } }
+          },
+          contentScale: settings.contentScale || 1
+        };
+      }
       return settings;
     }
+    // Default settings with per-scene configurations
+    const defaultSize = { width: 1280, height: 720 };
+    const defaultPosition = { x: 0, y: 0 };
     return {
-      displaySize: { width: 1280, height: 720 },
-      displayPosition: { x: 0, y: 0 },
+      sceneConfigs: {
+        'results': { size: defaultSize, position: defaultPosition },
+        'start-list': { size: defaultSize, position: defaultPosition },
+        'current-runner': { size: defaultSize, position: defaultPosition },
+        'split-1': { size: defaultSize, position: defaultPosition },
+        'split-2': { size: defaultSize, position: defaultPosition },
+        'split-3': { size: defaultSize, position: defaultPosition },
+        'split-4': { size: defaultSize, position: defaultPosition }
+      },
       contentScale: 1
     };
   };
@@ -28,13 +53,20 @@ function App() {
   const loadLiveState = () => {
     const saved = localStorage.getItem('orienteeringLiveState');
     if (saved) {
-      return JSON.parse(saved);
+      const state = JSON.parse(saved);
+      // Add timestamp if missing
+      if (!state.timestamp) {
+        state.timestamp = Date.now();
+      }
+      return state;
     }
     return {
       category: 'Men',
       scene: 'results',
       controlPoint: 1,
-      pageIndex: 0
+      pageIndex: 0,
+      timestamp: Date.now(),
+      sceneConfig: { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } }
     };
   };
 
@@ -50,12 +82,17 @@ function App() {
   const [liveCategory, setLiveCategory] = useState(savedLiveState.category);
   const [liveScene, setLiveScene] = useState(savedLiveState.scene);
   const [liveControlPoint, setLiveControlPoint] = useState(savedLiveState.controlPoint);
+  const [liveTimestamp, setLiveTimestamp] = useState(savedLiveState.timestamp);
 
-  // Preview settings (being edited)
-  const [previewSize, setPreviewSize] = useState(savedSettings.displaySize);
+  // Scene configurations (size and position per scene)
+  const [sceneConfigs, setSceneConfigs] = useState(savedSettings.sceneConfigs);
 
-  // Live settings (being broadcast)
-  const [liveSize, setLiveSize] = useState(savedSettings.displaySize);
+  // Current preview size (depends on selected scene)
+  const previewSize = sceneConfigs[previewScene]?.size || { width: 1280, height: 720 };
+  const previewPosition = sceneConfigs[previewScene]?.position || { x: 0, y: 0 };
+
+  // Live settings (what's actually displayed)
+  const [liveSceneConfig, setLiveSceneConfig] = useState(savedLiveState.sceneConfig || sceneConfigs[savedLiveState.scene]);
   const [autoRotate, setAutoRotate] = useState(true); // Auto-rotation enabled by default
   const [rotationInterval, setRotationInterval] = useState(5000); // 5 seconds for page rotation
   const [rotationPaused, setRotationPaused] = useState(false);
@@ -71,15 +108,14 @@ function App() {
     'split-4': 'Control Point 4'
   });
 
-  // Save settings whenever live settings change
+  // Save settings whenever scene configurations change
   useEffect(() => {
     const settings = {
-      displaySize: liveSize,
-      displayPosition: { x: 0, y: 0 },
+      sceneConfigs,
       contentScale: 1
     };
     localStorage.setItem('orienteeringDisplaySettings', JSON.stringify(settings));
-  }, [liveSize]);
+  }, [sceneConfigs]);
 
   // Save live state whenever it changes
   useEffect(() => {
@@ -87,13 +123,33 @@ function App() {
       category: liveCategory,
       scene: liveScene,
       controlPoint: liveControlPoint,
-      pageIndex: livePageIndex
+      pageIndex: livePageIndex,
+      timestamp: liveTimestamp,
+      sceneConfig: liveSceneConfig
     };
     localStorage.setItem('orienteeringLiveState', JSON.stringify(liveState));
 
+    // Also set a specific update timestamp for polling detection
+    localStorage.setItem('orienteeringLiveUpdate', Date.now().toString());
+
     // Dispatch storage event to notify other tabs/windows
     window.dispatchEvent(new Event('storage'));
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex]);
+
+    // Send postMessage to any open display windows
+    const displayWindows = window.displayWindows || [];
+    displayWindows.forEach(win => {
+      if (win && !win.closed) {
+        try {
+          win.postMessage({
+            type: 'live-update',
+            data: liveState
+          }, '*');
+        } catch (e) {
+          console.error('Error sending message to display window:', e);
+        }
+      }
+    });
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, liveTimestamp, liveSceneConfig]);
 
   const urlParams = new URLSearchParams(window.location.search);
   const isDisplayMode = urlParams.get('display') === 'true';
@@ -102,22 +158,45 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
+    let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
+
     const handleStorageChange = () => {
-      const liveState = loadLiveState();
-      setLiveCategory(liveState.category);
-      setLiveScene(liveState.scene);
-      setLiveControlPoint(liveState.controlPoint);
-      setLivePageIndex(liveState.pageIndex || 0);
+      const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
+      if (currentUpdateTime !== lastUpdateTime) {
+        lastUpdateTime = currentUpdateTime;
+        const liveState = loadLiveState();
+        setLiveCategory(liveState.category);
+        setLiveScene(liveState.scene);
+        setLiveControlPoint(liveState.controlPoint);
+        setLivePageIndex(liveState.pageIndex || 0);
+        setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+        setLiveTimestamp(liveState.timestamp || Date.now());
+      }
+    };
+
+    // Listen for postMessage updates
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'live-update') {
+        const liveState = event.data.data;
+        setLiveCategory(liveState.category);
+        setLiveScene(liveState.scene);
+        setLiveControlPoint(liveState.controlPoint);
+        setLivePageIndex(liveState.pageIndex || 0);
+        setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+        setLiveTimestamp(liveState.timestamp || Date.now());
+      }
     };
 
     // Listen for storage events from other tabs/windows
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('message', handleMessage);
 
-    // Poll for changes as backup (for same-tab updates)
-    const interval = setInterval(handleStorageChange, 500);
+    // Poll for changes as backup with timestamp check (more efficient)
+    const interval = setInterval(handleStorageChange, 100); // Faster polling for better responsiveness
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('message', handleMessage);
       clearInterval(interval);
     };
   }, [isDisplayMode]);
@@ -174,8 +253,20 @@ function App() {
     setLiveCategory(previewCategory);
     setLiveScene(previewScene);
     setLiveControlPoint(previewControlPoint);
-    setLiveSize(previewSize);
+    setLiveSceneConfig(sceneConfigs[previewScene]);
+    setLiveTimestamp(Date.now());
     setLivePageIndex(0); // Reset to first page when pushing new content to live
+  };
+
+  // Update preview size when scene changes or config is modified
+  const updateSceneConfig = (scene, newSize, newPosition) => {
+    setSceneConfigs(prev => ({
+      ...prev,
+      [scene]: {
+        size: newSize || prev[scene].size,
+        position: newPosition || prev[scene].position
+      }
+    }));
   };
 
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
@@ -208,8 +299,11 @@ function App() {
         <div
           className="display-output"
           style={{
-            width: `${liveSize.width}px`,
-            height: `${liveSize.height}px`
+            width: `${liveSceneConfig?.size?.width || 1280}px`,
+            height: `${liveSceneConfig?.size?.height || 720}px`,
+            position: 'absolute',
+            left: `${liveSceneConfig?.position?.x || 0}px`,
+            top: `${liveSceneConfig?.position?.y || 0}px`
           }}
         >
           {renderScene(liveScene, liveCategory, liveControlPoint, true)}
@@ -230,9 +324,13 @@ function App() {
           </div>
         </div>
         <SimpleResizable
+          key={`fullscreen-${previewScene}`}
           initialWidth={previewSize.width}
           initialHeight={previewSize.height}
-          onSizeChange={setPreviewSize}
+          initialX={previewPosition.x}
+          initialY={previewPosition.y}
+          onSizeChange={(newSize) => updateSceneConfig(previewScene, newSize, null)}
+          onPositionChange={(newPosition) => updateSceneConfig(previewScene, null, newPosition)}
           isPreview={true}
           previewScale={1}
         >
@@ -280,9 +378,13 @@ function App() {
               </div>
               <div className="display-wrapper" onClick={handleFullscreenPreview}>
                 <SimpleResizable
+                  key={`preview-${previewScene}`}
                   initialWidth={previewSize.width}
                   initialHeight={previewSize.height}
-                  onSizeChange={() => {}}
+                  initialX={previewPosition.x}
+                  initialY={previewPosition.y}
+                  onSizeChange={(newSize) => updateSceneConfig(previewScene, newSize, null)}
+                  onPositionChange={(newPosition) => updateSceneConfig(previewScene, null, newPosition)}
                   isPreview={false}
                   previewScale={previewSize.width > 1280 ? 0.4 : 0.5}
                 >
@@ -304,11 +406,14 @@ function App() {
               </div>
               <div className="display-wrapper">
                 <SimpleResizable
-                  initialWidth={liveSize.width}
-                  initialHeight={liveSize.height}
+                  initialWidth={liveSceneConfig?.size?.width || 1280}
+                  initialHeight={liveSceneConfig?.size?.height || 720}
+                  initialX={liveSceneConfig?.position?.x || 0}
+                  initialY={liveSceneConfig?.position?.y || 0}
                   onSizeChange={() => {}}
+                  onPositionChange={() => {}}
                   isPreview={false}
-                  previewScale={liveSize.width > 1280 ? 0.4 : 0.5}
+                  previewScale={(liveSceneConfig?.size?.width || 1280) > 1280 ? 0.4 : 0.5}
                 >
                   {renderScene(liveScene, liveCategory, liveControlPoint, true)}
                 </SimpleResizable>
@@ -333,6 +438,8 @@ function App() {
             onGoLive={handleGoLive}
             customSceneNames={customSceneNames}
             updateSceneName={updateSceneName}
+            sceneConfigs={sceneConfigs}
+            updateSceneConfig={updateSceneConfig}
           />
         </div>
       </div>

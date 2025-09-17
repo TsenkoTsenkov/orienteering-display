@@ -16,7 +16,9 @@ const Controls = ({
   setRotationInterval,
   onGoLive,
   customSceneNames,
-  updateSceneName
+  updateSceneName,
+  sceneConfigs,
+  updateSceneConfig
 }) => {
   const [editingScene, setEditingScene] = useState(null);
   const [tempSceneName, setTempSceneName] = useState('');
@@ -81,6 +83,54 @@ const Controls = ({
 
       <div className="control-section">
         <h4>Preview Settings</h4>
+        {sceneConfigs && sceneConfigs[scene] && (
+          <div className="scene-config-controls">
+            <div className="size-position-group">
+              <div className="config-row">
+                <label>Size:</label>
+                <span className="config-value">
+                  {Math.round(sceneConfigs[scene].size.width)} × {Math.round(sceneConfigs[scene].size.height)}
+                </span>
+              </div>
+              <div className="config-row">
+                <label>Position:</label>
+                <div className="position-inputs">
+                  <div className="position-input-group">
+                    <label>X:</label>
+                    <input
+                      type="number"
+                      value={Math.round(sceneConfigs[scene].position?.x || 0)}
+                      onChange={(e) => {
+                        const newX = parseInt(e.target.value) || 0;
+                        updateSceneConfig(scene, null, { ...sceneConfigs[scene].position, x: newX });
+                      }}
+                      className="position-input"
+                    />
+                  </div>
+                  <div className="position-input-group">
+                    <label>Y:</label>
+                    <input
+                      type="number"
+                      value={Math.round(sceneConfigs[scene].position?.y || 0)}
+                      onChange={(e) => {
+                        const newY = parseInt(e.target.value) || 0;
+                        updateSceneConfig(scene, null, { ...sceneConfigs[scene].position, y: newY });
+                      }}
+                      className="position-input"
+                    />
+                  </div>
+                </div>
+              </div>
+              <button
+                className="reset-position-btn"
+                onClick={() => updateSceneConfig(scene, null, { x: 0, y: 0 })}
+              >
+                Center Display
+              </button>
+            </div>
+            <p className="config-hint">Click preview to resize. Each scene has its own size and position.</p>
+          </div>
+        )}
       </div>
 
       <div className="control-section">

@@ -536,3 +536,96 @@
   cursor: pointer;
   border: none;
 }
+
+/* Scene Configuration Controls */
+.scene-config-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(30, 41, 59, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.size-position-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.config-row label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.config-value {
+  color: #cbd5e1;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.position-inputs {
+  display: flex;
+  gap: 15px;
+}
+
+.position-input-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.position-input-group label {
+  color: #94a3b8;
+  font-size: 12px;
+  min-width: 15px;
+}
+
+.position-input {
+  width: 60px;
+  padding: 5px 8px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 4px;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.position-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.reset-position-btn {
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #3b82f6;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reset-position-btn:hover {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.config-hint {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  font-style: italic;
+}

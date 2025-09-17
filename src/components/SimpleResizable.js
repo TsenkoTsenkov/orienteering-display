@@ -5,12 +5,15 @@ const SimpleResizable = ({
   children,
   initialWidth = 1280,
   initialHeight = 720,
+  initialX = 0,
+  initialY = 0,
   onSizeChange,
+  onPositionChange,
   isPreview = false,
   previewScale = 0.5
 }) => {
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -22,10 +25,24 @@ const SimpleResizable = ({
   }, [initialWidth, initialHeight]);
 
   useEffect(() => {
+    setPosition({ x: initialX, y: initialY });
+  }, [initialX, initialY]);
+
+  // Only trigger size change on user interaction, not on initialization
+  const handleSizeChange = (newSize) => {
+    setSize(newSize);
     if (onSizeChange) {
-      onSizeChange(size);
+      onSizeChange(newSize);
     }
-  }, [size, onSizeChange]);
+  };
+
+  // Only trigger position change on user interaction, not on initialization
+  const handlePositionChange = (newPosition) => {
+    setPosition(newPosition);
+    if (onPositionChange) {
+      onPositionChange(newPosition);
+    }
+  };
 
   const handleMouseDown = (e) => {
     if (!isPreview) return;
@@ -51,24 +68,32 @@ const SimpleResizable = ({
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging && !isResizing) {
-        setPosition({
+        const newPosition = {
           x: e.clientX - dragStart.x,
           y: e.clientY - dragStart.y
-        });
+        };
+        setPosition(newPosition);
       }
 
       if (isResizing) {
         const deltaX = e.clientX - dragStart.x;
         const deltaY = e.clientY - dragStart.y;
 
-        setSize({
+        const newSize = {
           width: Math.max(320, sizeStart.width + deltaX / previewScale),
           height: Math.max(180, sizeStart.height + deltaY / previewScale)
-        });
+        };
+        setSize(newSize);
       }
     };
 
     const handleMouseUp = () => {
+      if (isDragging && !isResizing && onPositionChange) {
+        onPositionChange(position);
+      }
+      if (isResizing && onSizeChange) {
+        onSizeChange(size);
+      }
       setIsDragging(false);
       setIsResizing(false);
     };
@@ -82,7 +107,7 @@ const SimpleResizable = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, sizeStart, previewScale]);
+  }, [isDragging, isResizing, dragStart, sizeStart, previewScale, position, size, onPositionChange, onSizeChange]);
 
   const displayStyle = {
     width: size.width * previewScale,
