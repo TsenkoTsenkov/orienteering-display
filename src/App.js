@@ -158,6 +158,10 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
+    // Load initial state immediately
+    const initialState = loadLiveState();
+    console.log('Display mode initial state:', initialState);
+
     let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
 
     const handleStorageChange = () => {
@@ -165,6 +169,7 @@ function App() {
       if (currentUpdateTime !== lastUpdateTime) {
         lastUpdateTime = currentUpdateTime;
         const liveState = loadLiveState();
+        console.log('Display mode updating with:', liveState);
         setLiveCategory(liveState.category);
         setLiveScene(liveState.scene);
         setLiveControlPoint(liveState.controlPoint);
@@ -250,6 +255,11 @@ function App() {
   };
 
   const handleGoLive = () => {
+    console.log('Pushing to live:', {
+      scene: previewScene,
+      category: previewCategory,
+      config: sceneConfigs[previewScene]
+    });
     setLiveCategory(previewCategory);
     setLiveScene(previewScene);
     setLiveControlPoint(previewControlPoint);

@@ -1,0 +1,9 @@
+Every time you add something new, commit and push the code with proper description.
+
+You are developing this application:
+
+Create an javascript React application that is going to be used for displaying orienteering competition events. It will be use into an upcoming livestreaming event where it should show main scenes like start list, current rankings through a specific control point and results by rank. For now the data is assumed to be just static json which will reside in the program. Later we will add more services which will extract dynamicaly data from another place but this is not a concern now.  There will be 2 categories - men and women, so you can have just 2 json files which hold records. The application is supposed to list those records in a professional way similar as how professional orienteering events and scenes are shown and how for example Eurosport is displaying different data for its viewers. The scenes should contain a rank, name, country code and flag and time (start, split, final, etc...) but those details right now are not so important. Since we will use programs like OBS to broadcast this, we are going to stream this using rtmp, please check the folder streaming-name-display/streaming-name-display in order to understand how we are doing this. You don't have to copy most of the things from there, just to get an idea of how we are streaming this widget that is created. For our program, it also should be customisable but not the style, but the size mostly should be customisable, the style should be consistent and we probably don't want to change it or the effects and animations. We should be able to easily change categories (juggling between men and women), changing the scenes (start list, control point A, control point B, current competitor time and ranking, results) from the app.
+
+Each scene should have diferent configuration. If you change the size of one scene that shouldn't reflect the other and so on.
+
+
