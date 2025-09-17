@@ -47,6 +47,12 @@
   gap: 10px;
 }
 
+.items-per-page-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
 .control-btn {
   padding: 12px 20px;
   background: rgba(30, 41, 59, 0.5);

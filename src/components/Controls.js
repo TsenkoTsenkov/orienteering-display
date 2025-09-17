@@ -14,6 +14,8 @@ const Controls = ({
   setAutoRotate,
   rotationInterval,
   setRotationInterval,
+  itemsPerPage,
+  setItemsPerPage,
   onGoLive,
   customSceneNames,
   updateSceneName,
@@ -188,6 +190,30 @@ const Controls = ({
           ))}
         </div>
         <p className="edit-hint">Double-click scene names to edit</p>
+      </div>
+
+      <div className="control-section">
+        <h4>Items Per Page</h4>
+        <div className="items-per-page-buttons">
+          <button
+            className={`control-btn ${itemsPerPage === 5 ? 'active' : ''}`}
+            onClick={() => setItemsPerPage(5)}
+          >
+            5 Items
+          </button>
+          <button
+            className={`control-btn ${itemsPerPage === 10 ? 'active' : ''}`}
+            onClick={() => setItemsPerPage(10)}
+          >
+            10 Items
+          </button>
+          <button
+            className={`control-btn ${itemsPerPage === 15 ? 'active' : ''}`}
+            onClick={() => setItemsPerPage(15)}
+          >
+            15 Items
+          </button>
+        </div>
       </div>
 
       <div className="control-section">

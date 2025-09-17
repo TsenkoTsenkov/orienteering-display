@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
-const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex }) => {
+const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 7; // Reduced to 7 because top 3 are always shown
+  // Top 3 are always shown, so actual items per page for remaining is reduced by 3
+  const remainingItemsPerPage = Math.max(2, itemsPerPage - 3);
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
 
   const finishedCompetitors = competitors
@@ -15,7 +16,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
   const top3 = finishedCompetitors.slice(0, 3);
   const remaining = finishedCompetitors.slice(3);
 
-  const totalPages = Math.max(1, Math.ceil(remaining.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(remaining.length / remainingItemsPerPage));
 
   // Determine which page to show
   const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
@@ -43,8 +44,8 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
     return () => clearInterval(interval);
   }, [totalPages, pageDuration, setCurrentPageIndex]);
 
-  const startIndex = pageToShow * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const startIndex = pageToShow * remainingItemsPerPage;
+  const endIndex = startIndex + remainingItemsPerPage;
   const currentRemainingCompetitors = remaining.slice(startIndex, endIndex);
 
   // Combine top 3 with current page of remaining competitors
@@ -135,7 +136,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
         {totalPages > 1 && (
           <div className="page-info">
-            Page {currentPage + 1} of {totalPages} (showing ranks 4-{Math.min(finishedCompetitors.length, 3 + (currentPage + 1) * itemsPerPage)})
+            Page {currentPage + 1} of {totalPages} (showing ranks 4-{Math.min(finishedCompetitors.length, 3 + (currentPage + 1) * remainingItemsPerPage)})
           </div>
         )}
       </div>

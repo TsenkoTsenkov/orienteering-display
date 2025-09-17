@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
-const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex }) => {
+const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 8;
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
 
   const getCompetitorsWithSplits = () => {

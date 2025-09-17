@@ -7,96 +7,40 @@ import Controls from './components/Controls';
 import SimpleResizable from './components/SimpleResizable';
 import menData from './data/menData.json';
 import womenData from './data/womenData.json';
+import { saveData, listenToData } from './utils/firebaseConfig';
 import './App.css';
 
 function App() {
-  // Load saved settings from localStorage - now per scene
-  const loadSettings = () => {
-    const saved = localStorage.getItem('orienteeringDisplaySettings');
-    if (saved) {
-      const settings = JSON.parse(saved);
-      // Migrate old format if needed
-      if (settings.displaySize && !settings.sceneConfigs) {
-        return {
-          sceneConfigs: {
-            'results': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
-            'start-list': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
-            'current-runner': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
-            'split-1': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
-            'split-2': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
-            'split-3': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } },
-            'split-4': { size: settings.displaySize, position: settings.displayPosition || { x: 0, y: 0 } }
-          },
-          contentScale: settings.contentScale || 1
-        };
-      }
-      return settings;
-    }
-    // Default settings with per-scene configurations
-    const defaultSize = { width: 1280, height: 720 };
-    const defaultPosition = { x: 0, y: 0 };
-    return {
-      sceneConfigs: {
-        'results': { size: defaultSize, position: defaultPosition },
-        'start-list': { size: defaultSize, position: defaultPosition },
-        'current-runner': { size: defaultSize, position: defaultPosition },
-        'split-1': { size: defaultSize, position: defaultPosition },
-        'split-2': { size: defaultSize, position: defaultPosition },
-        'split-3': { size: defaultSize, position: defaultPosition },
-        'split-4': { size: defaultSize, position: defaultPosition }
-      },
-      contentScale: 1
-    };
-  };
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDisplayMode = urlParams.get('display') === 'true';
 
-  // Load saved live state from localStorage
-  const loadLiveState = () => {
-    const saved = localStorage.getItem('orienteeringLiveState');
-    if (saved) {
-      const state = JSON.parse(saved);
-      // Add timestamp if missing
-      if (!state.timestamp) {
-        state.timestamp = Date.now();
-      }
-      return state;
-    }
-    return {
-      category: 'Men',
-      scene: 'results',
-      controlPoint: 1,
-      pageIndex: 0,
-      timestamp: Date.now(),
-      sceneConfig: { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } }
-    };
-  };
-
-  const savedSettings = loadSettings();
-  const savedLiveState = loadLiveState();
-
-  // Preview state (what's being edited)
+  // Preview state (what's being edited in control mode)
   const [previewCategory, setPreviewCategory] = useState('Men');
   const [previewScene, setPreviewScene] = useState('results');
   const [previewControlPoint, setPreviewControlPoint] = useState(1);
 
-  // Live state (what's being broadcast) - Initialize from localStorage
-  const [liveCategory, setLiveCategory] = useState(savedLiveState.category);
-  const [liveScene, setLiveScene] = useState(savedLiveState.scene);
-  const [liveControlPoint, setLiveControlPoint] = useState(savedLiveState.controlPoint);
-  const [liveTimestamp, setLiveTimestamp] = useState(savedLiveState.timestamp);
+  // Live state (what's being broadcast)
+  const [liveCategory, setLiveCategory] = useState('Men');
+  const [liveScene, setLiveScene] = useState('results');
+  const [liveControlPoint, setLiveControlPoint] = useState(1);
+  const [livePageIndex, setLivePageIndex] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Scene configurations (size and position per scene)
-  const [sceneConfigs, setSceneConfigs] = useState(savedSettings.sceneConfigs);
+  const [sceneConfigs, setSceneConfigs] = useState({
+    'results': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
+    'start-list': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
+    'current-runner': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
+    'split-1': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
+    'split-2': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
+    'split-3': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } },
+    'split-4': { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } }
+  });
 
-  // Current preview size (depends on selected scene)
-  const previewSize = sceneConfigs[previewScene]?.size || { width: 1280, height: 720 };
-  const previewPosition = sceneConfigs[previewScene]?.position || { x: 0, y: 0 };
-
-  // Live settings (what's actually displayed)
-  const [liveSceneConfig, setLiveSceneConfig] = useState(savedLiveState.sceneConfig || sceneConfigs[savedLiveState.scene]);
-  const [autoRotate, setAutoRotate] = useState(true); // Auto-rotation enabled by default
-  const [rotationInterval, setRotationInterval] = useState(5000); // 5 seconds for page rotation
+  const [liveSceneConfig, setLiveSceneConfig] = useState({ size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [rotationInterval, setRotationInterval] = useState(5000);
   const [rotationPaused, setRotationPaused] = useState(false);
-  const [livePageIndex, setLivePageIndex] = useState(savedLiveState.pageIndex || 0);
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const [customSceneNames, setCustomSceneNames] = useState({
     'results': 'Results',
@@ -108,21 +52,52 @@ function App() {
     'split-4': 'Control Point 4'
   });
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDisplayMode = urlParams.get('display') === 'true';
+  // Current preview size and position
+  const previewSize = sceneConfigs[previewScene]?.size || { width: 1280, height: 720 };
+  const previewPosition = sceneConfigs[previewScene]?.position || { x: 0, y: 0 };
 
-  // Save settings whenever scene configurations change
+  // Listen to Firebase for live state updates (for display mode)
   useEffect(() => {
-    const settings = {
-      sceneConfigs,
-      contentScale: 1
+    if (!isDisplayMode) return;
+
+    console.log('[Display Mode] Setting up Firebase listeners');
+
+    const unsubscribers = [];
+
+    // Listen to live state changes
+    unsubscribers.push(
+      listenToData('liveState', (data) => {
+        if (data) {
+          console.log('[Display Mode] Live state updated:', data);
+          setLiveCategory(data.category || 'Men');
+          setLiveScene(data.scene || 'results');
+          setLiveControlPoint(data.controlPoint || 1);
+          setLivePageIndex(data.pageIndex || 0);
+          setItemsPerPage(data.itemsPerPage || 10);
+          setLiveSceneConfig(data.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+        }
+      })
+    );
+
+    // Listen to settings changes
+    unsubscribers.push(
+      listenToData('settings', (data) => {
+        if (data) {
+          console.log('[Display Mode] Settings updated:', data);
+          setAutoRotate(data.autoRotate !== undefined ? data.autoRotate : true);
+          setRotationInterval(data.rotationInterval || 5000);
+          setItemsPerPage(data.itemsPerPage || 10);
+        }
+      })
+    );
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
     };
-    localStorage.setItem('orienteeringDisplaySettings', JSON.stringify(settings));
-  }, [sceneConfigs]);
+  }, [isDisplayMode]);
 
-  // Save live state whenever it changes (only in control mode, not display mode)
+  // Save live state to Firebase (only in control mode)
   useEffect(() => {
-    // Don't save if we're in display mode - display mode only reads
     if (isDisplayMode) return;
 
     const liveState = {
@@ -130,65 +105,32 @@ function App() {
       scene: liveScene,
       controlPoint: liveControlPoint,
       pageIndex: livePageIndex,
-      timestamp: liveTimestamp,
-      sceneConfig: liveSceneConfig
+      itemsPerPage: itemsPerPage,
+      sceneConfig: liveSceneConfig,
+      timestamp: Date.now()
     };
 
-    // Save the complete state
-    localStorage.setItem('orienteeringLiveState', JSON.stringify(liveState));
+    saveData('liveState', liveState);
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, isDisplayMode]);
 
-    // Also save a simple version number that increments
-    const currentVersion = parseInt(localStorage.getItem('orienteeringVersion') || '0');
-    localStorage.setItem('orienteeringVersion', (currentVersion + 1).toString());
-
-    console.log('[Control] Saved state, version:', currentVersion + 1);
-
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, liveTimestamp, liveSceneConfig, isDisplayMode]);
-
-  // Display mode - poll for changes and refresh when detected
+  // Save settings to Firebase (only in control mode)
   useEffect(() => {
-    if (!isDisplayMode) return;
+    if (isDisplayMode) return;
 
-    console.log('[Display] Starting in display mode');
-    let lastVersion = localStorage.getItem('orienteeringVersion') || '0';
-
-    // Function to check for updates
-    const checkForUpdates = () => {
-      const currentVersion = localStorage.getItem('orienteeringVersion') || '0';
-
-      if (currentVersion !== lastVersion) {
-        console.log('[Display] Version changed from', lastVersion, 'to', currentVersion, '- reloading page');
-        // Force a full page reload to ensure OBS picks up the changes
-        window.location.reload();
-      }
+    const settings = {
+      autoRotate,
+      rotationInterval,
+      itemsPerPage,
+      sceneConfigs,
+      customSceneNames
     };
 
-    // Check every 500ms
-    const interval = setInterval(checkForUpdates, 500);
-
-    return () => clearInterval(interval);
-  }, [isDisplayMode]);
-
-  // Load initial state for display mode
-  useEffect(() => {
-    if (!isDisplayMode) return;
-
-    const initialState = loadLiveState();
-    console.log('[Display] Loading initial state:', initialState);
-    setLiveCategory(initialState.category);
-    setLiveScene(initialState.scene);
-    setLiveControlPoint(initialState.controlPoint);
-    setLivePageIndex(initialState.pageIndex || 0);
-    setLiveSceneConfig(initialState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
-    setLiveTimestamp(initialState.timestamp || Date.now());
-  }, [isDisplayMode]);
+    saveData('settings', settings);
+  }, [autoRotate, rotationInterval, itemsPerPage, sceneConfigs, customSceneNames, isDisplayMode]);
 
   // Auto-rotation effect for live pages
   useEffect(() => {
-    if (!autoRotate || rotationPaused) return;
-
-    // In display mode, we still need pagination but it's controlled by the live state
-    if (isDisplayMode) return;
+    if (!autoRotate || rotationPaused || isDisplayMode) return;
 
     const interval = setInterval(() => {
       setLivePageIndex(prev => prev + 1);
@@ -203,7 +145,8 @@ function App() {
     rotationPaused,
     currentPageIndex: livePageIndex,
     rotationInterval,
-    setCurrentPageIndex: setLivePageIndex
+    setCurrentPageIndex: setLivePageIndex,
+    itemsPerPage
   };
 
   const handleStopRotation = () => {
@@ -235,15 +178,14 @@ function App() {
   };
 
   const handleGoLive = () => {
+    console.log('[Control] Pushing to live');
     setLiveCategory(previewCategory);
     setLiveScene(previewScene);
     setLiveControlPoint(previewControlPoint);
     setLiveSceneConfig(sceneConfigs[previewScene]);
-    setLiveTimestamp(Date.now());
     setLivePageIndex(0); // Reset to first page when pushing new content to live
   };
 
-  // Update preview size when scene changes or config is modified
   const updateSceneConfig = (scene, newSize, newPosition) => {
     setSceneConfigs(prev => ({
       ...prev,
@@ -256,7 +198,7 @@ function App() {
 
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
     const competitors = categoryType === 'Men' ? menData.competitors : womenData.competitors;
-    const rotationProps = isLive ? pageRotationState : {};
+    const rotationProps = isLive ? pageRotationState : { itemsPerPage };
 
     switch (sceneType) {
       case 'start-list':
@@ -279,13 +221,11 @@ function App() {
   };
 
   if (isDisplayMode) {
-    // Convert center-relative position to absolute position
     const displayWidth = liveSceneConfig?.size?.width || 1280;
     const displayHeight = liveSceneConfig?.size?.height || 720;
     const relativeX = liveSceneConfig?.position?.x || 0;
     const relativeY = liveSceneConfig?.position?.y || 0;
 
-    // Calculate absolute position (center of screen + relative offset)
     const absoluteX = (window.innerWidth / 2) - (displayWidth / 2) + relativeX;
     const absoluteY = (window.innerHeight / 2) - (displayHeight / 2) + relativeY;
 
@@ -430,6 +370,8 @@ function App() {
             setAutoRotate={setAutoRotate}
             rotationInterval={rotationInterval}
             setRotationInterval={setRotationInterval}
+            itemsPerPage={itemsPerPage}
+            setItemsPerPage={setItemsPerPage}
             onGoLive={handleGoLive}
             customSceneNames={customSceneNames}
             updateSceneName={updateSceneName}
