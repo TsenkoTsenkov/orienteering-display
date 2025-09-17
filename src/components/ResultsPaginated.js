@@ -16,7 +16,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
   // Sync with external page control when in live mode
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
-      const newPage = currentPageIndex % Math.max(1, totalPages);
+      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
       console.log('ResultsPaginated: Syncing page', currentPageIndex, 'to', newPage, 'of', totalPages);
       setCurrentPage(newPage);
     }

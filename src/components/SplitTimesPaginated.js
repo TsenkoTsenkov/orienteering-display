@@ -36,7 +36,8 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
   // Sync with external page control when in live mode
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
-      setCurrentPage(currentPageIndex % Math.max(1, totalPages));
+      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      setCurrentPage(newPage);
     }
   }, [currentPageIndex, totalPages, setCurrentPageIndex]);
 
