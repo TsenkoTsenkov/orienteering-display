@@ -3,14 +3,9 @@ import axios from 'axios';
 // LiveResults.it API service
 class LiveResultsService {
   constructor() {
-    // IMPORTANT: Due to CORS restrictions, you need to set up your own backend proxy
-    // For now, we'll use mock data for development
-    // Options for production:
-    // 1. Set up your own Node.js/Express proxy server
-    // 2. Use a serverless function (Netlify, Vercel, AWS Lambda)
-    // 3. Configure nginx as a reverse proxy
-    this.useMockData = true; // Set to false when you have a working proxy
-    this.proxyUrl = ''; // Add your proxy URL here when available
+    // Using local proxy server to bypass CORS restrictions
+    this.useMockData = false; // Using real data through proxy
+    this.proxyUrl = 'http://localhost:3001/api/fetch?url=';
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
   }
 
@@ -19,12 +14,6 @@ class LiveResultsService {
     try {
       const proxyUrl = `${this.proxyUrl}${encodeURIComponent(url)}`;
       const response = await axios.get(proxyUrl, { timeout: 10000 });
-
-      // allorigins returns data in a wrapper
-      if (response.data && response.data.contents) {
-        return { ...response, data: response.data.contents };
-      }
-
       return response;
     } catch (error) {
       console.error('Proxy request failed:', url, error.message);
