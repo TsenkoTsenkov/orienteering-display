@@ -44,6 +44,8 @@ function App() {
     const saved = localStorage.getItem('projects');
     return saved ? JSON.parse(saved) : [];
   });
+  const [isRefetching, setIsRefetching] = useState(false);
+  const [refetchCategory, setRefetchCategory] = useState(null);
 
   // Preview state (what's being edited in control mode)
   const [previewCategory, setPreviewCategory] = useState('Men');
@@ -336,6 +338,74 @@ function App() {
     }
   };
 
+  // Handle refetch for specific competition and category
+  const handleRefetch = async (category = null) => {
+    if (!currentProject || !currentProject.eventUrl || !currentCompetitionId) {
+      alert('No active project or competition selected');
+      return;
+    }
+
+    setIsRefetching(true);
+    setRefetchCategory(category);
+
+    try {
+      const eventId = liveResultsService.parseEventIdFromUrl(currentProject.eventUrl);
+      if (!eventId) {
+        throw new Error('Invalid event URL');
+      }
+
+      // Get classes for the current competition
+      const classes = await liveResultsService.fetchClasses(eventId, currentCompetitionId);
+      const { menClass, womenClass } = liveResultsService.findEliteClasses(classes);
+
+      let updatedData = { ...competitorsData };
+
+      // Fetch data for specified category or both
+      if (!category || category === 'men') {
+        if (menClass) {
+          const menCompetitors = await liveResultsService.fetchCompetitors(eventId, currentCompetitionId, menClass.id);
+          updatedData.men = menCompetitors.map((c, index) =>
+            liveResultsService.transformCompetitor(c, 'Men', index)
+          );
+        }
+      }
+
+      if (!category || category === 'women') {
+        if (womenClass) {
+          const womenCompetitors = await liveResultsService.fetchCompetitors(eventId, currentCompetitionId, womenClass.id);
+          updatedData.women = womenCompetitors.map((c, index) =>
+            liveResultsService.transformCompetitor(c, 'Women', index)
+          );
+        }
+      }
+
+      // Update state and localStorage
+      setCompetitorsData(updatedData);
+      localStorage.setItem('competitorsData', JSON.stringify(updatedData));
+
+      // Update the project's event data in memory
+      if (currentProject.eventData) {
+        const competitionIndex = currentProject.eventData.competitions.findIndex(c => c.id === currentCompetitionId);
+        if (competitionIndex !== -1) {
+          currentProject.eventData.competitions[competitionIndex].men = updatedData.men;
+          currentProject.eventData.competitions[competitionIndex].women = updatedData.women;
+
+          // Save updated project
+          localStorage.setItem('currentProject', JSON.stringify(currentProject));
+          await saveData(`projects/${currentProject.id}`, currentProject);
+        }
+      }
+
+      console.log(`Refetched data for ${category || 'all categories'}`);
+    } catch (error) {
+      console.error('Error refetching data:', error);
+      alert(`Failed to refetch data: ${error.message}`);
+    } finally {
+      setIsRefetching(false);
+      setRefetchCategory(null);
+    }
+  };
+
   // Handle delete project
   const handleDeleteProject = async (projectId) => {
     // Confirm deletion
@@ -522,6 +592,32 @@ function App() {
                             </option>
                           ))}
                         </select>
+                        <div className="refetch-controls">
+                          <button
+                            className="refetch-btn"
+                            onClick={() => handleRefetch()}
+                            disabled={isRefetching}
+                            title="Refetch all data for current competition"
+                          >
+                            {isRefetching ? '⏳' : '🔄'} Refresh All
+                          </button>
+                          <button
+                            className="refetch-btn refetch-men"
+                            onClick={() => handleRefetch('men')}
+                            disabled={isRefetching}
+                            title="Refetch men's data only"
+                          >
+                            {isRefetching && refetchCategory === 'men' ? '⏳' : '♂️'} Men
+                          </button>
+                          <button
+                            className="refetch-btn refetch-women"
+                            onClick={() => handleRefetch('women')}
+                            disabled={isRefetching}
+                            title="Refetch women's data only"
+                          >
+                            {isRefetching && refetchCategory === 'women' ? '⏳' : '♀️'} Women
+                          </button>
+                        </div>
                         <span className="live-indicator">● LIVE</span>
                       </>
                     )}

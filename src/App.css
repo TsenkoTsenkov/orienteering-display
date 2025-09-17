@@ -201,6 +201,47 @@ body {
     animation: pulse 2s ease-in-out infinite;
 }
 
+.refetch-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.refetch-btn {
+    padding: 6px 12px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.refetch-btn:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.refetch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.refetch-btn.refetch-men:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: #3b82f6;
+}
+
+.refetch-btn.refetch-women:hover:not(:disabled) {
+    background: rgba(236, 72, 153, 0.3);
+    border-color: #ec4899;
+}
+
 .create-project-btn {
     padding: 10px 20px;
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
