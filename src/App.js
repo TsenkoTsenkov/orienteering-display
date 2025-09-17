@@ -144,6 +144,13 @@ function App() {
     const updateTime = Date.now().toString();
     localStorage.setItem('orienteeringLiveUpdate', updateTime);
 
+    console.log('[Control] Saved to localStorage:', {
+      scene: liveScene,
+      category: liveCategory,
+      pageIndex: livePageIndex,
+      updateTime: updateTime
+    });
+
 
     // Dispatch storage event to notify other tabs/windows
     window.dispatchEvent(new Event('storage'));
@@ -168,14 +175,26 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
+    console.log('[Display Mode] Initializing polling mechanism');
     let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
+    let pollCount = 0;
 
     const checkForUpdates = () => {
+      pollCount++;
+      if (pollCount % 50 === 0) { // Log every 5 seconds (50 * 100ms)
+        console.log('[Display] Still polling, count:', pollCount, 'lastUpdate:', lastUpdateTime);
+      }
+
       try {
         const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate');
 
         // Only update if the timestamp has changed
         if (currentUpdateTime && currentUpdateTime !== lastUpdateTime) {
+          console.log('[Display] Detected change!', {
+            old: lastUpdateTime,
+            new: currentUpdateTime
+          });
+
           lastUpdateTime = currentUpdateTime;
 
           // Load the state from localStorage
@@ -191,9 +210,10 @@ function App() {
             setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
             setLiveTimestamp(liveState.timestamp || Date.now());
 
-            console.log('[Display] Updated from localStorage:', {
+            console.log('[Display] Successfully updated state:', {
               scene: liveState.scene,
               category: liveState.category,
+              pageIndex: liveState.pageIndex,
               updateTime: currentUpdateTime
             });
           }
@@ -237,9 +257,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount, not when isDisplayMode changes
 
-  // Auto-rotation effect for live pages (only in control mode)
+  // Auto-rotation effect for live pages
   useEffect(() => {
-    if (!autoRotate || rotationPaused || isDisplayMode) return;
+    if (!autoRotate || rotationPaused) return;
+
+    // In display mode, we still need pagination but it's controlled by the live state
+    if (isDisplayMode) return;
 
     const interval = setInterval(() => {
       setLivePageIndex(prev => prev + 1);
