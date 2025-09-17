@@ -4,14 +4,18 @@ import './SceneStyles.css';
 
 const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 8;
+  const itemsPerPage = 7; // Reduced to 7 because top 3 are always shown
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
 
   const finishedCompetitors = competitors
     .filter(c => c.status === 'finished' && c.rank)
     .sort((a, b) => a.rank - b.rank);
 
-  const totalPages = Math.ceil(finishedCompetitors.length / itemsPerPage);
+  // Split into top 3 and the rest
+  const top3 = finishedCompetitors.slice(0, 3);
+  const remaining = finishedCompetitors.slice(3);
+
+  const totalPages = Math.max(1, Math.ceil(remaining.length / itemsPerPage));
 
   // Determine which page to show
   const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
@@ -41,9 +45,11 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
 
   const startIndex = pageToShow * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentCompetitors = finishedCompetitors.slice(startIndex, endIndex);
-  const bestTime = finishedCompetitors[0]?.finalTime;
+  const currentRemainingCompetitors = remaining.slice(startIndex, endIndex);
 
+  // Combine top 3 with current page of remaining competitors
+  const displayCompetitors = [...top3, ...currentRemainingCompetitors];
+  const bestTime = finishedCompetitors[0]?.finalTime;
 
   const formatTime = (time) => {
     if (!time) return '--:--:--';
@@ -83,28 +89,33 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         </div>
 
         <div className="page-transition">
-          {currentCompetitors.map((competitor, index) => (
-            <div
-              key={`${pageToShow}-${competitor.id}`}
-              className={`competitor-row result-row large-row ${competitor.rank <= 3 ? `rank-${competitor.rank}` : ''}`}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <span className="rank large-rank">
-                {competitor.rank === 1 && <span className="medal gold">🥇</span>}
-                {competitor.rank === 2 && <span className="medal silver">🥈</span>}
-                {competitor.rank === 3 && <span className="medal bronze">🥉</span>}
-                <span className="rank-number">{competitor.rank}</span>
-              </span>
-              <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
-              <span className="competitor-country">
-                <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
-                <span className="country-code">{competitor.country}</span>
-              </span>
-              <span className="final-time large-time">{formatTime(competitor.finalTime)}</span>
-              <span className="time-diff large-diff">
-                {getTimeDifference(competitor.finalTime, bestTime)}
-              </span>
-            </div>
+          {displayCompetitors.map((competitor, index) => (
+            <React.Fragment key={`${pageToShow}-${competitor.id}`}>
+              <div
+                className={`competitor-row result-row large-row ${competitor.rank <= 3 ? `rank-${competitor.rank}` : ''} ${index < 3 ? 'top-three' : ''}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <span className="rank large-rank">
+                  {competitor.rank === 1 && <span className="medal gold">🥇</span>}
+                  {competitor.rank === 2 && <span className="medal silver">🥈</span>}
+                  {competitor.rank === 3 && <span className="medal bronze">🥉</span>}
+                  <span className="rank-number">{competitor.rank}</span>
+                </span>
+                <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
+                <span className="competitor-country">
+                  <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
+                  <span className="country-code">{competitor.country}</span>
+                </span>
+                <span className="final-time large-time">{formatTime(competitor.finalTime)}</span>
+                <span className="time-diff large-diff">
+                  {getTimeDifference(competitor.finalTime, bestTime)}
+                </span>
+              </div>
+              {/* Add separator line after top 3 */}
+              {index === 2 && displayCompetitors.length > 3 && (
+                <div className="top-three-separator-line"></div>
+              )}
+            </React.Fragment>
           ))}
         </div>
 
@@ -124,7 +135,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
         {totalPages > 1 && (
           <div className="page-info">
-            Page {currentPage + 1} of {totalPages}
+            Page {currentPage + 1} of {totalPages} (showing ranks 4-{Math.min(finishedCompetitors.length, 3 + (currentPage + 1) * itemsPerPage)})
           </div>
         )}
       </div>

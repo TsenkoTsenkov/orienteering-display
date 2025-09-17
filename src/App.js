@@ -211,12 +211,21 @@ function App() {
     window.addEventListener('message', handleMessage);
 
     // Poll for changes as backup with timestamp check (more efficient)
-    const interval = setInterval(handleStorageChange, 100); // Faster polling for better responsiveness
+    const interval = setInterval(handleStorageChange, 50); // Very fast polling for OBS
+
+    // Force refresh periodically for OBS compatibility
+    const forceRefreshInterval = setInterval(() => {
+      const obsRefresh = localStorage.getItem('orienteeringOBSRefresh');
+      if (obsRefresh && obsRefresh !== lastUpdateTimeRef.current) {
+        window.location.reload();
+      }
+    }, 2000); // Check every 2 seconds for forced refresh
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('message', handleMessage);
       clearInterval(interval);
+      clearInterval(forceRefreshInterval);
     };
   }, [isDisplayMode]);
 
@@ -289,6 +298,13 @@ function App() {
     setLiveSceneConfig(sceneConfigs[previewScene]);
     setLiveTimestamp(Date.now());
     setLivePageIndex(0); // Reset to first page when pushing new content to live
+
+    // Also update URL for OBS (if using query params)
+    if (window.location.hostname !== 'localhost') {
+      // Force OBS to refresh by adding timestamp to URL
+      const obsRefreshTime = Date.now();
+      localStorage.setItem('orienteeringOBSRefresh', obsRefreshTime.toString());
+    }
   };
 
   // Update preview size when scene changes or config is modified
