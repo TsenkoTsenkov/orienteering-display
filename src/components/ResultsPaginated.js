@@ -16,42 +16,35 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
   const firstPlace = finishedCompetitors[0];
   const remaining = finishedCompetitors.slice(1);
 
-  // Ensure we have at least 1 page even with no remaining competitors after first place
+  // Calculate total pages for remaining competitors
   const totalPages = remaining.length > 0
     ? Math.ceil(remaining.length / remainingItemsPerPage)
-    : 1;
+    : 1; // Always at least 1 page to show first place
 
-  // Determine which page to show
-  const pageToShow = currentPageIndex !== undefined
-    ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
-    : currentPage;
+  // Determine page to show based on mode
+  let pageToShow = 0;
 
-  // Sync with external page control when in live mode
-  useEffect(() => {
-    if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
-      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
-      console.log('[ResultsPaginated] External page control - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
-      setCurrentPage(newPage);
-    } else if (currentPageIndex !== undefined) {
-      // Display mode: no setter, just currentPageIndex
-      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
-      console.log('[ResultsPaginated] Display mode - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
-      setCurrentPage(newPage);
+  if (totalPages > 0) {
+    if (currentPageIndex !== undefined) {
+      // External control mode (live)
+      pageToShow = currentPageIndex % totalPages;
+    } else {
+      // Internal control mode (preview)
+      pageToShow = currentPage;
     }
-  }, [currentPageIndex, totalPages, setCurrentPageIndex]);
+  }
 
-  // Handle auto-rotation for preview mode only
+  // Handle internal rotation for preview mode only
   useEffect(() => {
-    // Only auto-rotate in preview mode (when setCurrentPageIndex is undefined)
-    if (setCurrentPageIndex !== undefined) return;
-    if (totalPages <= 1) return;
+    // Skip if external control or only 1 page
+    if (currentPageIndex !== undefined || totalPages <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => (prev + 1) % totalPages);
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [totalPages, pageDuration, setCurrentPageIndex]);
+  }, [totalPages, pageDuration, currentPageIndex]);
 
   const startIndex = pageToShow * remainingItemsPerPage;
   const endIndex = startIndex + remainingItemsPerPage;
@@ -134,7 +127,7 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
             {[...Array(totalPages)].map((_, i) => (
               <span
                 key={i}
-                className={`page-dot ${i === currentPage ? 'active' : ''}`}
+                className={`page-dot ${i === pageToShow ? 'active' : ''}`}
               />
             ))}
           </div>

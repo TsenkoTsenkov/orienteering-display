@@ -32,43 +32,37 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, 
   const competitorsWithSplits = getCompetitorsWithSplits();
   const leader = competitorsWithSplits[0];
   const remaining = competitorsWithSplits.slice(1);
-  // Ensure we have at least 1 page even with no remaining competitors after leader
+
+  // Calculate total pages for remaining competitors
   const totalPages = remaining.length > 0
     ? Math.ceil(remaining.length / remainingItemsPerPage)
-    : 1;
+    : 1; // Always at least 1 page to show leader
   const bestSplitTime = leader?.splitTime;
 
-  // Determine which page to show (use external control in live mode)
-  const pageToShow = currentPageIndex !== undefined
-    ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
-    : currentPage;
+  // Determine page to show based on mode
+  let pageToShow = 0;
 
-  // Sync with external page control when in live mode
-  useEffect(() => {
-    if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
-      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
-      console.log('[SplitTimesPaginated] External page control - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
-      setCurrentPage(newPage);
-    } else if (currentPageIndex !== undefined) {
-      // Display mode: no setter, just currentPageIndex
-      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
-      console.log('[SplitTimesPaginated] Display mode - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
-      setCurrentPage(newPage);
+  if (totalPages > 0) {
+    if (currentPageIndex !== undefined) {
+      // External control mode (live)
+      pageToShow = currentPageIndex % totalPages;
+    } else {
+      // Internal control mode (preview)
+      pageToShow = currentPage;
     }
-  }, [currentPageIndex, totalPages, setCurrentPageIndex]);
+  }
 
-  // Handle auto-rotation for preview mode only
+  // Handle internal rotation for preview mode only
   useEffect(() => {
-    // Only auto-rotate in preview mode (when setCurrentPageIndex is undefined)
-    if (setCurrentPageIndex !== undefined) return;
-    if (totalPages <= 1) return;
+    // Skip if external control or only 1 page
+    if (currentPageIndex !== undefined || totalPages <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => (prev + 1) % totalPages);
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [totalPages, pageDuration, setCurrentPageIndex]);
+  }, [totalPages, pageDuration, currentPageIndex]);
 
   const startIndex = pageToShow * remainingItemsPerPage;
   const currentRemainingCompetitors = remaining.slice(startIndex, startIndex + remainingItemsPerPage);
@@ -140,7 +134,7 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, 
             {[...Array(totalPages)].map((_, i) => (
               <span
                 key={i}
-                className={`page-dot ${i === currentPage ? 'active' : ''}`}
+                className={`page-dot ${i === pageToShow ? 'active' : ''}`}
               />
             ))}
           </div>
@@ -151,7 +145,7 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, 
         <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
         {totalPages > 1 && (
           <div className="page-info">
-            Page {currentPage + 1} of {totalPages}
+            Page {pageToShow + 1} of {totalPages}
           </div>
         )}
       </div>
