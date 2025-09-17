@@ -485,12 +485,12 @@ function App() {
           <div className="broadcast-header">
             <h1>Orienteering Broadcast Control</h1>
             <div className="project-info">
-              {currentProject ? (
+              {projects.length > 0 ? (
                 <div className="project-controls">
                   <div className="current-project">
                     <select
                       className="project-selector"
-                      value={currentProject.id}
+                      value={currentProject?.id || ''}
                       onChange={(e) => {
                         const project = projects.find(p => p.id === e.target.value);
                         if (project) {
@@ -501,6 +501,7 @@ function App() {
                         }
                       }}
                     >
+                      {!currentProject && <option value="">Select a project</option>}
                       {projects.map(project => (
                         <option key={project.id} value={project.id}>
                           {project.name}
@@ -508,7 +509,7 @@ function App() {
                       ))}
                     </select>
 
-                    {currentProject.dataSource === 'liveresults' && currentProject.eventData && (
+                    {currentProject?.dataSource === 'liveresults' && currentProject?.eventData && (
                       <>
                         <select
                           className="competition-selector"

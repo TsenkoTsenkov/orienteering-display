@@ -6,6 +6,7 @@ class LiveResultsService {
     // Using local proxy server to bypass CORS restrictions
     this.useMockData = false; // Using real data through proxy
     this.proxyUrl = 'http://localhost:3001/api/fetch?url=';
+    this.scrapeUrl = 'http://localhost:3001/api/scrape?url=';
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
   }
 
@@ -17,6 +18,18 @@ class LiveResultsService {
       return response;
     } catch (error) {
       console.error('Proxy request failed:', url, error.message);
+      throw error;
+    }
+  }
+
+  // Scrape SPA content with Puppeteer
+  async scrapeSPAContent(url) {
+    try {
+      const scrapeUrl = `${this.scrapeUrl}${encodeURIComponent(url)}`;
+      const response = await axios.get(scrapeUrl, { timeout: 35000 }); // Longer timeout for Puppeteer
+      return response.data;
+    } catch (error) {
+      console.error('Scraping failed:', url, error.message);
       throw error;
     }
   }
@@ -70,13 +83,38 @@ class LiveResultsService {
       const encodedClass = encodeURIComponent(classId);
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/startlist`;
       console.log('Fetching start list from:', url);
-      const response = await this.makeProxiedRequest(url);
 
-      console.log('Response received, parsing HTML...');
-      // Parse the HTML response to extract competitor data
-      const competitors = this.parseCompetitorData(response.data, 'startlist');
-      console.log(`Parsed ${competitors.length} competitors from start list`);
-      return competitors;
+      // Use Puppeteer scraping for SPA content
+      const scrapedData = await this.scrapeSPAContent(url);
+      console.log('Scraped data:', scrapedData.rowCount, 'rows found');
+
+      if (scrapedData.competitors && scrapedData.competitors.length > 0) {
+        // Parse scraped data - extract name properly
+        const competitors = scrapedData.competitors.map((comp, index) => {
+          // Clean up the name (remove duplicate country info)
+          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
+          name = name.split('   ')[0].trim(); // Remove duplicate country info
+
+          return {
+            id: `comp_${index}`,
+            startTime: comp.structured?.startTime || comp.cells?.[0] || null,
+            name: name,
+            club: comp.structured?.club || comp.cells?.[2] || '',
+            country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
+            bib: comp.structured?.bib || comp.cells?.[4] || '',
+            card: comp.structured?.card || comp.cells?.[5] || '',
+            status: 'not_started',
+            rank: null,
+            finalTime: null
+          };
+        });
+        console.log(`Parsed ${competitors.length} competitors from scraped data`);
+        return competitors;
+      }
+
+      // Fallback to mock data if no data found
+      console.log('No data found, using mock data');
+      return this.getMockCompetitors('startlist');
     } catch (error) {
       console.error('Error fetching start list:', error);
       return this.getMockCompetitors('startlist');
@@ -256,6 +294,32 @@ class LiveResultsService {
       if (countryMatch) return countryMatch[0];
     }
     return 'UNK';
+  }
+
+  extractCountryFromClub(club) {
+    // Extract country code from club name like "NT Croatia" -> "CRO"
+    const countryMap = {
+      'Croatia': 'CRO',
+      'Bulgaria': 'BUL',
+      'Serbia': 'SRB',
+      'Romania': 'ROU',
+      'Moldova': 'MDA',
+      'Turkey': 'TUR',
+      'Turkiye': 'TUR',
+      'Greece': 'GRE',
+      'Slovenia': 'SLO',
+      'Bosnia': 'BIH',
+      'Macedonia': 'MKD',
+      'Albania': 'ALB'
+    };
+
+    for (const [country, code] of Object.entries(countryMap)) {
+      if (club.includes(country)) return code;
+    }
+
+    // Try to find 3-letter code in the string
+    const match = club.match(/\b[A-Z]{3}\b/);
+    return match ? match[0] : 'UNK';
   }
 
   extractTime(cells, isStartTime) {
