@@ -5,7 +5,7 @@ import './SceneStyles.css';
 const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const remainingItemsPerPage = Math.max(2, itemsPerPage - 1); // Leader is always shown
-  const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
+  const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
   const getCompetitorsWithSplits = () => {
     const controlKey = `control${controlPoint}`;

@@ -6,7 +6,7 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
   const [currentPage, setCurrentPage] = useState(0);
   // First place is always shown, so actual items per page for remaining is reduced by 1
   const remainingItemsPerPage = Math.max(2, itemsPerPage - 1);
-  const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
+  const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
   const finishedCompetitors = competitors
     .filter(c => c.status === 'finished' && c.rank)

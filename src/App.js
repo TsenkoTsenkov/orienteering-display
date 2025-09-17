@@ -72,7 +72,7 @@ function App() {
 
   const [liveSceneConfig, setLiveSceneConfig] = useState({ size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
   const [autoRotate, setAutoRotate] = useState(true);
-  const [rotationInterval, setRotationInterval] = useState(5000);
+  const [rotationInterval, setRotationInterval] = useState(10000); // 10 seconds between pages
   const [rotationPaused, setRotationPaused] = useState(false);
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const [customSceneNames, setCustomSceneNames] = useState({

@@ -4,7 +4,7 @@ import './SceneStyles.css';
 
 const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
+  const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
   const upcomingCompetitors = competitors
     .filter(c => c.status === 'not_started');
