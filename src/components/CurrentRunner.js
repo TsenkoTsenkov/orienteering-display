@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { countryFlags } from '../data/flags';
 import './SceneStyles.css';
 
-const CurrentRunner = ({ competitors, category }) => {
+const CurrentRunner = ({ competitors, category, sceneTitle }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const currentRunner = competitors.find(c => c.status === 'running');
@@ -22,7 +22,7 @@ const CurrentRunner = ({ competitors, category }) => {
       <div className="scene-container current-runner">
         <div className="scene-header">
           <div className="header-accent"></div>
-          <h2 className="scene-title">CURRENT RUNNER</h2>
+          <h2 className="scene-title">{sceneTitle || 'CURRENT RUNNER'}</h2>
           <div className="category-badge">{category}</div>
         </div>
         <div className="no-runner">

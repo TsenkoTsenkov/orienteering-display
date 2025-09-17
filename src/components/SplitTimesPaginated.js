@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
-const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
+const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const remainingItemsPerPage = Math.max(2, itemsPerPage - 1); // Leader is always shown
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
 
   const getCompetitorsWithSplits = () => {
@@ -29,11 +30,13 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
   };
 
   const competitorsWithSplits = getCompetitorsWithSplits();
-  const totalPages = Math.ceil(competitorsWithSplits.length / itemsPerPage);
-  const bestSplitTime = competitorsWithSplits[0]?.splitTime;
+  const leader = competitorsWithSplits[0];
+  const remaining = competitorsWithSplits.slice(1);
+  const totalPages = Math.max(1, Math.ceil(remaining.length / remainingItemsPerPage));
+  const bestSplitTime = leader?.splitTime;
 
   // Determine which page to show (use external control in live mode)
-  const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
+  const pageToShow = currentPageIndex !== undefined
     ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
     : currentPage;
 
@@ -41,6 +44,12 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
       const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      console.log('[SplitTimesPaginated] External page control - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
+      setCurrentPage(newPage);
+    } else if (currentPageIndex !== undefined) {
+      // Display mode: no setter, just currentPageIndex
+      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      console.log('[SplitTimesPaginated] Display mode - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
       setCurrentPage(newPage);
     }
   }, [currentPageIndex, totalPages, setCurrentPageIndex]);
@@ -58,8 +67,9 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
     return () => clearInterval(interval);
   }, [totalPages, pageDuration, setCurrentPageIndex]);
 
-  const startIndex = pageToShow * itemsPerPage;
-  const currentCompetitors = competitorsWithSplits.slice(startIndex, startIndex + itemsPerPage);
+  const startIndex = pageToShow * remainingItemsPerPage;
+  const currentRemainingCompetitors = remaining.slice(startIndex, startIndex + remainingItemsPerPage);
+  const currentCompetitors = leader ? [leader, ...currentRemainingCompetitors] : currentRemainingCompetitors;
 
   const getTimeDifference = (time, bestTime) => {
     if (!time || !bestTime || time === bestTime) return '';
@@ -80,11 +90,11 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
     <div className="scene-container split-times paginated">
       <div className="scene-header">
         <div className="header-accent"></div>
-        <h2 className="scene-title">CONTROL POINT {controlPoint}</h2>
+        <h2 className="scene-title">{sceneTitle || `CONTROL POINT ${controlPoint}`}</h2>
         <div className="category-badge">{category}</div>
       </div>
 
-      <div className="competitors-list-paginated">
+      <div className={`competitors-list-paginated items-${itemsPerPage}`}>
         <div className="list-header split-header">
           <span className="header-rank">POS</span>
           <span className="header-name">NAME</span>
@@ -95,25 +105,30 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, autoRotate, 
 
         <div className="page-transition">
           {currentCompetitors.map((competitor, index) => (
-            <div
-              key={`${currentPage}-${competitor.id}`}
-              className={`competitor-row split-row large-row ${competitor.splitRank === 1 ? 'leader' : ''}`}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <span className="rank large-rank">
-                {competitor.splitRank === 1 && <span className="leader-icon">👑</span>}
-                <span className="rank-number">{competitor.splitRank}</span>
-              </span>
-              <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
-              <span className="competitor-country">
-                <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
-                <span className="country-code">{competitor.country}</span>
-              </span>
-              <span className="split-time large-time">{competitor.splitTime}</span>
-              <span className="time-diff large-diff">
-                {getTimeDifference(competitor.splitTime, bestSplitTime)}
-              </span>
-            </div>
+            <React.Fragment key={competitor.id}>
+              <div
+                className={`competitor-row split-row large-row ${competitor.splitRank === 1 ? 'leader' : ''}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <span className="rank large-rank">
+                  {competitor.splitRank === 1 && <span className="leader-icon">👑</span>}
+                  <span className="rank-number">{competitor.splitRank}</span>
+                </span>
+                <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
+                <span className="competitor-country">
+                  <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
+                  <span className="country-code">{competitor.country}</span>
+                </span>
+                <span className="split-time large-time">{competitor.splitTime}</span>
+                <span className="time-diff large-diff">
+                  {getTimeDifference(competitor.splitTime, bestSplitTime)}
+                </span>
+              </div>
+              {/* Add separator line after leader */}
+              {competitor.splitRank === 1 && currentRemainingCompetitors.length > 0 && (
+                <div className="top-three-separator-line"></div>
+              )}
+            </React.Fragment>
           ))}
         </div>
 

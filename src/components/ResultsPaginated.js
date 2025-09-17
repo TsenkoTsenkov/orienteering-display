@@ -2,24 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
-const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
+const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  // Top 3 are always shown, so actual items per page for remaining is reduced by 3
-  const remainingItemsPerPage = Math.max(2, itemsPerPage - 3);
+  // First place is always shown, so actual items per page for remaining is reduced by 1
+  const remainingItemsPerPage = Math.max(2, itemsPerPage - 1);
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
 
   const finishedCompetitors = competitors
     .filter(c => c.status === 'finished' && c.rank)
     .sort((a, b) => a.rank - b.rank);
 
-  // Split into top 3 and the rest
-  const top3 = finishedCompetitors.slice(0, 3);
-  const remaining = finishedCompetitors.slice(3);
+  // Split into first place and the rest
+  const firstPlace = finishedCompetitors[0];
+  const remaining = finishedCompetitors.slice(1);
 
   const totalPages = Math.max(1, Math.ceil(remaining.length / remainingItemsPerPage));
 
   // Determine which page to show
-  const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
+  const pageToShow = currentPageIndex !== undefined
     ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
     : currentPage;
 
@@ -27,6 +27,12 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
       const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      console.log('[ResultsPaginated] External page control - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
+      setCurrentPage(newPage);
+    } else if (currentPageIndex !== undefined) {
+      // Display mode: no setter, just currentPageIndex
+      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      console.log('[ResultsPaginated] Display mode - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
       setCurrentPage(newPage);
     }
   }, [currentPageIndex, totalPages, setCurrentPageIndex]);
@@ -48,8 +54,8 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
   const endIndex = startIndex + remainingItemsPerPage;
   const currentRemainingCompetitors = remaining.slice(startIndex, endIndex);
 
-  // Combine top 3 with current page of remaining competitors
-  const displayCompetitors = [...top3, ...currentRemainingCompetitors];
+  // Combine first place with current page of remaining competitors
+  const displayCompetitors = firstPlace ? [firstPlace, ...currentRemainingCompetitors] : currentRemainingCompetitors;
   const bestTime = finishedCompetitors[0]?.finalTime;
 
   const formatTime = (time) => {
@@ -76,11 +82,11 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
     <div className="scene-container results paginated">
       <div className="scene-header">
         <div className="header-accent"></div>
-        <h2 className="scene-title">RESULTS</h2>
+        <h2 className="scene-title">{sceneTitle || 'RESULTS'}</h2>
         <div className="category-badge">{category}</div>
       </div>
 
-      <div className="competitors-list-paginated">
+      <div className={`competitors-list-paginated items-${itemsPerPage}`}>
         <div className="list-header results-header">
           <span className="header-rank">RANK</span>
           <span className="header-name">NAME</span>
@@ -91,9 +97,9 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
 
         <div className="page-transition">
           {displayCompetitors.map((competitor, index) => (
-            <React.Fragment key={`${pageToShow}-${competitor.id}`}>
+            <React.Fragment key={competitor.id}>
               <div
-                className={`competitor-row result-row large-row ${competitor.rank <= 3 ? `rank-${competitor.rank}` : ''} ${index < 3 ? 'top-three' : ''}`}
+                className={`competitor-row result-row large-row ${competitor.rank <= 3 ? `rank-${competitor.rank}` : ''} ${competitor.rank === 1 ? 'leader' : ''}`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <span className="rank large-rank">
@@ -112,8 +118,8 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
                   {getTimeDifference(competitor.finalTime, bestTime)}
                 </span>
               </div>
-              {/* Add separator line after top 3 */}
-              {index === 2 && displayCompetitors.length > 3 && (
+              {/* Add separator line after first place */}
+              {competitor.rank === 1 && currentRemainingCompetitors.length > 0 && (
                 <div className="top-three-separator-line"></div>
               )}
             </React.Fragment>
@@ -136,7 +142,7 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
         <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
         {totalPages > 1 && (
           <div className="page-info">
-            Page {currentPage + 1} of {totalPages} (showing ranks 4-{Math.min(finishedCompetitors.length, 3 + (currentPage + 1) * remainingItemsPerPage)})
+            Page {pageToShow + 1} of {totalPages} (showing ranks {2 + startIndex}-{Math.min(finishedCompetitors.length, 1 + endIndex)})
           </div>
         )}
       </div>

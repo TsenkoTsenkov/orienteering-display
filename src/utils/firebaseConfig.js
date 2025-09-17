@@ -1,16 +1,16 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, onValue, off, get } from 'firebase/database';
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, onValue, off } from "firebase/database";
 
-// Your Firebase configuration - using the exact config you provided
+// Your Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyBcdimQ_ScFa57nSgKRE7KXRE80sWgyS60",
-  authDomain: "orienteering-display.firebaseapp.com",
-  databaseURL: "https://orienteering-display-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "orienteering-display",
-  storageBucket: "orienteering-display.firebasestorage.app",
-  messagingSenderId: "135957995762",
-  appId: "1:135957995762:web:9e6e5373ac43cb6201706b",
-  measurementId: "G-Z05G3F1TPX"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
@@ -21,22 +21,27 @@ try {
   app = initializeApp(firebaseConfig);
   // Initialize database without URL - Firebase will determine it automatically
   database = getDatabase(app);
-  console.log('[Firebase] Initialized successfully');
+  console.log("[Firebase] Initialized successfully");
 
   // Test the connection
-  const testRef = ref(database, '.info/connected');
+  const testRef = ref(database, ".info/connected");
   onValue(testRef, (snapshot) => {
     const connected = snapshot.val();
-    console.log('[Firebase] Database connection status:', connected ? 'Connected' : 'Disconnected');
+    console.log(
+      "[Firebase] Database connection status:",
+      connected ? "Connected" : "Disconnected",
+    );
   });
 } catch (error) {
-  console.error('[Firebase] Initialization error:', error);
+  console.error("[Firebase] Initialization error:", error);
 }
 
 // Helper functions for database operations
 export const saveData = async (path, data) => {
   if (!database) {
-    console.warn('[Firebase] Database not initialized. Please check your Firebase configuration.');
+    console.warn(
+      "[Firebase] Database not initialized. Please check your Firebase configuration.",
+    );
     return false;
   }
 
@@ -52,23 +57,31 @@ export const saveData = async (path, data) => {
 
 export const getData = async (path) => {
   if (!database) {
-    console.warn('[Firebase] Database not initialized. Please check your Firebase configuration.');
+    console.warn(
+      "[Firebase] Database not initialized. Please check your Firebase configuration.",
+    );
     return null;
   }
 
   return new Promise((resolve) => {
     const dataRef = ref(database, path);
-    onValue(dataRef, (snapshot) => {
-      const data = snapshot.val();
-      console.log(`[Firebase] Got data from ${path}:`, data);
-      resolve(data);
-    }, { onlyOnce: true });
+    onValue(
+      dataRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        console.log(`[Firebase] Got data from ${path}:`, data);
+        resolve(data);
+      },
+      { onlyOnce: true },
+    );
   });
 };
 
 export const listenToData = (path, callback) => {
   if (!database) {
-    console.warn('[Firebase] Database not initialized. Please check your Firebase configuration.');
+    console.warn(
+      "[Firebase] Database not initialized. Please check your Firebase configuration.",
+    );
     return () => {}; // Return empty unsubscribe function
   }
 
@@ -80,7 +93,7 @@ export const listenToData = (path, callback) => {
   });
 
   // Return unsubscribe function
-  return () => off(dataRef, 'value', listener);
+  return () => off(dataRef, "value", listener);
 };
 
 export { database };

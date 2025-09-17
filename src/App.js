@@ -87,6 +87,12 @@ function App() {
           setAutoRotate(data.autoRotate !== undefined ? data.autoRotate : true);
           setRotationInterval(data.rotationInterval || 5000);
           setItemsPerPage(data.itemsPerPage || 10);
+          if (data.sceneConfigs) {
+            setSceneConfigs(data.sceneConfigs);
+          }
+          if (data.customSceneNames) {
+            setCustomSceneNames(data.customSceneNames);
+          }
         }
       })
     );
@@ -146,7 +152,7 @@ function App() {
       console.log('[Control] Stopping auto-rotation');
       clearInterval(interval);
     };
-  }, [autoRotate, rotationPaused, rotationInterval, isDisplayMode]);
+  }, [autoRotate, rotationPaused, rotationInterval, isDisplayMode, liveScene]);
 
   // Pass page rotation state to components
   const pageRotationState = {
@@ -154,7 +160,7 @@ function App() {
     rotationPaused,
     currentPageIndex: livePageIndex,
     rotationInterval,
-    setCurrentPageIndex: setLivePageIndex,
+    setCurrentPageIndex: !isDisplayMode ? setLivePageIndex : undefined,
     itemsPerPage
   };
 
@@ -208,24 +214,25 @@ function App() {
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
     const competitors = categoryType === 'Men' ? menData.competitors : womenData.competitors;
     const rotationProps = isLive ? pageRotationState : { itemsPerPage };
+    const sceneTitle = customSceneNames[sceneType];
 
     switch (sceneType) {
       case 'start-list':
-        return <StartListPaginated competitors={competitors} category={categoryType} {...rotationProps} />;
+        return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'results':
-        return <ResultsPaginated competitors={competitors} category={categoryType} {...rotationProps} />;
+        return <ResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'current-runner':
-        return <CurrentRunner competitors={competitors} category={categoryType} />;
+        return <CurrentRunner competitors={competitors} category={categoryType} sceneTitle={sceneTitle} />;
       case 'split-1':
-        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={1} {...rotationProps} />;
+        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={1} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'split-2':
-        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={2} {...rotationProps} />;
+        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={2} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'split-3':
-        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={3} {...rotationProps} />;
+        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={3} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'split-4':
-        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={4} {...rotationProps} />;
+        return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={4} sceneTitle={sceneTitle} {...rotationProps} />;
       default:
-        return <ResultsPaginated competitors={competitors} category={categoryType} {...rotationProps} />;
+        return <ResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
     }
   };
 

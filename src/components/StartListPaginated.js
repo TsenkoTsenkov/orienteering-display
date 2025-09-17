@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
-const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
+const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
 
@@ -12,7 +12,7 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
   const totalPages = Math.ceil(upcomingCompetitors.length / itemsPerPage);
 
   // Determine which page to show (use external control in live mode)
-  const pageToShow = setCurrentPageIndex !== undefined && currentPageIndex !== undefined
+  const pageToShow = currentPageIndex !== undefined
     ? (totalPages > 0 ? currentPageIndex % totalPages : 0)
     : currentPage;
 
@@ -20,6 +20,12 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
       const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      console.log('[StartListPaginated] External page control - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
+      setCurrentPage(newPage);
+    } else if (currentPageIndex !== undefined) {
+      // Display mode: no setter, just currentPageIndex
+      const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
+      console.log('[StartListPaginated] Display mode - currentPageIndex:', currentPageIndex, 'newPage:', newPage, 'totalPages:', totalPages);
       setCurrentPage(newPage);
     }
   }, [currentPageIndex, totalPages, setCurrentPageIndex]);
@@ -44,11 +50,11 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
     <div className="scene-container start-list paginated">
       <div className="scene-header">
         <div className="header-accent"></div>
-        <h2 className="scene-title">START LIST</h2>
+        <h2 className="scene-title">{sceneTitle || 'START LIST'}</h2>
         <div className="category-badge">{category}</div>
       </div>
 
-      <div className="competitors-list-paginated">
+      <div className={`competitors-list-paginated items-${itemsPerPage}`}>
         <div className="list-header">
           <span className="header-time">START TIME</span>
           <span className="header-name">NAME</span>
@@ -58,7 +64,7 @@ const StartListPaginated = ({ competitors, category, autoRotate, rotationPaused,
         <div className="page-transition">
           {currentCompetitors.map((competitor, index) => (
             <div
-              key={`${pageToShow}-${competitor.id}`}
+              key={competitor.id}
               className={`competitor-row large-row ${index === 0 && currentPage === 0 ? 'next-starter' : ''}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >

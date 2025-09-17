@@ -460,6 +460,79 @@
   flex-direction: column;
   gap: 8px;
   position: relative;
+  overflow: hidden;
+}
+
+/* Dynamic sizing based on items per page */
+.competitors-list-paginated.items-5 .large-row {
+  padding: 16px 30px;
+  min-height: auto;
+}
+
+.competitors-list-paginated.items-5 .large-name {
+  font-size: 28px;
+}
+
+.competitors-list-paginated.items-5 .large-rank {
+  font-size: 32px;
+}
+
+.competitors-list-paginated.items-5 .large-time {
+  font-size: 26px;
+}
+
+.competitors-list-paginated.items-5 .large-flag {
+  font-size: 32px;
+}
+
+.competitors-list-paginated.items-10 .large-row {
+  padding: 12px 25px;
+  min-height: auto;
+}
+
+.competitors-list-paginated.items-10 .large-name {
+  font-size: 22px;
+}
+
+.competitors-list-paginated.items-10 .large-rank {
+  font-size: 26px;
+}
+
+.competitors-list-paginated.items-10 .large-time {
+  font-size: 20px;
+}
+
+.competitors-list-paginated.items-10 .large-flag {
+  font-size: 26px;
+}
+
+.competitors-list-paginated.items-10 .large-diff {
+  font-size: 20px;
+}
+
+.competitors-list-paginated.items-15 .large-row {
+  padding: 8px 20px;
+  min-height: auto;
+}
+
+.competitors-list-paginated.items-15 .large-name {
+  font-size: 18px;
+}
+
+.competitors-list-paginated.items-15 .large-rank {
+  font-size: 20px;
+}
+
+.competitors-list-paginated.items-15 .large-time {
+  font-size: 16px;
+}
+
+.competitors-list-paginated.items-15 .large-flag {
+  font-size: 20px;
+}
+
+.competitors-list-paginated.items-15 .large-diff {
+  font-size: 16px;
 }
 
 .top-three-separator-line {
