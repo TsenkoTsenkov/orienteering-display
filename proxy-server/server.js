@@ -126,13 +126,26 @@ app.get('/api/scrape', async (req, res) => {
             const cells = row.querySelectorAll('td, [role="cell"]');
             if (cells.length > 0) {
               const competitorData = {
-                cells: Array.from(cells).map(cell => cell.textContent.trim())
+                cells: Array.from(cells).map((cell, index) => {
+                  let text = cell.textContent.trim();
+                  // Clean timezone from start time (first cell)
+                  if (index === 0 && text) {
+                    text = text.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+                  }
+                  return text;
+                })
               };
 
               // Try to extract structured data
               if (cells.length >= 2) {
+                // Clean up start time - remove timezone information
+                let startTime = cells[0]?.textContent.trim();
+                if (startTime) {
+                  startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+                }
+
                 competitorData.structured = {
-                  startTime: cells[0]?.textContent.trim(),
+                  startTime: startTime,
                   name: cells[1]?.textContent.trim(),
                   club: cells[2]?.textContent.trim(),
                   country: cells[3]?.textContent.trim() || cells[2]?.textContent.match(/[A-Z]{3}/)?.[0],
