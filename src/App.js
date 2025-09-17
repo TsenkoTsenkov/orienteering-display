@@ -133,9 +133,14 @@ function App() {
       timestamp: liveTimestamp,
       sceneConfig: liveSceneConfig
     };
-    localStorage.setItem('orienteeringLiveState', JSON.stringify(liveState));
 
-    // Also set a specific update timestamp for polling detection
+    // Save in a simpler format similar to streaming-name-display
+    localStorage.setItem('orienteeringLiveState', JSON.stringify(liveState));
+    localStorage.setItem('orienteeringLiveCategory', liveCategory);
+    localStorage.setItem('orienteeringLiveScene', liveScene);
+    localStorage.setItem('orienteeringLivePageIndex', livePageIndex.toString());
+
+    // Always update the timestamp last - this is what triggers the update detection
     const updateTime = Date.now().toString();
     localStorage.setItem('orienteeringLiveUpdate', updateTime);
 
@@ -163,69 +168,58 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
+    let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
 
-    // Use a ref to persist the last update time across closure calls
-    const lastUpdateTimeRef = { current: localStorage.getItem('orienteeringLiveUpdate') || '0' };
-    const lastStateRef = { current: JSON.stringify(loadLiveState()) };
-
-
-    const handleStorageChange = () => {
+    const checkForUpdates = () => {
       try {
-        const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
-        const liveState = loadLiveState();
-        const currentStateStr = JSON.stringify(liveState);
+        const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate');
 
-        // Check both timestamp and actual state changes
-        if (currentUpdateTime !== lastUpdateTimeRef.current || currentStateStr !== lastStateRef.current) {
+        // Only update if the timestamp has changed
+        if (currentUpdateTime && currentUpdateTime !== lastUpdateTime) {
+          lastUpdateTime = currentUpdateTime;
 
-          lastUpdateTimeRef.current = currentUpdateTime;
-          lastStateRef.current = currentStateStr;
+          // Load the state from localStorage
+          const liveStateJson = localStorage.getItem('orienteeringLiveState');
+          if (liveStateJson) {
+            const liveState = JSON.parse(liveStateJson);
 
-          setLiveCategory(liveState.category);
-          setLiveScene(liveState.scene);
-          setLiveControlPoint(liveState.controlPoint);
-          setLivePageIndex(liveState.pageIndex || 0);
-          setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
-          setLiveTimestamp(liveState.timestamp || Date.now());
+            // Update all state values
+            setLiveCategory(liveState.category);
+            setLiveScene(liveState.scene);
+            setLiveControlPoint(liveState.controlPoint);
+            setLivePageIndex(liveState.pageIndex || 0);
+            setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
+            setLiveTimestamp(liveState.timestamp || Date.now());
 
+            console.log('[Display] Updated from localStorage:', {
+              scene: liveState.scene,
+              category: liveState.category,
+              updateTime: currentUpdateTime
+            });
+          }
         }
       } catch (e) {
+        console.error('[Display] Error checking updates:', e);
       }
     };
 
-    // Listen for postMessage updates
-    const handleMessage = (event) => {
-      if (event.data && event.data.type === 'live-update') {
-        const liveState = event.data.data;
-        setLiveCategory(liveState.category);
-        setLiveScene(liveState.scene);
-        setLiveControlPoint(liveState.controlPoint);
-        setLivePageIndex(liveState.pageIndex || 0);
-        setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
-        setLiveTimestamp(liveState.timestamp || Date.now());
-      }
-    };
+    // Check for updates immediately
+    checkForUpdates();
 
     // Listen for storage events from other tabs/windows
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('message', handleMessage);
-
-    // Poll for changes as backup with timestamp check (more efficient)
-    const interval = setInterval(handleStorageChange, 50); // Very fast polling for OBS
-
-    // Force refresh periodically for OBS compatibility
-    const forceRefreshInterval = setInterval(() => {
-      const obsRefresh = localStorage.getItem('orienteeringOBSRefresh');
-      if (obsRefresh && obsRefresh !== lastUpdateTimeRef.current) {
-        window.location.reload();
+    const handleStorageChange = (e) => {
+      if (e.key === 'orienteeringLiveUpdate') {
+        checkForUpdates();
       }
-    }, 2000); // Check every 2 seconds for forced refresh
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // Poll for changes frequently (needed for OBS)
+    const interval = setInterval(checkForUpdates, 100); // Check every 100ms
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('message', handleMessage);
       clearInterval(interval);
-      clearInterval(forceRefreshInterval);
     };
   }, [isDisplayMode]);
 
@@ -298,13 +292,6 @@ function App() {
     setLiveSceneConfig(sceneConfigs[previewScene]);
     setLiveTimestamp(Date.now());
     setLivePageIndex(0); // Reset to first page when pushing new content to live
-
-    // Also update URL for OBS (if using query params)
-    if (window.location.hostname !== 'localhost') {
-      // Force OBS to refresh by adding timestamp to URL
-      const obsRefreshTime = Date.now();
-      localStorage.setItem('orienteeringOBSRefresh', obsRefreshTime.toString());
-    }
   };
 
   // Update preview size when scene changes or config is modified
