@@ -108,6 +108,9 @@ function App() {
     'split-4': 'Control Point 4'
   });
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDisplayMode = urlParams.get('display') === 'true';
+
   // Save settings whenever scene configurations change
   useEffect(() => {
     const settings = {
@@ -117,8 +120,11 @@ function App() {
     localStorage.setItem('orienteeringDisplaySettings', JSON.stringify(settings));
   }, [sceneConfigs]);
 
-  // Save live state whenever it changes
+  // Save live state whenever it changes (only in control mode, not display mode)
   useEffect(() => {
+    // Don't save if we're in display mode - display mode only reads
+    if (isDisplayMode) return;
+
     const liveState = {
       category: liveCategory,
       scene: liveScene,
@@ -150,10 +156,7 @@ function App() {
         }
       }
     });
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, liveTimestamp, liveSceneConfig]);
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDisplayMode = urlParams.get('display') === 'true';
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, liveTimestamp, liveSceneConfig, isDisplayMode]);
 
   // In display mode, listen for storage changes to update the view
   useEffect(() => {
@@ -217,16 +220,16 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount, not when isDisplayMode changes
 
-  // Auto-rotation effect for live pages
+  // Auto-rotation effect for live pages (only in control mode)
   useEffect(() => {
-    if (!autoRotate || rotationPaused) return;
+    if (!autoRotate || rotationPaused || isDisplayMode) return;
 
     const interval = setInterval(() => {
       setLivePageIndex(prev => prev + 1);
     }, rotationInterval);
 
     return () => clearInterval(interval);
-  }, [autoRotate, rotationPaused, rotationInterval]);
+  }, [autoRotate, rotationPaused, rotationInterval, isDisplayMode]);
 
   // Pass page rotation state to components
   const pageRotationState = {
