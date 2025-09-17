@@ -134,128 +134,54 @@ function App() {
       sceneConfig: liveSceneConfig
     };
 
-    // Save in a simpler format similar to streaming-name-display
+    // Save the complete state
     localStorage.setItem('orienteeringLiveState', JSON.stringify(liveState));
-    localStorage.setItem('orienteeringLiveCategory', liveCategory);
-    localStorage.setItem('orienteeringLiveScene', liveScene);
-    localStorage.setItem('orienteeringLivePageIndex', livePageIndex.toString());
 
-    // Always update the timestamp last - this is what triggers the update detection
-    const updateTime = Date.now().toString();
-    localStorage.setItem('orienteeringLiveUpdate', updateTime);
+    // Also save a simple version number that increments
+    const currentVersion = parseInt(localStorage.getItem('orienteeringVersion') || '0');
+    localStorage.setItem('orienteeringVersion', (currentVersion + 1).toString());
 
-    console.log('[Control] Saved to localStorage:', {
-      scene: liveScene,
-      category: liveCategory,
-      pageIndex: livePageIndex,
-      updateTime: updateTime
-    });
+    console.log('[Control] Saved state, version:', currentVersion + 1);
 
-
-    // Dispatch storage event to notify other tabs/windows
-    window.dispatchEvent(new Event('storage'));
-
-    // Send postMessage to any open display windows
-    const displayWindows = window.displayWindows || [];
-    displayWindows.forEach(win => {
-      if (win && !win.closed) {
-        try {
-          win.postMessage({
-            type: 'live-update',
-            data: liveState
-          }, '*');
-        } catch (e) {
-          console.error('Error sending message to display window:', e);
-        }
-      }
-    });
   }, [liveCategory, liveScene, liveControlPoint, livePageIndex, liveTimestamp, liveSceneConfig, isDisplayMode]);
 
-  // In display mode, listen for storage changes to update the view
+  // Display mode - poll for changes and refresh when detected
   useEffect(() => {
     if (!isDisplayMode) return;
 
-    console.log('[Display Mode] Initializing polling mechanism');
-    let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
-    let pollCount = 0;
+    console.log('[Display] Starting in display mode');
+    let lastVersion = localStorage.getItem('orienteeringVersion') || '0';
 
+    // Function to check for updates
     const checkForUpdates = () => {
-      pollCount++;
-      if (pollCount % 50 === 0) { // Log every 5 seconds (50 * 100ms)
-        console.log('[Display] Still polling, count:', pollCount, 'lastUpdate:', lastUpdateTime);
-      }
+      const currentVersion = localStorage.getItem('orienteeringVersion') || '0';
 
-      try {
-        const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate');
-
-        // Only update if the timestamp has changed
-        if (currentUpdateTime && currentUpdateTime !== lastUpdateTime) {
-          console.log('[Display] Detected change!', {
-            old: lastUpdateTime,
-            new: currentUpdateTime
-          });
-
-          lastUpdateTime = currentUpdateTime;
-
-          // Load the state from localStorage
-          const liveStateJson = localStorage.getItem('orienteeringLiveState');
-          if (liveStateJson) {
-            const liveState = JSON.parse(liveStateJson);
-
-            // Update all state values
-            setLiveCategory(liveState.category);
-            setLiveScene(liveState.scene);
-            setLiveControlPoint(liveState.controlPoint);
-            setLivePageIndex(liveState.pageIndex || 0);
-            setLiveSceneConfig(liveState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
-            setLiveTimestamp(liveState.timestamp || Date.now());
-
-            console.log('[Display] Successfully updated state:', {
-              scene: liveState.scene,
-              category: liveState.category,
-              pageIndex: liveState.pageIndex,
-              updateTime: currentUpdateTime
-            });
-          }
-        }
-      } catch (e) {
-        console.error('[Display] Error checking updates:', e);
+      if (currentVersion !== lastVersion) {
+        console.log('[Display] Version changed from', lastVersion, 'to', currentVersion, '- reloading page');
+        // Force a full page reload to ensure OBS picks up the changes
+        window.location.reload();
       }
     };
 
-    // Check for updates immediately
-    checkForUpdates();
+    // Check every 500ms
+    const interval = setInterval(checkForUpdates, 500);
 
-    // Listen for storage events from other tabs/windows
-    const handleStorageChange = (e) => {
-      if (e.key === 'orienteeringLiveUpdate') {
-        checkForUpdates();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
-    // Poll for changes frequently (needed for OBS)
-    const interval = setInterval(checkForUpdates, 100); // Check every 100ms
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [isDisplayMode]);
 
-  // Load initial state once when display mode starts
+  // Load initial state for display mode
   useEffect(() => {
     if (!isDisplayMode) return;
 
     const initialState = loadLiveState();
+    console.log('[Display] Loading initial state:', initialState);
     setLiveCategory(initialState.category);
     setLiveScene(initialState.scene);
     setLiveControlPoint(initialState.controlPoint);
     setLivePageIndex(initialState.pageIndex || 0);
     setLiveSceneConfig(initialState.sceneConfig || { size: { width: 1280, height: 720 }, position: { x: 0, y: 0 } });
     setLiveTimestamp(initialState.timestamp || Date.now());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount, not when isDisplayMode changes
+  }, [isDisplayMode]);
 
   // Auto-rotation effect for live pages
   useEffect(() => {
@@ -331,7 +257,6 @@ function App() {
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
     const competitors = categoryType === 'Men' ? menData.competitors : womenData.competitors;
     const rotationProps = isLive ? pageRotationState : {};
-
 
     switch (sceneType) {
       case 'start-list':
