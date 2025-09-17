@@ -22,8 +22,8 @@ const ProjectCreator = ({ onProjectCreated, onCancel }) => {
     try {
       const data = await liveResultsService.fetchEventData(eventUrl);
       setEventData(data);
-      if (!projectName && data.eventInfo.name) {
-        setProjectName(data.eventInfo.name);
+      if (!projectName && data.eventName) {
+        setProjectName(data.eventName);
       }
     } catch (err) {
       setError('Failed to fetch event data. Please check the URL and try again.');

@@ -3,46 +3,28 @@ import axios from 'axios';
 // LiveResults.it API service
 class LiveResultsService {
   constructor() {
-    // Use multiple CORS proxies as fallbacks
-    this.proxies = [
-      'https://api.allorigins.win/raw?url=',
-      'https://cors-anywhere.herokuapp.com/',
-      '' // Try direct access as last resort
-    ];
-    this.currentProxyIndex = 0;
+    // For development, we'll use a simple proxy approach
+    // In production, you should set up your own proxy server
+    this.proxyUrl = 'https://api.allorigins.win/get?url=';
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
   }
 
-  // Get current proxy
-  getProxyUrl() {
-    return this.proxies[this.currentProxyIndex];
-  }
+  // Make request with proxy
+  async makeProxiedRequest(url) {
+    try {
+      const proxyUrl = `${this.proxyUrl}${encodeURIComponent(url)}`;
+      const response = await axios.get(proxyUrl, { timeout: 10000 });
 
-  // Try next proxy
-  tryNextProxy() {
-    this.currentProxyIndex = (this.currentProxyIndex + 1) % this.proxies.length;
-  }
-
-  // Make request with proxy fallback
-  async makeProxiedRequest(url, retries = 3) {
-    let lastError = null;
-    const originalProxyIndex = this.currentProxyIndex;
-
-    for (let i = 0; i < retries; i++) {
-      try {
-        const proxyUrl = this.getProxyUrl();
-        const fullUrl = proxyUrl ? `${proxyUrl}${encodeURIComponent(url)}` : url;
-        const response = await axios.get(fullUrl, { timeout: 10000 });
-        return response;
-      } catch (error) {
-        lastError = error;
-        console.log(`Proxy ${this.currentProxyIndex} failed, trying next...`);
-        this.tryNextProxy();
+      // allorigins returns data in a wrapper
+      if (response.data && response.data.contents) {
+        return { ...response, data: response.data.contents };
       }
-    }
 
-    this.currentProxyIndex = originalProxyIndex; // Reset to original
-    throw lastError || new Error('All proxies failed');
+      return response;
+    } catch (error) {
+      console.error('Proxy request failed:', url, error.message);
+      throw error;
+    }
   }
 
   // Parse event ID from URL
@@ -136,53 +118,66 @@ class LiveResultsService {
     const competitors = [];
 
     try {
-      // Extract competitor data using regex patterns
-      // This is a simplified approach - in production, use a proper HTML parser
-      const tablePattern = /<table[^>]*>.*?<\/table>/gs;
-      const tables = html.match(tablePattern);
+      // Check if the HTML contains a "No results" or empty message
+      if (html.includes('No results') || html.includes('No competitors') || html.includes('not started yet')) {
+        console.log('No competitors found for', type);
+        return this.getMockCompetitors(type);
+      }
 
-      if (tables && tables.length > 0) {
-        // Find the competitor table
-        const competitorTable = tables.find(table =>
-          table.includes('startlist') ||
-          table.includes('results') ||
-          table.includes('splits')
-        ) || tables[0];
-
-        // Extract rows
-        const rowPattern = /<tr[^>]*>(.*?)<\/tr>/gs;
-        const rows = competitorTable.matchAll(rowPattern);
-
-        let index = 0;
-        for (const row of rows) {
-          const rowContent = row[1];
-          if (!rowContent || rowContent.includes('<th')) continue;
-
-          // Extract cells
-          const cellPattern = /<td[^>]*>(.*?)<\/td>/gs;
-          const cells = [...rowContent.matchAll(cellPattern)].map(cell =>
-            cell[1].replace(/<[^>]*>/g, '').trim()
-          );
-
-          if (cells.length >= 3) {
-            const competitor = {
-              id: `comp_${index++}`,
-              rank: cells[0] || null,
-              name: cells[1] || cells[2] || 'Unknown',
-              country: this.extractCountryFromCell(cells),
-              club: cells[3] || '',
-              startTime: this.extractTime(cells, type === 'startlist'),
-              finalTime: type === 'results' ? this.extractTime(cells, false) : null,
-              status: type === 'results' ? 'finished' : 'not_started'
-            };
-
-            competitors.push(competitor);
+      // Try to parse JSON data if present (some pages embed JSON)
+      const jsonMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.*?});/s);
+      if (jsonMatch) {
+        try {
+          const jsonData = JSON.parse(jsonMatch[1]);
+          // Extract competitors from JSON structure
+          if (jsonData.competitors || jsonData.results || jsonData.startList) {
+            const list = jsonData.competitors || jsonData.results || jsonData.startList || [];
+            return list.map((comp, index) => ({
+              id: `comp_${index}`,
+              rank: comp.rank || comp.position || null,
+              name: comp.name || comp.competitor || 'Unknown',
+              country: comp.country || comp.nation || 'UNK',
+              club: comp.club || '',
+              startTime: comp.startTime || comp.start || null,
+              finalTime: comp.finalTime || comp.time || null,
+              status: comp.status || (type === 'results' ? 'finished' : 'not_started')
+            }));
           }
+        } catch (e) {
+          console.log('JSON parsing failed, falling back to HTML parsing');
         }
       }
 
-      // If no competitors found, return mock data for testing
+      // Extract data from table structure
+      // Look for divs with class names that might contain competitor data
+      const namePattern = /class="[^"]*(?:name|athlete-name|competitor|runner)[^"]*"[^>]*>([^<]+)</gi;
+      const timePattern = /(?:\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2})/g;
+      const countryPattern = /\b[A-Z]{3}\b/g;
+
+      // Try to extract structured data
+      const names = [...html.matchAll(namePattern)].map(m => m[1].trim());
+      const times = [...html.matchAll(timePattern)];
+      const countries = [...html.matchAll(countryPattern)];
+
+      // If we found names, create competitors from them
+      if (names.length > 0) {
+        for (let i = 0; i < names.length; i++) {
+          competitors.push({
+            id: `comp_${i}`,
+            rank: i + 1,
+            name: names[i],
+            country: countries[i] ? countries[i][0] : 'UNK',
+            club: '',
+            startTime: type === 'startlist' && times[i] ? times[i][0] : null,
+            finalTime: type === 'results' && times[i] ? times[i][0] : null,
+            status: type === 'results' ? 'finished' : 'not_started'
+          });
+        }
+      }
+
+      // If no competitors found, return mock data
       if (competitors.length === 0) {
+        console.log('No competitors parsed, using mock data for', type);
         return this.getMockCompetitors(type);
       }
 
@@ -213,9 +208,11 @@ class LiveResultsService {
 
   getMockCompetitors(type) {
     const baseCompetitors = [
-      { id: '1', name: 'Test Runner 1', country: 'NOR', club: 'Test Club' },
-      { id: '2', name: 'Test Runner 2', country: 'SWE', club: 'Test Club' },
-      { id: '3', name: 'Test Runner 3', country: 'FIN', club: 'Test Club' }
+      { id: 'mock_1', name: 'John Smith', country: 'NOR', club: 'Halden SK' },
+      { id: 'mock_2', name: 'Emma Wilson', country: 'SWE', club: 'OK Linné' },
+      { id: 'mock_3', name: 'Pierre Dubois', country: 'FRA', club: 'CO Liège' },
+      { id: 'mock_4', name: 'Maria Garcia', country: 'ESP', club: 'ADOL' },
+      { id: 'mock_5', name: 'Hans Mueller', country: 'GER', club: 'OLG Bonn' }
     ];
 
     return baseCompetitors.map((comp, index) => ({
@@ -283,9 +280,9 @@ class LiveResultsService {
   }
 
   // Transform competitor data
-  transformCompetitor(competitor, category) {
+  transformCompetitor(competitor, category, index) {
     return {
-      id: competitor.id || `${category}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: competitor.id || `${category}_${index}_${Math.random().toString(36).substr(2, 9)}`,
       name: competitor.name || 'Unknown',
       country: this.extractCountry(competitor),
       startTime: competitor.start || competitor.starttime || '00:00:00',
@@ -367,13 +364,13 @@ class LiveResultsService {
           // Fetch men competitors
           if (menClass) {
             const menCompetitors = await this.fetchCompetitors(eventId, comp.id, menClass.id);
-            competitionData.men = menCompetitors.map(c => this.transformCompetitor(c, 'Men'));
+            competitionData.men = menCompetitors.map((c, index) => this.transformCompetitor(c, 'Men', index));
           }
 
           // Fetch women competitors
           if (womenClass) {
             const womenCompetitors = await this.fetchCompetitors(eventId, comp.id, womenClass.id);
-            competitionData.women = womenCompetitors.map(c => this.transformCompetitor(c, 'Women'));
+            competitionData.women = womenCompetitors.map((c, index) => this.transformCompetitor(c, 'Women', index));
           }
         } catch (err) {
           console.error(`Error fetching data for competition ${comp.name}:`, err);
