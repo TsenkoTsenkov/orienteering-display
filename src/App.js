@@ -175,7 +175,9 @@ function App() {
     console.log('[Control] Starting auto-rotation, interval:', rotationInterval);
     const interval = setInterval(() => {
       setLivePageIndex(prev => {
-        const next = prev + 1;
+        // Keep the index reasonably bounded to prevent overflow issues
+        // We'll wrap at a reasonable max (100 pages should be more than enough)
+        const next = (prev + 1) % 100;
         console.log('[Control] Rotating page from', prev, 'to', next);
         return next;
       });

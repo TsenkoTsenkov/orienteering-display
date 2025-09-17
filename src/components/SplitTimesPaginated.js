@@ -32,7 +32,10 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, 
   const competitorsWithSplits = getCompetitorsWithSplits();
   const leader = competitorsWithSplits[0];
   const remaining = competitorsWithSplits.slice(1);
-  const totalPages = Math.max(1, Math.ceil(remaining.length / remainingItemsPerPage));
+  // Ensure we have at least 1 page even with no remaining competitors after leader
+  const totalPages = remaining.length > 0
+    ? Math.ceil(remaining.length / remainingItemsPerPage)
+    : 1;
   const bestSplitTime = leader?.splitTime;
 
   // Determine which page to show (use external control in live mode)

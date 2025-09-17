@@ -9,7 +9,10 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   const upcomingCompetitors = competitors
     .filter(c => c.status === 'not_started');
 
-  const totalPages = Math.ceil(upcomingCompetitors.length / itemsPerPage);
+  // Ensure we have at least 1 page if we have any competitors
+  const totalPages = upcomingCompetitors.length > 0
+    ? Math.ceil(upcomingCompetitors.length / itemsPerPage)
+    : 1;
 
   // Determine which page to show (use external control in live mode)
   const pageToShow = currentPageIndex !== undefined
@@ -45,6 +48,45 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
 
   const startIndex = pageToShow * itemsPerPage;
   const currentCompetitors = upcomingCompetitors.slice(startIndex, startIndex + itemsPerPage);
+
+  // Safeguard: If we somehow have no competitors to show, show the first page
+  if (currentCompetitors.length === 0 && upcomingCompetitors.length > 0) {
+    const fallbackCompetitors = upcomingCompetitors.slice(0, itemsPerPage);
+    return (
+      <div className="scene-container start-list paginated">
+        <div className="scene-header">
+          <div className="header-accent"></div>
+          <h2 className="scene-title">{sceneTitle || 'START LIST'}</h2>
+          <div className="category-badge">{category}</div>
+        </div>
+
+        <div className={`competitors-list-paginated items-${itemsPerPage}`}>
+          <div className="list-header">
+            <span className="header-time">START TIME</span>
+            <span className="header-name">NAME</span>
+            <span className="header-country">NATION</span>
+          </div>
+
+          <div className="page-transition">
+            {fallbackCompetitors.map((competitor, index) => (
+              <div
+                key={competitor.id}
+                className={`competitor-row large-row ${index === 0 ? 'next-starter' : ''}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <span className="start-time large-time">{competitor.startTime}</span>
+                <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
+                <span className="competitor-country">
+                  <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
+                  <span className="country-code">{competitor.country}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="scene-container start-list paginated">

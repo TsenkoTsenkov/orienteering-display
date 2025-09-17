@@ -16,7 +16,10 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
   const firstPlace = finishedCompetitors[0];
   const remaining = finishedCompetitors.slice(1);
 
-  const totalPages = Math.max(1, Math.ceil(remaining.length / remainingItemsPerPage));
+  // Ensure we have at least 1 page even with no remaining competitors after first place
+  const totalPages = remaining.length > 0
+    ? Math.ceil(remaining.length / remainingItemsPerPage)
+    : 1;
 
   // Determine which page to show
   const pageToShow = currentPageIndex !== undefined
