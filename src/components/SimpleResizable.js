@@ -28,22 +28,6 @@ const SimpleResizable = ({
     setPosition({ x: initialX, y: initialY });
   }, [initialX, initialY]);
 
-  // Only trigger size change on user interaction, not on initialization
-  const handleSizeChange = (newSize) => {
-    setSize(newSize);
-    if (onSizeChange) {
-      onSizeChange(newSize);
-    }
-  };
-
-  // Only trigger position change on user interaction, not on initialization
-  const handlePositionChange = (newPosition) => {
-    setPosition(newPosition);
-    if (onPositionChange) {
-      onPositionChange(newPosition);
-    }
-  };
-
   const handleMouseDown = (e) => {
     if (!isPreview) return;
     e.preventDefault();
