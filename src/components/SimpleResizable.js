@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './SimpleResizable.css';
+import React, { useState, useEffect, useRef } from "react";
+import "./SimpleResizable.css";
 
 const SimpleResizable = ({
   children,
-  initialWidth = 1280,
-  initialHeight = 720,
+  initialWidth = 1920,
+  initialHeight = 1080,
   initialX = 0,
   initialY = 0,
   onSizeChange,
   onPositionChange,
   isPreview = false,
-  previewScale = 0.5
+  previewScale = 0.5,
 }) => {
-  const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
+  const [size, setSize] = useState({
+    width: initialWidth,
+    height: initialHeight,
+  });
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -34,7 +37,7 @@ const SimpleResizable = ({
 
     setDragStart({
       x: e.clientX - position.x,
-      y: e.clientY - position.y
+      y: e.clientY - position.y,
     });
     setIsDragging(true);
   };
@@ -54,7 +57,7 @@ const SimpleResizable = ({
       if (isDragging && !isResizing) {
         const newPosition = {
           x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y
+          y: e.clientY - dragStart.y,
         };
         setPosition(newPosition);
       }
@@ -65,7 +68,7 @@ const SimpleResizable = ({
 
         const newSize = {
           width: Math.max(320, sizeStart.width + deltaX / previewScale),
-          height: Math.max(180, sizeStart.height + deltaY / previewScale)
+          height: Math.max(180, sizeStart.height + deltaY / previewScale),
         };
         setSize(newSize);
       }
@@ -83,40 +86,45 @@ const SimpleResizable = ({
     };
 
     if (isDragging || isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
 
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, dragStart, sizeStart, previewScale, position, size, onPositionChange, onSizeChange]);
+  }, [
+    isDragging,
+    isResizing,
+    dragStart,
+    sizeStart,
+    previewScale,
+    position,
+    size,
+    onPositionChange,
+    onSizeChange,
+  ]);
 
   const displayStyle = {
     width: size.width * previewScale,
     height: size.height * previewScale,
     transform: `translate(${position.x}px, ${position.y}px)`,
-    cursor: isPreview ? (isDragging ? 'grabbing' : 'grab') : 'default'
+    cursor: isPreview ? (isDragging ? "grabbing" : "grab") : "default",
   };
 
   return (
     <div
       ref={containerRef}
-      className={`simple-resizable ${isPreview ? 'interactive' : ''}`}
+      className={`simple-resizable ${isPreview ? "interactive" : ""}`}
       style={displayStyle}
       onMouseDown={handleMouseDown}
     >
-      <div className="content-wrapper">
-        {children}
-      </div>
+      <div className="content-wrapper">{children}</div>
 
       {isPreview && (
         <>
-          <div
-            className="resize-handle"
-            onMouseDown={handleResizeMouseDown}
-          />
+          <div className="resize-handle" onMouseDown={handleResizeMouseDown} />
           <div className="size-label">
             {Math.round(size.width)} × {Math.round(size.height)}
           </div>
