@@ -127,13 +127,11 @@ function App() {
       timestamp: liveTimestamp,
       sceneConfig: liveSceneConfig
     };
-    console.log('Saving live state:', liveState);
     localStorage.setItem('orienteeringLiveState', JSON.stringify(liveState));
 
     // Also set a specific update timestamp for polling detection
     const updateTime = Date.now().toString();
     localStorage.setItem('orienteeringLiveUpdate', updateTime);
-    console.log('Update timestamp:', updateTime);
 
     // Dispatch storage event to notify other tabs/windows
     window.dispatchEvent(new Event('storage'));
@@ -161,14 +159,14 @@ function App() {
   useEffect(() => {
     if (!isDisplayMode) return;
 
-    let lastUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
+    // Use a ref to persist the last update time across closure calls
+    const lastUpdateTimeRef = { current: localStorage.getItem('orienteeringLiveUpdate') || '0' };
 
     const handleStorageChange = () => {
       const currentUpdateTime = localStorage.getItem('orienteeringLiveUpdate') || '0';
-      if (currentUpdateTime !== lastUpdateTime) {
-        lastUpdateTime = currentUpdateTime;
+      if (currentUpdateTime !== lastUpdateTimeRef.current) {
+        lastUpdateTimeRef.current = currentUpdateTime;
         const liveState = loadLiveState();
-        console.log('Display mode updating with:', liveState);
         setLiveCategory(liveState.category);
         setLiveScene(liveState.scene);
         setLiveControlPoint(liveState.controlPoint);
@@ -210,7 +208,6 @@ function App() {
     if (!isDisplayMode) return;
 
     const initialState = loadLiveState();
-    console.log('Display mode initial load:', initialState);
     setLiveCategory(initialState.category);
     setLiveScene(initialState.scene);
     setLiveControlPoint(initialState.controlPoint);
@@ -224,13 +221,8 @@ function App() {
   useEffect(() => {
     if (!autoRotate || rotationPaused) return;
 
-    console.log('Starting auto-rotation, interval:', rotationInterval);
     const interval = setInterval(() => {
-      setLivePageIndex(prev => {
-        const next = prev + 1;
-        console.log('Rotating page from', prev, 'to', next);
-        return next;
-      });
+      setLivePageIndex(prev => prev + 1);
     }, rotationInterval);
 
     return () => clearInterval(interval);
@@ -274,11 +266,6 @@ function App() {
   };
 
   const handleGoLive = () => {
-    console.log('Pushing to live:', {
-      scene: previewScene,
-      category: previewCategory,
-      config: sceneConfigs[previewScene]
-    });
     setLiveCategory(previewCategory);
     setLiveScene(previewScene);
     setLiveControlPoint(previewControlPoint);
@@ -302,9 +289,6 @@ function App() {
     const competitors = categoryType === 'Men' ? menData.competitors : womenData.competitors;
     const rotationProps = isLive ? pageRotationState : {};
 
-    if (isLive) {
-      console.log('Rendering live scene with rotation props:', rotationProps);
-    }
 
     switch (sceneType) {
       case 'start-list':
@@ -350,20 +334,6 @@ function App() {
           }}
         >
           {renderScene(liveScene, liveCategory, liveControlPoint, true)}
-        </div>
-        {/* Debug info for OBS */}
-        <div style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          background: 'rgba(0,0,0,0.5)',
-          color: 'white',
-          padding: '5px 10px',
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          zIndex: 9999
-        }}>
-          Scene: {liveScene} | Page: {livePageIndex} | Time: {new Date().toLocaleTimeString()}
         </div>
       </div>
     );

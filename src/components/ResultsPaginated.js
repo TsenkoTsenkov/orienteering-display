@@ -3,7 +3,6 @@ import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
 const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex }) => {
-  console.log('ResultsPaginated props:', { autoRotate, rotationPaused, currentPageIndex, setCurrentPageIndex });
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3; // Reduced for testing pagination
   const pageDuration = rotationInterval || 5000; // Use rotation interval from props or default
@@ -23,7 +22,6 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
   useEffect(() => {
     if (setCurrentPageIndex !== undefined && currentPageIndex !== undefined) {
       const newPage = totalPages > 0 ? currentPageIndex % totalPages : 0;
-      console.log('ResultsPaginated: Syncing page', currentPageIndex, 'to', newPage, 'of', totalPages);
       setCurrentPage(newPage);
     }
   }, [currentPageIndex, totalPages, setCurrentPageIndex]);
@@ -46,16 +44,6 @@ const ResultsPaginated = ({ competitors, category, autoRotate, rotationPaused, c
   const currentCompetitors = finishedCompetitors.slice(startIndex, endIndex);
   const bestTime = finishedCompetitors[0]?.finalTime;
 
-  console.log('ResultsPaginated render:', {
-    pageToShow,
-    currentPage,
-    currentPageIndex,
-    startIndex,
-    endIndex,
-    totalCompetitors: finishedCompetitors.length,
-    showingCompetitors: currentCompetitors.length,
-    firstCompetitor: currentCompetitors[0]?.name
-  });
 
   const formatTime = (time) => {
     if (!time) return '--:--:--';
