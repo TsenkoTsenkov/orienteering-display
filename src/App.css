@@ -181,6 +181,21 @@ body {
     border-radius: 8px;
 }
 
+.demo-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: rgba(251, 146, 60, 0.2);
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fb923c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
 .project-label {
     color: #94a3b8;
     font-size: 12px;

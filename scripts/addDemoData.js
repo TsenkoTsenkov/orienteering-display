@@ -1,0 +1,85 @@
+const { initializeApp } = require("firebase/app");
+const { getDatabase, ref, set } = require("firebase/database");
+const dotenv = require('dotenv');
+const { readFileSync } = require('fs');
+const { join } = require('path');
+
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+const menData = JSON.parse(readFileSync(join(__dirname, '..', 'src', 'data', 'menData.json'), 'utf8'));
+const womenData = JSON.parse(readFileSync(join(__dirname, '..', 'src', 'data', 'womenData.json'), 'utf8'));
+
+const demoProject = {
+  id: 'demo-woc-2024',
+  name: 'Demo - World Championships 2024',
+  timestamp: Date.now(),
+  eventName: 'World Orienteering Championships 2024',
+  eventDate: '2024-11-15',
+  location: 'Edinburgh, Scotland',
+  competitions: {
+    'men-elite': {
+      id: 'men-elite',
+      name: 'Men Elite',
+      category: 'Men Elite',
+      courseDetails: menData.courseDetails,
+      competitors: menData.competitors,
+      status: 'live',
+      currentControl: 6,
+      lastUpdate: Date.now()
+    },
+    'women-elite': {
+      id: 'women-elite',
+      name: 'Women Elite',
+      category: 'Women Elite',
+      courseDetails: womenData.courseDetails,
+      competitors: womenData.competitors,
+      status: 'live',
+      currentControl: 6,
+      lastUpdate: Date.now()
+    }
+  },
+  controls: {
+    'men-elite': ['Start', 'Control 1', 'Control 2', 'Control 3', 'Control 4', 'Control 5', 'Control 6', 'Finish'],
+    'women-elite': ['Start', 'Control 1', 'Control 2', 'Control 3', 'Control 4', 'Control 5', 'Control 6', 'Finish']
+  },
+  isDemo: true,
+  description: 'Demo data for testing and demonstration purposes. Shows realistic competition data from World Orienteering Championships.'
+};
+
+async function addDemoData() {
+  try {
+    const dbPrefix = process.env.REACT_APP_FIREBASE_DB_PREFIX || 'dev';
+    console.log(`Adding demo data to Firebase (${dbPrefix} environment)...`);
+
+    const projectPath = `${dbPrefix}/projects/${demoProject.id}`;
+    await set(ref(database, projectPath), demoProject);
+
+    console.log('✅ Demo project added successfully!');
+    console.log(`Project ID: ${demoProject.id}`);
+    console.log(`Project Name: ${demoProject.name}`);
+    console.log('');
+    console.log('The demo project is now available in your application.');
+    console.log('Select "Demo - World Championships 2024" from the project dropdown.');
+
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error adding demo data:', error);
+    process.exit(1);
+  }
+}
+
+addDemoData();

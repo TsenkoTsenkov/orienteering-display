@@ -655,7 +655,10 @@ function App() {
       <div className="main-container">
         <div className="broadcast-section">
           <div className="broadcast-header">
-            <h1>Orienteering Broadcast Control</h1>
+            <h1>
+              Orienteering Broadcast Control
+              {currentProject?.isDemo && <span className="demo-badge">Demo</span>}
+            </h1>
             <div className="project-info">
               {projects.length > 0 ? (
                 <div className="project-controls">
@@ -676,7 +679,7 @@ function App() {
                       {!currentProject && <option value="">Select a project</option>}
                       {projects.map(project => (
                         <option key={project.id} value={project.id}>
-                          {project.name}
+                          {project.name} {project.isDemo && '(Demo)'}
                         </option>
                       ))}
                     </select>
