@@ -12,11 +12,31 @@ app.use(express.json());
 // Initialize Puppeteer browser instance
 let browser;
 (async () => {
-  browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  console.log('Puppeteer browser launched');
+  try {
+    const launchOptions = {
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    };
+
+    // Use executable path if provided (for Render deployment)
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    browser = await puppeteer.launch(launchOptions);
+    console.log('Puppeteer browser launched successfully');
+  } catch (error) {
+    console.error('Failed to launch Puppeteer:', error.message);
+    console.log('Proxy server will run without Puppeteer scraping support');
+  }
 })();
 
 app.get('/api/liveresults/*', async (req, res) => {
@@ -85,6 +105,14 @@ app.get('/api/scrape', async (req, res) => {
 
     if (!url) {
       return res.status(400).json({ error: 'URL parameter is required' });
+    }
+
+    if (!browser) {
+      console.error('Puppeteer browser not available');
+      return res.status(503).json({
+        error: 'Scraping service unavailable',
+        message: 'Puppeteer browser not initialized'
+      });
     }
 
     console.log('Scraping SPA URL:', url);
