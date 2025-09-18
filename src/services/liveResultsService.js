@@ -5,21 +5,31 @@ class LiveResultsService {
   constructor() {
     // Using proxy server to bypass CORS restrictions
     this.useMockData = false; // Using real data through proxy
-    const proxyBase = process.env.REACT_APP_PROXY_URL || 'http://localhost:3001';
 
-    // Check if we have Lambda function URLs (they end with .on.aws)
-    if (proxyBase.includes('.on.aws')) {
-      // Using Lambda functions directly
-      this.proxyUrl = `${proxyBase}?url=`;
-      // For now, use proxy for scraping too (pagination limited to first page)
-      this.scrapeUrl = `${proxyBase}?url=`;
+    // Determine the environment and set proxy URLs accordingly
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // Local development - use local proxy server
+      const localProxy = process.env.REACT_APP_PROXY_URL || 'http://localhost:3001';
+      this.proxyUrl = `${localProxy}/api/fetch?url=`;
+      this.scrapeUrl = `${localProxy}/api/scrape?url=`;
+    } else if (window.location.hostname.includes('netlify')) {
+      // Production on Netlify - use Netlify Functions
+      this.proxyUrl = '/.netlify/functions/fetch?url=';
+      this.scrapeUrl = '/.netlify/functions/scrape?url=';
     } else {
-      // Using local proxy server
-      this.proxyUrl = `${proxyBase}/api/fetch?url=`;
-      this.scrapeUrl = `${proxyBase}/api/scrape?url=`;
+      // Other production environments (e.g., custom domain)
+      // Assume Netlify functions are available
+      this.proxyUrl = '/.netlify/functions/fetch?url=';
+      this.scrapeUrl = '/.netlify/functions/scrape?url=';
     }
 
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
+
+    console.log('LiveResultsService initialized:', {
+      hostname: window.location.hostname,
+      proxyUrl: this.proxyUrl,
+      scrapeUrl: this.scrapeUrl
+    });
   }
 
   // Make request with proxy

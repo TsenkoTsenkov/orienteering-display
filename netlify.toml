@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "build"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [build.environment]
   # Disable secrets scanning for Firebase configuration
   # These are public client-side configuration values, not secret keys

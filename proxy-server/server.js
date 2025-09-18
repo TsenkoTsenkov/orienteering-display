@@ -26,7 +26,7 @@ let browser;
       ]
     };
 
-    // Use executable path if provided (for Render deployment)
+    // Use executable path if provided (for deployment)
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
       launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     }
@@ -39,33 +39,7 @@ let browser;
   }
 })();
 
-app.get('/api/liveresults/*', async (req, res) => {
-  try {
-    const targetUrl = req.params[0];
-    console.log('Proxying request to:', targetUrl);
-
-    const response = await axios.get(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      timeout: 10000
-    });
-
-    res.send(response.data);
-  } catch (error) {
-    console.error('Proxy error:', error.message);
-    res.status(500).json({
-      error: 'Failed to fetch data',
-      message: error.message,
-      url: req.params[0]
-    });
-  }
-});
-
+// Simple fetch proxy endpoint
 app.get('/api/fetch', async (req, res) => {
   try {
     const { url } = req.query;
@@ -98,7 +72,7 @@ app.get('/api/fetch', async (req, res) => {
   }
 });
 
-// New endpoint for scraping SPA content with Puppeteer
+// Puppeteer scraping endpoint for SPA content
 app.get('/api/scrape', async (req, res) => {
   try {
     const { url } = req.query;
@@ -127,263 +101,36 @@ app.get('/api/scrape', async (req, res) => {
 
       // Navigate to the URL
       await page.goto(url, {
-        waitUntil: 'networkidle0', // Wait until network is idle
+        waitUntil: 'networkidle0',
         timeout: 30000
       });
 
-      // Wait for specific content to load (tables or competitor data)
+      // Wait for specific content to load
       try {
         await page.waitForSelector('table, .competitor-row, .start-list-row', { timeout: 10000 });
       } catch (e) {
-        console.log('No table found, trying to wait for any content...');
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds for content to load
+        console.log('No table found, waiting for content...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
 
-      // Function to extract competitors from current page
-      const extractCompetitors = async () => {
-        return await page.evaluate(() => {
-          const competitors = [];
-
-          // Try to find table rows
-          const rows = document.querySelectorAll('table tr, .competitor-row, .start-list-row, [role="row"]');
-
-          rows.forEach((row, index) => {
-            // Skip header rows
-            if (index === 0 && row.querySelector('th')) return;
-
-            const cells = row.querySelectorAll('td, [role="cell"]');
-            if (cells.length > 0) {
-              const competitorData = {
-                cells: Array.from(cells).map((cell, index) => {
-                  let text = cell.textContent.trim();
-                  // Clean timezone from start time (first cell)
-                  if (index === 0 && text) {
-                    text = text.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
-                  }
-                  return text;
-                })
-              };
-
-              // Try to extract structured data
-              if (cells.length >= 2) {
-                // Clean up start time - remove timezone information
-                let startTime = cells[0]?.textContent.trim();
-                if (startTime) {
-                  startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
-                }
-
-                competitorData.structured = {
-                  startTime: startTime,
-                  name: cells[1]?.textContent.trim(),
-                  club: cells[2]?.textContent.trim(),
-                  country: cells[3]?.textContent.trim() || cells[2]?.textContent.match(/[A-Z]{3}/)?.[0],
-                  bib: cells[4]?.textContent.trim(),
-                  card: cells[5]?.textContent.trim(),
-                };
-              }
-
-              competitors.push(competitorData);
-            }
-          });
-
-          return competitors;
-        });
-      };
-
-      // Collect all competitors across all pages
-      let allCompetitors = [];
-      let currentPage = 1;
-      let hasMorePages = true;
-      const maxPages = 20; // Safety limit to prevent infinite loops
-
-      while (hasMorePages && currentPage <= maxPages) {
-        console.log(`Scraping page ${currentPage}...`);
-
-        // Extract competitors from current page
-        const pageCompetitors = await extractCompetitors();
-        allCompetitors = allCompetitors.concat(pageCompetitors);
-
-        // Check for pagination controls
-        const paginationInfo = await page.evaluate(() => {
-          // Look for next button or pagination controls - includes common LiveResults.it selectors
-          let nextButton = document.querySelector(
-            '[aria-label="Next"], ' +
-            '.pagination-next, ' +
-            '[class*="next"]:not(:disabled), ' +
-            '.MuiPagination-ul button[aria-label*="next"], ' +
-            '.MuiTablePagination-actions button:last-child:not(:disabled), ' +
-            'button[title="Next page"], ' +
-            '.pagination button:last-child:not(:disabled)'
-          );
-
-          // If not found, look for buttons with "Next" text
-          if (!nextButton) {
-            const allButtons = document.querySelectorAll('button, a');
-            for (const btn of allButtons) {
-              if (btn.textContent && btn.textContent.includes('Next') && !btn.disabled) {
-                nextButton = btn;
-                break;
-              }
-            }
-          }
-
-          const disabledNext = document.querySelector(
-            '[aria-label="Next"][disabled], ' +
-            '.pagination-next[disabled], ' +
-            '.MuiPagination-ul button[aria-label*="next"][disabled], ' +
-            '.MuiTablePagination-actions button:last-child[disabled]'
-          );
-
-          const pageButtons = document.querySelectorAll(
-            '.pagination-item, ' +
-            '[role="navigation"] button, ' +
-            '.page-link, ' +
-            '.MuiPagination-ul button, ' +
-            '.MuiTablePagination-displayedRows'
-          );
-
-          // Check if we have more pages
-          const hasNext = nextButton && !nextButton.disabled && !nextButton.classList.contains('disabled') && !nextButton.classList.contains('Mui-disabled');
-          const isLastPage = disabledNext !== null;
-
-          // Check for Material-UI table pagination
-          const muiPaginationText = document.querySelector('.MuiTablePagination-displayedRows')?.textContent || '';
-          const muiRowsInfo = muiPaginationText.match(/(\d+)[–-](\d+) of (\d+)/);
-
-          return {
-            hasNextButton: !!nextButton,
-            canGoNext: hasNext,
-            isLastPage: isLastPage,
-            totalPageButtons: pageButtons.length,
-            muiPagination: muiRowsInfo ? {
-              from: parseInt(muiRowsInfo[1]),
-              to: parseInt(muiRowsInfo[2]),
-              total: parseInt(muiRowsInfo[3])
-            } : null
-          };
-        });
-
-        console.log('Pagination info:', paginationInfo);
-
-        // Check if we should continue based on MUI pagination
-        if (paginationInfo.muiPagination && paginationInfo.muiPagination.to >= paginationInfo.muiPagination.total) {
-          console.log('Reached last page based on MUI pagination');
-          hasMorePages = false;
-          break;
-        }
-
-        // Try to navigate to next page
-        if (paginationInfo.canGoNext || (paginationInfo.muiPagination && paginationInfo.muiPagination.to < paginationInfo.muiPagination.total)) {
-          try {
-            // Click next button
-            const clicked = await page.evaluate(() => {
-              // Try various selectors for next button
-              const selectors = [
-                '[aria-label="Next"]',
-                '.MuiTablePagination-actions button:last-child:not(:disabled)',
-                '.MuiPagination-ul button[aria-label*="next"]:not(.Mui-disabled)',
-                '.pagination-next:not(:disabled)',
-                'button[title="Next page"]:not(:disabled)',
-                '[class*="next"]:not(:disabled)'
-              ];
-
-              for (const selector of selectors) {
-                try {
-                  const nextButton = document.querySelector(selector);
-                  if (nextButton && !nextButton.disabled && !nextButton.classList.contains('disabled') && !nextButton.classList.contains('Mui-disabled')) {
-                    nextButton.click();
-                    return true;
-                  }
-                } catch (e) {
-                  // Continue to next selector
-                }
-              }
-
-              // Also try to find buttons/links with "Next" text
-              const allButtons = document.querySelectorAll('button, a');
-              for (const btn of allButtons) {
-                if (btn.textContent && btn.textContent.includes('Next') && !btn.disabled) {
-                  btn.click();
-                  return true;
-                }
-              }
-
-              return false;
-            });
-
-            if (!clicked) {
-              console.log('Could not find or click next button');
-              hasMorePages = false;
-              break;
-            }
-
-            // Wait for new content to load
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page transition
-
-            // Wait for table to reload
-            try {
-              await page.waitForSelector('table, .competitor-row, .start-list-row', { timeout: 5000 });
-            } catch (e) {
-              console.log('No new content loaded after pagination');
-              hasMorePages = false;
-            }
-
-            currentPage++;
-          } catch (error) {
-            console.log('Error navigating to next page:', error.message);
-            hasMorePages = false;
-          }
-        } else if (paginationInfo.totalPageButtons > 1 && currentPage === 1) {
-          // Try numbered pagination
-          try {
-            const clicked = await page.evaluate((pageNum) => {
-              const pageButton = document.querySelector(`[aria-label="Page ${pageNum}"], button:has-text("${pageNum}"), a:has-text("${pageNum}")`);
-              if (pageButton) {
-                pageButton.click();
-                return true;
-              }
-              return false;
-            }, currentPage + 1);
-
-            if (clicked) {
-              await page.waitForTimeout(2000);
-              currentPage++;
-            } else {
-              hasMorePages = false;
-            }
-          } catch (error) {
-            console.log('Error with numbered pagination:', error.message);
-            hasMorePages = false;
-          }
-        } else {
-          hasMorePages = false;
-        }
-
-        // Additional check: if we got no new competitors, stop
-        if (pageCompetitors.length === 0 && currentPage > 1) {
-          hasMorePages = false;
-        }
-      }
-
-      console.log(`Total competitors collected: ${allCompetitors.length} from ${currentPage} page(s)`);
+      // Extract all competitors with pagination
+      const allCompetitors = await extractAllCompetitors(page);
 
       // Get the page HTML for fallback parsing
       const html = await page.evaluate(() => document.documentElement.outerHTML);
       const title = await page.evaluate(() => document.title);
-      const hasTable = await page.evaluate(() => !!document.querySelector('table'));
 
       const data = {
         competitors: allCompetitors,
-        html,
-        title,
-        hasTable,
-        rowCount: allCompetitors.length,
-        totalPages: currentPage
+        html: html,
+        title: title,
+        hasTable: allCompetitors.length > 0,
+        rowCount: allCompetitors.length
       };
 
       await page.close();
-
       res.json(data);
+
     } catch (error) {
       await page.close();
       throw error;
@@ -398,14 +145,151 @@ app.get('/api/scrape', async (req, res) => {
   }
 });
 
+// Helper function to extract competitors with pagination
+async function extractAllCompetitors(page) {
+  let allCompetitors = [];
+  let currentPage = 1;
+  let hasMorePages = true;
+  const maxPages = 20;
+
+  while (hasMorePages && currentPage <= maxPages) {
+    console.log(`Extracting page ${currentPage}...`);
+
+    // Extract competitors from current page
+    const pageCompetitors = await page.evaluate(() => {
+      const competitors = [];
+      const rows = document.querySelectorAll('table tr, .competitor-row, .start-list-row, [role="row"]');
+
+      rows.forEach((row, index) => {
+        // Skip header rows
+        if (index === 0 && row.querySelector('th')) return;
+
+        const cells = row.querySelectorAll('td, [role="cell"]');
+        if (cells.length > 0) {
+          const competitorData = {
+            cells: Array.from(cells).map((cell, idx) => {
+              let text = cell.textContent.trim();
+              // Clean timezone from start time (first cell)
+              if (idx === 0 && text) {
+                text = text.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+              }
+              return text;
+            })
+          };
+
+          // Try to extract structured data
+          if (cells.length >= 2) {
+            let startTime = cells[0]?.textContent.trim();
+            if (startTime) {
+              startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+            }
+
+            competitorData.structured = {
+              startTime: startTime,
+              name: cells[1]?.textContent.trim(),
+              club: cells[2]?.textContent.trim(),
+              country: cells[3]?.textContent.trim() || cells[2]?.textContent.match(/[A-Z]{3}/)?.[0],
+              bib: cells[4]?.textContent.trim(),
+              card: cells[5]?.textContent.trim(),
+            };
+          }
+
+          competitors.push(competitorData);
+        }
+      });
+
+      return competitors;
+    });
+
+    allCompetitors = allCompetitors.concat(pageCompetitors);
+
+    // Check for pagination controls
+    const paginationInfo = await page.evaluate(() => {
+      // Look for next button
+      const nextButton = document.querySelector(
+        '[aria-label="Next"]:not(:disabled):not(.Mui-disabled), ' +
+        '.MuiTablePagination-actions button:last-child:not(:disabled):not(.Mui-disabled), ' +
+        '.pagination-next:not(:disabled)'
+      );
+
+      // Check MUI table pagination text
+      const muiPaginationText = document.querySelector('.MuiTablePagination-displayedRows')?.textContent || '';
+      const muiRowsInfo = muiPaginationText.match(/(\d+)[–-](\d+) of (\d+)/);
+
+      return {
+        canGoNext: !!nextButton,
+        muiPagination: muiRowsInfo ? {
+          from: parseInt(muiRowsInfo[1]),
+          to: parseInt(muiRowsInfo[2]),
+          total: parseInt(muiRowsInfo[3])
+        } : null
+      };
+    });
+
+    console.log('Pagination info:', paginationInfo);
+
+    // Check if we should continue
+    if (paginationInfo.muiPagination && paginationInfo.muiPagination.to >= paginationInfo.muiPagination.total) {
+      console.log('Reached last page based on MUI pagination');
+      hasMorePages = false;
+    } else if (paginationInfo.canGoNext) {
+      try {
+        // Click next button
+        const clicked = await page.evaluate(() => {
+          const selectors = [
+            '[aria-label="Next"]:not(:disabled):not(.Mui-disabled)',
+            '.MuiTablePagination-actions button:last-child:not(:disabled):not(.Mui-disabled)',
+            '.pagination-next:not(:disabled)'
+          ];
+
+          for (const selector of selectors) {
+            const nextButton = document.querySelector(selector);
+            if (nextButton) {
+              nextButton.click();
+              return true;
+            }
+          }
+          return false;
+        });
+
+        if (clicked) {
+          // Wait for new content to load
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          currentPage++;
+        } else {
+          hasMorePages = false;
+        }
+      } catch (error) {
+        console.log('Error navigating to next page:', error.message);
+        hasMorePages = false;
+      }
+    } else {
+      hasMorePages = false;
+    }
+
+    // Stop if no new competitors found
+    if (pageCompetitors.length === 0 && currentPage > 1) {
+      hasMorePages = false;
+    }
+  }
+
+  console.log(`Total competitors collected: ${allCompetitors.length} from ${currentPage} page(s)`);
+  return allCompetitors;
+}
+
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Proxy server is running with Puppeteer support' });
+  res.json({
+    status: 'ok',
+    message: 'Proxy server is running',
+    puppeteer: !!browser
+  });
 });
 
 app.listen(PORT, () => {
   console.log(`Proxy server running on http://localhost:${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Proxy endpoint: http://localhost:${PORT}/api/fetch?url=<URL>`);
+  console.log(`Fetch endpoint: http://localhost:${PORT}/api/fetch?url=<URL>`);
   console.log(`Scrape endpoint: http://localhost:${PORT}/api/scrape?url=<URL>`);
 });
 
