@@ -1,27 +1,31 @@
-import React from 'react';
-import { countryFlags } from '../data/flags';
-import './SceneStyles.css';
+import React from "react";
+import { countryFlags } from "../data/flags";
+import "./SceneStyles.css";
 
 const SplitTimes = ({ competitors, category, controlPoint }) => {
   const getCompetitorsWithSplits = () => {
     const controlKey = `control${controlPoint}`;
 
     return competitors
-      .filter(c => c.splits && c.splits[controlKey])
-      .map(c => ({
+      .filter((c) => c.splits && c.splits[controlKey])
+      .map((c) => ({
         ...c,
-        splitTime: c.splits[controlKey]
+        splitTime: c.splits[controlKey],
       }))
       .sort((a, b) => {
         const parseTime = (t) => {
-          const parts = t.split(':');
-          return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+          const parts = t.split(":");
+          return (
+            parseInt(parts[0]) * 3600 +
+            parseInt(parts[1]) * 60 +
+            parseFloat(parts[2])
+          );
         };
         return parseTime(a.splitTime) - parseTime(b.splitTime);
       })
       .map((c, index) => ({
         ...c,
-        splitRank: index + 1
+        splitRank: index + 1,
       }))
       .slice(0, 10);
   };
@@ -30,16 +34,20 @@ const SplitTimes = ({ competitors, category, controlPoint }) => {
   const bestSplitTime = competitorsWithSplits[0]?.splitTime;
 
   const getTimeDifference = (time, bestTime) => {
-    if (!time || !bestTime || time === bestTime) return '';
+    if (!time || !bestTime || time === bestTime) return "";
 
     const parseTime = (t) => {
-      const parts = t.split(':');
-      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+      const parts = t.split(":");
+      return (
+        parseInt(parts[0]) * 3600 +
+        parseInt(parts[1]) * 60 +
+        parseFloat(parts[2])
+      );
     };
 
     const diff = parseTime(time) - parseTime(bestTime);
     const minutes = Math.floor(diff / 60);
-    const seconds = (diff % 60).toFixed(0).padStart(2, '0');
+    const seconds = (diff % 60).toFixed(0).padStart(2, "0");
 
     return `+${minutes}:${seconds}`;
   };
@@ -64,16 +72,22 @@ const SplitTimes = ({ competitors, category, controlPoint }) => {
         {competitorsWithSplits.map((competitor, index) => (
           <div
             key={competitor.id}
-            className={`competitor-row split-row ${competitor.splitRank === 1 ? 'leader' : ''}`}
+            className={`competitor-row split-row ${competitor.splitRank === 1 ? "leader" : ""}`}
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <span className="rank">
-              {competitor.splitRank === 1 && <span className="leader-icon">👑</span>}
+              {competitor.splitRank === 1 && (
+                <span className="leader-icon">👑</span>
+              )}
               {competitor.splitRank}
             </span>
-            <span className="competitor-name">{competitor.name.toUpperCase()}</span>
+            <span className="competitor-name">
+              {competitor.name.toUpperCase()}
+            </span>
             <span className="competitor-country">
-              <span className="country-flag">{countryFlags[competitor.country]}</span>
+              <span className="country-flag">
+                {countryFlags[competitor.country]}
+              </span>
               <span className="country-code">{competitor.country}</span>
             </span>
             <span className="split-time">{competitor.splitTime}</span>
@@ -85,7 +99,7 @@ const SplitTimes = ({ competitors, category, controlPoint }) => {
       </div>
 
       <div className="scene-footer">
-        <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
+        <div className="broadcast-logo">CX80 MTBO World Cup SPRINT</div>
       </div>
     </div>
   );
