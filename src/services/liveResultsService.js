@@ -130,8 +130,8 @@ class LiveResultsService {
             const name = titleMatch[1].trim();
             const dateTimeStr = subtitleMatch[1].trim();
 
-            // Only include known competition types
-            if (name.match(/^(Middle|Long|Relay|Sprint)$/i)) {
+            // Include all competition types found
+            if (name) {
               // Parse date and time from string like "Sep 4, 2025, 10:00 AM"
               const dateMatch = dateTimeStr.match(/(\w+ \d+, \d+)/);
               const timeMatch = dateTimeStr.match(/(\d+:\d+ [AP]M)/i);
@@ -156,22 +156,20 @@ class LiveResultsService {
         return competitions;
       }
 
-      // Fallback to default competitions if parsing failed
-      console.log('No competitions found in HTML, using defaults');
+      // Fallback to mtbowcup2025 actual competitions
+      console.log('No competitions found in HTML, using mtbowcup2025 defaults');
       return [
-        { id: 'middle', name: 'Middle', date: 'Sep 4, 2025', time: '10:00 AM' },
-        { id: 'long', name: 'Long', date: 'Sep 5, 2025', time: '10:00 AM' },
-        { id: 'relay', name: 'Relay', date: 'Sep 6, 2025', time: '10:00 AM' },
-        { id: 'sprint', name: 'Sprint', date: 'Sep 7, 2025', time: '9:30 AM' }
+        { id: 'sprint', name: 'Sprint', date: 'Sep 19, 2025', time: '10:00 AM' },
+        { id: 'long', name: 'Long', date: 'Sep 20, 2025', time: '10:00 AM' },
+        { id: 'mixed-relay', name: 'Mixed Relay', date: 'Sep 21, 2025', time: '10:00 AM' }
       ];
     } catch (error) {
       console.error('Error fetching competitions:', error);
-      // Fallback to default competitions with string IDs
+      // Fallback to mtbowcup2025 competitions
       return [
-        { id: 'middle', name: 'Middle', date: 'Sep 4, 2025', time: '10:00 AM' },
-        { id: 'long', name: 'Long', date: 'Sep 5, 2025', time: '10:00 AM' },
-        { id: 'relay', name: 'Relay', date: 'Sep 6, 2025', time: '10:00 AM' },
-        { id: 'sprint', name: 'Sprint', date: 'Sep 7, 2025', time: '9:30 AM' }
+        { id: 'sprint', name: 'Sprint', date: 'Sep 19, 2025', time: '10:00 AM' },
+        { id: 'long', name: 'Long', date: 'Sep 20, 2025', time: '10:00 AM' },
+        { id: 'mixed-relay', name: 'Mixed Relay', date: 'Sep 21, 2025', time: '10:00 AM' }
       ];
     }
   }
