@@ -81,26 +81,69 @@ class LiveResultsService {
       const url = `https://app.liveresults.it/${eventId}`;
       console.log('Fetching competitions from:', url);
 
-      await this.scrapeSPAContent(url);
-      // TODO: Parse actual competition list from scrapedData
-      // For now, we'll use the known structure with proper IDs
+      const scrapedData = await this.scrapeSPAContent(url);
 
-      // For SEEMOC 2025, the competitions are typically:
-      // middle, long, relay, sprint
+      // Parse competitions from the HTML
+      const competitions = [];
+
+      if (scrapedData.html) {
+        // Look for race cards specifically (inside app-race-card components)
+        // First, split by race card components
+        const raceCardSections = scrapedData.html.split('<app-race-card');
+
+        for (let i = 1; i < raceCardSections.length; i++) {
+          const section = raceCardSections[i];
+
+          // Extract title and subtitle from this race card
+          const titleMatch = section.match(/<mat-card-title[^>]*class="mat-mdc-card-title"[^>]*>([^<]+)<\/mat-card-title>/);
+          const subtitleMatch = section.match(/<mat-card-subtitle[^>]*class="mat-mdc-card-subtitle"[^>]*>([^<]+)<\/mat-card-subtitle>/);
+
+          if (titleMatch && subtitleMatch) {
+            const name = titleMatch[1].trim();
+            const dateTimeStr = subtitleMatch[1].trim();
+
+            // Only include known competition types
+            if (name.match(/^(Middle|Long|Relay|Sprint)$/i)) {
+              // Parse date and time from string like "Sep 4, 2025, 10:00 AM"
+              const dateMatch = dateTimeStr.match(/(\w+ \d+, \d+)/);
+              const timeMatch = dateTimeStr.match(/(\d+:\d+ [AP]M)/i);
+
+              // Generate ID from name (lowercase)
+              const id = name.toLowerCase();
+
+              competitions.push({
+                id: id,
+                name: name,
+                date: dateMatch ? dateMatch[1] : '',
+                time: timeMatch ? timeMatch[1] : ''
+              });
+            }
+          }
+        }
+      }
+
+      // If we found competitions, return them
+      if (competitions.length > 0) {
+        console.log(`Found ${competitions.length} competitions:`, competitions);
+        return competitions;
+      }
+
+      // Fallback to default competitions if parsing failed
+      console.log('No competitions found in HTML, using defaults');
       return [
-        { id: 'middle', name: 'Middle', date: '2025-09-04', time: '10:00' },
-        { id: 'long', name: 'Long', date: '2025-09-05', time: '10:00' },
-        { id: 'relay', name: 'Relay', date: '2025-09-06', time: '10:00' },
-        { id: 'sprint', name: 'Sprint', date: '2025-09-07', time: '09:30' }
+        { id: 'middle', name: 'Middle', date: 'Sep 4, 2025', time: '10:00 AM' },
+        { id: 'long', name: 'Long', date: 'Sep 5, 2025', time: '10:00 AM' },
+        { id: 'relay', name: 'Relay', date: 'Sep 6, 2025', time: '10:00 AM' },
+        { id: 'sprint', name: 'Sprint', date: 'Sep 7, 2025', time: '9:30 AM' }
       ];
     } catch (error) {
       console.error('Error fetching competitions:', error);
       // Fallback to default competitions with string IDs
       return [
-        { id: 'middle', name: 'Middle', date: '2025-09-04', time: '10:00' },
-        { id: 'long', name: 'Long', date: '2025-09-05', time: '10:00' },
-        { id: 'relay', name: 'Relay', date: '2025-09-06', time: '10:00' },
-        { id: 'sprint', name: 'Sprint', date: '2025-09-07', time: '09:30' }
+        { id: 'middle', name: 'Middle', date: 'Sep 4, 2025', time: '10:00 AM' },
+        { id: 'long', name: 'Long', date: 'Sep 5, 2025', time: '10:00 AM' },
+        { id: 'relay', name: 'Relay', date: 'Sep 6, 2025', time: '10:00 AM' },
+        { id: 'sprint', name: 'Sprint', date: 'Sep 7, 2025', time: '9:30 AM' }
       ];
     }
   }
