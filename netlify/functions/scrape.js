@@ -38,20 +38,27 @@ exports.handler = async (event) => {
     // Set user agent
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-    // Navigate to the page with faster loading
+    // Navigate to the page and wait for SPA to load
     await page.goto(url, {
-      waitUntil: 'domcontentloaded', // Much faster than networkidle0
-      timeout: 10000
+      waitUntil: 'networkidle2', // Wait for network to settle (crucial for SPAs)
+      timeout: 15000
     });
 
-    // Wait for content with reduced timeout
+    // Give React/Angular time to render
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Wait for table content
     try {
-      await page.waitForSelector('table, .competitor-row, .start-list-row, .MuiTableBody-root', {
-        timeout: 2000
-      });
+      await page.waitForSelector(
+        '.MuiTableContainer-root, table tbody tr, .MuiDataGrid-root, [role="grid"], tbody',
+        {
+          timeout: 5000,
+          visible: true
+        }
+      );
+      console.log('Table content found');
     } catch (e) {
-      console.log('No table found, waiting briefly...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('No table found, proceeding anyway...');
     }
 
     // Extract competitors with pagination support
@@ -112,13 +119,27 @@ async function extractAllCompetitors(page) {
     // Extract competitors from current page
     const pageCompetitors = await page.evaluate(() => {
       const competitors = [];
-      const rows = document.querySelectorAll('table tr, .competitor-row, .start-list-row, [role="row"]');
+      const rows = document.querySelectorAll(
+        'tbody tr, ' +
+        '.MuiTableBody-root tr, ' +
+        '.MuiDataGrid-row, ' +
+        'table tr:not(:first-child), ' +
+        '[role="row"]:not(:first-child), ' +
+        '.competitor-row, ' +
+        '.start-list-row'
+      );
 
       rows.forEach((row, index) => {
         // Skip header rows
         if (index === 0 && row.querySelector('th')) return;
 
-        const cells = row.querySelectorAll('td, [role="cell"]');
+        const cells = row.querySelectorAll(
+          'td, ' +
+          '[role="cell"], ' +
+          '[role="gridcell"], ' +
+          '.MuiTableCell-root, ' +
+          '.MuiDataGrid-cell'
+        );
         if (cells.length > 0) {
           const competitorData = {
             cells: Array.from(cells).map((cell, idx) => {
@@ -199,8 +220,8 @@ async function extractAllCompetitors(page) {
       });
 
       if (clicked) {
-        // Wait for new content with reduced delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for new content to load
+        await new Promise(resolve => setTimeout(resolve, 1000));
         currentPage++;
       } else {
         hasMorePages = false;

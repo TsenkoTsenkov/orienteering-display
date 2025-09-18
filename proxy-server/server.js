@@ -99,18 +99,34 @@ app.get('/api/scrape', async (req, res) => {
       await page.setViewport({ width: 1920, height: 1080 });
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-      // Navigate to the URL with faster loading
+      // Navigate to the URL and wait for network to settle (important for SPAs)
       await page.goto(url, {
-        waitUntil: 'domcontentloaded', // Faster than networkidle0
-        timeout: 15000
+        waitUntil: 'networkidle2', // Wait for network to be idle (important for SPAs)
+        timeout: 20000
       });
+
+      // Additional wait for React/Angular to render
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Wait for specific content to load
       try {
-        await page.waitForSelector('table, .competitor-row, .start-list-row, .MuiTableBody-root', { timeout: 5000 });
+        // More specific selectors for the actual table structure
+        await page.waitForSelector('.MuiTableContainer-root, table tbody tr, .MuiDataGrid-root, [role="grid"]', {
+          timeout: 10000,
+          visible: true
+        });
+        console.log('Table content detected');
       } catch (e) {
-        console.log('No table found, waiting for content...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('Primary selectors not found, waiting for any table...');
+        // Try broader selectors
+        try {
+          await page.waitForSelector('table, tbody, [role="table"], .table-container', {
+            timeout: 5000,
+            visible: true
+          });
+        } catch (e2) {
+          console.log('No table structure found, proceeding anyway...');
+        }
       }
 
       // Extract all competitors with pagination
@@ -158,14 +174,30 @@ async function extractAllCompetitors(page) {
     // Extract competitors from current page
     const pageCompetitors = await page.evaluate(() => {
       const competitors = [];
-      // More specific selectors for MUI tables
-      const rows = document.querySelectorAll('tbody tr, .MuiTableBody-root tr, table tr:has(td), .competitor-row, .start-list-row');
+      // More specific selectors for MUI/React tables
+      const rows = document.querySelectorAll(
+        'tbody tr, ' +
+        '.MuiTableBody-root tr, ' +
+        '.MuiDataGrid-row, ' +
+        'table tr:not(:first-child), ' +  // Skip header
+        '[role="row"]:not(:first-child), ' +
+        '.table-row, ' +
+        '.competitor-row, ' +
+        '.start-list-row'
+      );
 
       rows.forEach((row) => {
         // Skip header rows and empty rows
         if (row.querySelector('th')) return;
 
-        const cells = row.querySelectorAll('td, [role="cell"], .MuiTableCell-root');
+        const cells = row.querySelectorAll(
+          'td, ' +
+          '[role="cell"], ' +
+          '[role="gridcell"], ' +
+          '.MuiTableCell-root, ' +
+          '.MuiDataGrid-cell, ' +
+          '.table-cell'
+        );
         if (cells.length > 0 && cells[0].textContent.trim()) {
           const competitorData = {
             cells: Array.from(cells).map((cell, idx) => {
