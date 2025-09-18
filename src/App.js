@@ -110,6 +110,16 @@ function App() {
       })
     );
 
+    // Listen to competitors data changes
+    unsubscribers.push(
+      listenToData('competitorsData', (data) => {
+        if (data) {
+          console.log('[Display Mode] Competitors data updated:', data);
+          setCompetitorsData(data);
+        }
+      })
+    );
+
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
@@ -302,7 +312,8 @@ function App() {
     const competition = currentProject.eventData.competitions.find(c => c.id === competitionId);
     if (competition) {
       setCurrentCompetitionId(competitionId);
-      // Competition ID kept in state only
+      // Save competition ID to Firebase
+      await saveData('currentCompetitionId', competitionId);
 
       // Reset page index to 0 when changing competitions
       setLivePageIndex(0);
@@ -328,7 +339,8 @@ function App() {
             women: womenData
           };
           setCompetitorsData(newCompetitorsData);
-          // Data kept in state only
+          // Save to Firebase for display mode
+          await saveData('competitorsData', newCompetitorsData);
         } catch (error) {
           console.error('Error fetching competition data:', error);
           // Fallback to cached data if available
@@ -337,7 +349,8 @@ function App() {
             women: competition.women || []
           };
           setCompetitorsData(newCompetitorsData);
-          // Data kept in state only
+          // Save to Firebase for display mode
+          await saveData('competitorsData', newCompetitorsData);
         }
       } else {
         // No URL, use cached data
@@ -346,7 +359,8 @@ function App() {
           women: competition.women || []
         };
         setCompetitorsData(newCompetitorsData);
-        // Data kept in state only
+        // Save to Firebase for display mode
+        await saveData('competitorsData', newCompetitorsData);
       }
 
       // Update polling for new competition
