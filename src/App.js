@@ -233,52 +233,60 @@ function App() {
 
   // Handle project creation
   const handleProjectCreated = async (project) => {
-    setCurrentProject(project);
+    // Add timestamp for sorting
+    const projectWithTimestamp = {
+      ...project,
+      timestamp: Date.now()
+    };
+
+    setCurrentProject(projectWithTimestamp);
     setShowProjectCreator(false);
 
-    // Save to // localStorage removed for OBS compatibility
-    //setItem('currentProject', JSON.stringify(project));
-
     // Save project to Firebase
-    await saveData(`projects/${project.id}`, project);
+    await saveData(`projects/${projectWithTimestamp.id}`, projectWithTimestamp);
+
+    // Also save as the current project
+    await saveData('currentProjectId', projectWithTimestamp.id);
 
     // Add to local projects list (check for duplicates)
     setProjects(prev => {
-      const filtered = prev.filter(p => p.id !== project.id);
-      const updated = [...filtered, project];
-      //setItem('projects', JSON.stringify(updated));
+      const filtered = prev.filter(p => p.id !== projectWithTimestamp.id);
+      const updated = [...filtered, projectWithTimestamp];
       return updated;
     });
 
-    if (project.dataSource === 'liveresults' && project.eventData) {
+    if (projectWithTimestamp.dataSource === 'liveresults' && projectWithTimestamp.eventData) {
       // Set the first competition as current
-      const firstCompetition = project.eventData.competitions[0];
+      const firstCompetition = projectWithTimestamp.eventData.competitions[0];
       if (firstCompetition) {
         setCurrentCompetitionId(firstCompetition.id);
-        //setItem('currentCompetitionId', JSON.stringify(firstCompetition.id));
 
         const newCompetitorsData = {
           men: firstCompetition.men || [],
           women: firstCompetition.women || []
         };
         setCompetitorsData(newCompetitorsData);
-        // Data kept in state only
+
+        // Save competitors data to Firebase
+        await saveData('competitorsData', newCompetitorsData);
+        await saveData('currentCompetitionId', firstCompetition.id);
 
         // Start polling for updates if we have a live event
-        if (project.eventUrl && pollingInterval) {
+        if (projectWithTimestamp.eventUrl && pollingInterval) {
           liveResultsService.stopPolling(pollingInterval);
         }
 
         const interval = liveResultsService.startPolling(
-          project.eventUrl,
+          projectWithTimestamp.eventUrl,
           firstCompetition.id,
-          (updatedData) => {
+          async (updatedData) => {
             const newData = {
               men: updatedData.men || [],
               women: updatedData.women || []
             };
             setCompetitorsData(newData);
-            //setItem('competitorsData', JSON.stringify(newData));
+            // Save updated data to Firebase
+            await saveData('competitorsData', newData);
           },
           30000 // Poll every 30 seconds
         );
@@ -348,13 +356,14 @@ function App() {
         const interval = liveResultsService.startPolling(
           currentProject.eventUrl,
           competitionId,
-          (updatedData) => {
+          async (updatedData) => {
             const newData = {
               men: updatedData.men || [],
               women: updatedData.women || []
             };
             setCompetitorsData(newData);
-            //setItem('competitorsData', JSON.stringify(newData));
+            // Save updated data to Firebase
+            await saveData('competitorsData', newData);
           },
           30000
         );
@@ -468,14 +477,53 @@ function App() {
   // Load projects from Firebase on mount
   useEffect(() => {
     if (!isDisplayMode) {
-      listenToData('projects', (data) => {
-        if (data) {
-          const projectsList = Object.values(data);
-          setProjects(projectsList);
-        }
-      });
+      const unsubscribers = [];
+
+      // Listen to projects and restore current project
+      unsubscribers.push(
+        listenToData('projects', (data) => {
+          if (data) {
+            const projectsList = Object.values(data);
+            setProjects(projectsList);
+
+            // If we have projects but no current project, restore the last one
+            if (projectsList.length > 0 && !currentProject) {
+              // Get the most recent project
+              const latestProject = projectsList.sort((a, b) =>
+                (b.timestamp || 0) - (a.timestamp || 0)
+              )[0];
+
+              if (latestProject) {
+                setCurrentProject(latestProject);
+              }
+            }
+          }
+        })
+      );
+
+      // Listen to saved competitor data
+      unsubscribers.push(
+        listenToData('competitorsData', (data) => {
+          if (data) {
+            setCompetitorsData(data);
+          }
+        })
+      );
+
+      // Listen to saved competition ID
+      unsubscribers.push(
+        listenToData('currentCompetitionId', (data) => {
+          if (data) {
+            setCurrentCompetitionId(data);
+          }
+        })
+      );
+
+      return () => {
+        unsubscribers.forEach(unsub => unsub());
+      };
     }
-  }, [isDisplayMode]);
+  }, [isDisplayMode, currentProject]);
 
   // Clean up polling on unmount
   useEffect(() => {
