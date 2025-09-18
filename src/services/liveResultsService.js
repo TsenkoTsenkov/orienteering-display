@@ -492,22 +492,62 @@ class LiveResultsService {
   }
 
   extractCountryFromClub(club) {
-    // Extract country code from club name like "NT Croatia" -> "CRO"
+    // Extract country code from club name or full country name
     const countryMap = {
-      'Croatia': 'CRO',
+      // Countries in mtbowcup2025
+      'Estonia': 'EST',
       'Bulgaria': 'BUL',
+      'Spain': 'ESP',
+      'Croatia': 'CRO',
       'Serbia': 'SRB',
+      'Poland': 'POL',
+      'Czech Republic': 'CZE',
+      'Czechia': 'CZE',
+      'Slovakia': 'SVK',
+      'Hungary': 'HUN',
+      'Slovenia': 'SLO',
+      'Lithuania': 'LTU',
+      'Latvia': 'LAT',
+      'Finland': 'FIN',
+      'Norway': 'NOR',
+      'Sweden': 'SWE',
+      'Denmark': 'DEN',
+      'Switzerland': 'SUI',
+      'Austria': 'AUT',
+      'Germany': 'GER',
+      'France': 'FRA',
+      'Italy': 'ITA',
+      'Belgium': 'BEL',
+      'Netherlands': 'NED',
+      'Portugal': 'POR',
+      'Great Britain': 'GBR',
+      'Ireland': 'IRL',
+      // Other countries
       'Romania': 'ROU',
       'Moldova': 'MDA',
       'Turkey': 'TUR',
       'Turkiye': 'TUR',
       'Greece': 'GRE',
-      'Slovenia': 'SLO',
       'Bosnia': 'BIH',
       'Macedonia': 'MKD',
-      'Albania': 'ALB'
+      'Albania': 'ALB',
+      'Russia': 'RUS',
+      'Ukraine': 'UKR',
+      'Belarus': 'BLR',
+      'Israel': 'ISR',
+      'Japan': 'JPN',
+      'USA': 'USA',
+      'Canada': 'CAN',
+      'Australia': 'AUS',
+      'New Zealand': 'NZL'
     };
 
+    // First check if club IS the country name directly
+    if (countryMap[club]) {
+      return countryMap[club];
+    }
+
+    // Then check if country name is contained in the club string
     for (const [country, code] of Object.entries(countryMap)) {
       if (club.includes(country)) return code;
     }
