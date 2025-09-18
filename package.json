@@ -29,7 +29,8 @@
     "proxy": "node proxy-server/server.js",
     "sportident": "node sportident-server/server.js",
     "dev:all": "concurrently \"npm run start\" \"npm run proxy\" \"npm run sportident\"",
-    "add-demo": "node scripts/addDemoData.js"
+    "add-demo": "node scripts/addDemoData.js",
+    "add-demo:prod": "node scripts/addDemoDataProd.js"
   },
   "eslintConfig": {
     "extends": [
