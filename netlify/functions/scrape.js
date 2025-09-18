@@ -1,9 +1,15 @@
 const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
 
-// Set chromium to download automatically if not present
+// Configure chromium for Netlify environment
 chromium.setHeadlessMode = true;
 chromium.setGraphicsMode = false;
+
+// Set the binary path for Netlify Functions
+if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  // We're in a Lambda/Netlify Functions environment
+  chromium.setBinPath('/opt/chromium');
+}
 
 // Main handler function for Netlify
 exports.handler = async (event) => {
@@ -29,11 +35,39 @@ exports.handler = async (event) => {
   try {
     console.log('Launching browser for:', url);
 
+    // Get the executable path - handle both local and serverless environments
+    let executablePath;
+    try {
+      executablePath = await chromium.executablePath();
+    } catch (error) {
+      console.log('Failed to get Chromium path, trying fallback:', error.message);
+      // Fallback paths for different environments
+      const possiblePaths = [
+        '/opt/chromium',  // AWS Lambda layer
+        '/tmp/chromium',  // Downloaded to tmp
+        process.env.PUPPETEER_EXECUTABLE_PATH,  // Environment variable
+      ].filter(Boolean);
+
+      for (const path of possiblePaths) {
+        const fs = require('fs');
+        if (fs.existsSync(path)) {
+          executablePath = path;
+          break;
+        }
+      }
+
+      if (!executablePath) {
+        throw new Error('Could not find Chromium binary');
+      }
+    }
+
+    console.log('Using Chromium from:', executablePath);
+
     // Launch browser with optimized settings for serverless
     browser = await puppeteer.launch({
-      args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+      args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: executablePath,
       headless: chromium.headless,
       ignoreHTTPSErrors: true
     });
