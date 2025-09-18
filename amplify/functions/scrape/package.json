@@ -1,12 +1,11 @@
 {
   "name": "scrape-function",
   "version": "1.0.0",
-  "type": "module",
   "dependencies": {
-    "@sparticuz/chromium": "^119.0.0",
-    "puppeteer-core": "^21.5.0"
+    "@sparticuz/chromium": "^131.0.1",
+    "puppeteer-core": "^23.11.1"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.130"
+    "@types/aws-lambda": "^8.10.152"
   }
 }

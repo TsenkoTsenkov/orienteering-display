@@ -11,10 +11,8 @@ class LiveResultsService {
     if (proxyBase.includes('.on.aws')) {
       // Using Lambda functions directly
       this.proxyUrl = `${proxyBase}?url=`;
-      // Use separate scrape function URL if available
-      this.scrapeUrl = process.env.REACT_APP_SCRAPE_URL ?
-        `${process.env.REACT_APP_SCRAPE_URL}?url=` :
-        `${proxyBase}/api/scrape?url=`;
+      // For now, use proxy for scraping too (pagination limited to first page)
+      this.scrapeUrl = `${proxyBase}?url=`;
     } else {
       // Using local proxy server
       this.proxyUrl = `${proxyBase}/api/fetch?url=`;

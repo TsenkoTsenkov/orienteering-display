@@ -70,7 +70,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
           const cells = row.querySelectorAll('td, [role="cell"]');
           if (cells.length > 0) {
-            const competitorData = {
+            const competitorData: any = {
               cells: Array.from(cells).map((cell, idx) => {
                 let text = (cell as HTMLElement).textContent?.trim() || '';
                 // Clean timezone from start time (first column)
@@ -86,7 +86,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               let startTime = (cells[0] as HTMLElement).textContent?.trim() || '';
               startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
 
-              competitorData['structured'] = {
+              competitorData.structured = {
                 startTime,
                 name: (cells[1] as HTMLElement).textContent?.trim(),
                 club: (cells[2] as HTMLElement).textContent?.trim(),
