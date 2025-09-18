@@ -26,7 +26,9 @@
     "netlify:dev": "netlify dev",
     "netlify:build": "netlify build",
     "dev": "concurrently \"npm run start\" \"npm run proxy\"",
-    "proxy": "node proxy-server/server.js"
+    "proxy": "node proxy-server/server.js",
+    "sportident": "node sportident-server/server.js",
+    "dev:all": "concurrently \"npm run start\" \"npm run proxy\" \"npm run sportident\""
   },
   "eslintConfig": {
     "extends": [
