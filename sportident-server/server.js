@@ -132,15 +132,16 @@ class SportIdentClient extends EventEmitter {
   }
 }
 
-// Alternative HTTP polling approach for SportIdent API
+// Correct HTTP polling approach for SportIdent API
 class SportIdentHTTPClient extends EventEmitter {
   constructor(apiKey, eventId) {
     super();
     this.apiKey = apiKey;
     this.eventId = eventId;
-    this.baseUrl = 'https://center.sportident.com/api';
+    // Correct base URL for SportIdent Center API
+    this.baseUrl = 'https://center-origin.sportident.com';
     this.pollingInterval = null;
-    this.lastPunchId = null;
+    this.lastPunchId = 0; // Start with 0 as recommended by SportIdent docs
   }
 
   async start() {
@@ -149,66 +150,64 @@ class SportIdentHTTPClient extends EventEmitter {
     // Initial fetch
     await this.fetchPunches();
 
-    // Set up polling
+    // Set up polling every 10 seconds (recommended by SportIdent)
     this.pollingInterval = setInterval(() => {
       this.fetchPunches();
-    }, 5000); // Poll every 5 seconds
+    }, 10000);
   }
 
   async fetchPunches() {
     const axios = require('axios');
 
     try {
-      const urls = [
-        `${this.baseUrl}/events/${this.eventId}/punches`,
-        `${this.baseUrl}/v1/events/${this.eventId}/punches`,
-        `https://center.sportident.com/admin/events/${this.eventId}/punches`
-      ];
+      // Correct endpoint structure as per SportIdent documentation
+      const url = `${this.baseUrl}/api/rest/v1/public/events/${this.eventId}/punches`;
 
-      for (const url of urls) {
-        try {
-          console.log(`Trying to fetch from: ${url}`);
+      console.log(`Fetching from: ${url} with afterId=${this.lastPunchId}`);
 
-          const response = await axios.get(url, {
-            headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
-              'X-API-Key': this.apiKey,
-              'Accept': 'application/json'
-            },
-            params: {
-              since: this.lastPunchId || 0,
-              live: true
+      const params = {
+        afterId: this.lastPunchId,
+        projection: 'simple',
+        limit: 1000 // Max limit per request
+      };
+
+      const response = await axios.get(url, {
+        headers: {
+          // Correct authentication header for SportIdent
+          'apikey': this.apiKey,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json;charset=UTF-8'
+        },
+        params: params
+      });
+
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`✅ Received ${response.data.length} punches`);
+
+        if (response.data.length > 0) {
+          console.log('Sample punch data:', JSON.stringify(response.data[0], null, 2));
+
+          // Process each punch
+          response.data.forEach(punch => {
+            this.emit('punch', punch);
+            // Update lastPunchId to the highest ID for next poll
+            if (punch.id && punch.id > this.lastPunchId) {
+              this.lastPunchId = punch.id;
             }
           });
 
-          if (response.data) {
-            console.log('✅ Received punches data:', JSON.stringify(response.data, null, 2));
-
-            // Process punches
-            if (Array.isArray(response.data)) {
-              response.data.forEach(punch => {
-                this.emit('punch', punch);
-                if (punch.id) {
-                  this.lastPunchId = punch.id;
-                }
-              });
-            } else if (response.data.punches) {
-              response.data.punches.forEach(punch => {
-                this.emit('punch', punch);
-                if (punch.id) {
-                  this.lastPunchId = punch.id;
-                }
-              });
-            }
-
-            break; // Success, exit loop
-          }
-        } catch (error) {
-          console.log(`Failed to fetch from ${url}: ${error.message}`);
+          console.log(`Updated lastPunchId to: ${this.lastPunchId}`);
         }
+      } else {
+        console.log('No new punches received');
       }
+
     } catch (error) {
       console.error('Error fetching punches:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
       this.emit('error', error);
     }
   }
@@ -239,40 +238,12 @@ const receivedEvents = [];
 let wsClient = null;
 let httpClient = null;
 
-// Initialize both WebSocket and HTTP clients
+// Initialize HTTP client (WebSocket not supported by SportIdent)
 function initializeClients() {
-  // Try WebSocket connection
-  wsClient = new SportIdentClient(API_KEY, EVENT_ID);
+  console.log('⚠️  Note: SportIdent Center API does not support WebSocket connections.');
+  console.log('🔄 Using HTTP polling approach as recommended by SportIdent documentation.');
 
-  wsClient.on('connected', () => {
-    console.log('WebSocket client connected successfully');
-  });
-
-  wsClient.on('punch', (data) => {
-    console.log('🎯 PUNCH EVENT:', data);
-    receivedEvents.push({
-      type: 'punch',
-      timestamp: new Date().toISOString(),
-      data: data
-    });
-  });
-
-  wsClient.on('data', (data) => {
-    console.log('📊 DATA EVENT:', data);
-    receivedEvents.push({
-      type: 'data',
-      timestamp: new Date().toISOString(),
-      data: data
-    });
-  });
-
-  wsClient.on('error', (error) => {
-    console.error('WebSocket error:', error);
-  });
-
-  wsClient.connect();
-
-  // Also try HTTP polling as fallback
+  // Use HTTP polling as the primary (and only) method
   httpClient = new SportIdentHTTPClient(API_KEY, EVENT_ID);
 
   httpClient.on('punch', (data) => {
@@ -285,6 +256,10 @@ function initializeClients() {
     });
   });
 
+  httpClient.on('error', (error) => {
+    console.error('❌ HTTP Client error:', error.message);
+  });
+
   httpClient.start();
 }
 
@@ -292,10 +267,13 @@ function initializeClients() {
 app.get('/api/sportident/status', (req, res) => {
   res.json({
     status: 'running',
-    wsConnected: wsClient ? wsClient.isConnected : false,
+    method: 'HTTP Polling',
+    wsSupported: false,
     httpPolling: httpClient ? true : false,
     eventId: EVENT_ID,
-    eventsReceived: receivedEvents.length
+    apiEndpoint: `https://center-origin.sportident.com/api/rest/v1/public/events/${EVENT_ID}/punches`,
+    eventsReceived: receivedEvents.length,
+    lastPunchId: httpClient ? httpClient.lastPunchId : 0
   });
 });
 
