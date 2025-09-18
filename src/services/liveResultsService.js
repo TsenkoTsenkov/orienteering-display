@@ -218,31 +218,33 @@ class LiveResultsService {
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data - extract name properly
         const competitors = scrapedData.competitors.map((comp, index) => {
-          // Check if we have UTC timezone in cells[1] to determine the format
-          const hasTimezone = comp.cells?.[1] && comp.cells[1].match(/UTC|GMT/i);
+          // The actual format from liveresults.it appears to be:
+          // cells[0]: Start time
+          // cells[1]: Name + Country (concatenated with spaces)
+          // cells[2]: Country
+          // cells[3]: Year
+          // cells[4]: Bib
+          // cells[5]: Card
 
-          let startTime, name, country, year, bib, card;
+          let startTime = comp.cells?.[0] || null;
+          let nameWithCountry = comp.cells?.[1] || 'Unknown';
+          let country = comp.cells?.[2] || '';
+          let year = comp.cells?.[3] || '';
+          let bib = comp.cells?.[4] || '';
+          let card = comp.cells?.[5] || '';
 
-          if (hasTimezone) {
-            // Format with timezone column: StartTime | UTC+3 | Name | Country | Year | Bib | Card
-            startTime = comp.cells?.[0] || null;
-            name = comp.cells?.[2] || 'Unknown';
-            country = comp.cells?.[3] || '';
-            year = comp.cells?.[4] || '';
-            bib = comp.cells?.[5] || '';
-            card = comp.cells?.[6] || '';
-          } else {
-            // Format without timezone column: StartTime | Name | Club/Country | Year | Bib | Card
-            startTime = comp.structured?.startTime || comp.cells?.[0] || null;
-            name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
-            country = comp.structured?.club || comp.cells?.[2] || '';
-            year = comp.cells?.[3] || '';
-            bib = comp.structured?.bib || comp.cells?.[4] || '';
-            card = comp.structured?.card || comp.cells?.[5] || '';
+          // Extract the actual name from the concatenated string
+          // The format is "Name   Country" with multiple spaces
+          let name = nameWithCountry;
+          if (nameWithCountry.includes('   ')) {
+            // Split by multiple spaces and take the first part
+            name = nameWithCountry.split('   ')[0].trim();
+          } else if (country && nameWithCountry.endsWith(country)) {
+            // Remove the country from the end if it's there
+            name = nameWithCountry.replace(country, '').trim();
           }
 
-          // Clean up the name (remove duplicate country info)
-          name = name.split('   ')[0].trim();
+          // Clean up the name further
           name = this.cleanCompetitorName(name);
 
           // Clean up start time - remove timezone information
@@ -250,7 +252,7 @@ class LiveResultsService {
             startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
           }
 
-          // Extract country code - it might be the country name directly
+          // Extract country code
           const countryCode = this.extractCountryFromClub(country);
 
           return {
