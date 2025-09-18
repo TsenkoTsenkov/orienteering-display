@@ -33,10 +33,8 @@ exports.handler = async (event) => {
     browser = await puppeteer.launch({
       args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath({
-        fallback: true // This allows automatic download if binary not found
-      }),
-      headless: 'new',
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
       ignoreHTTPSErrors: true
     });
 
