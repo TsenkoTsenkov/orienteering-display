@@ -152,13 +152,18 @@ function App() {
   useEffect(() => {
     if (!autoRotate || rotationPaused || isDisplayMode) return;
 
-    console.log('[Control] Starting auto-rotation, interval:', rotationInterval);
+    // Calculate actual number of pages based on current data
+    const competitors = liveCategory === 'Men' ? competitorsData.men : competitorsData.women;
+    const totalPages = competitors && competitors.length > 0
+      ? Math.ceil(competitors.length / itemsPerPage)
+      : 1;
+
+    console.log('[Control] Starting auto-rotation, interval:', rotationInterval, 'totalPages:', totalPages);
     const interval = setInterval(() => {
       setLivePageIndex(prev => {
-        // Keep the index reasonably bounded to prevent overflow issues
-        // We'll wrap at a reasonable max (100 pages should be more than enough)
-        const next = (prev + 1) % 100;
-        console.log('[Control] Rotating page from', prev, 'to', next);
+        // Wrap around to 0 when reaching the last page
+        const next = (prev + 1) % totalPages;
+        console.log('[Control] Rotating page from', prev, 'to', next, 'of', totalPages);
         return next;
       });
     }, rotationInterval);
@@ -167,7 +172,7 @@ function App() {
       console.log('[Control] Stopping auto-rotation');
       clearInterval(interval);
     };
-  }, [autoRotate, rotationPaused, rotationInterval, isDisplayMode, liveScene]);
+  }, [autoRotate, rotationPaused, rotationInterval, isDisplayMode, liveScene, liveCategory, competitorsData, itemsPerPage]);
 
   // Pass page rotation state to components
   const pageRotationState = {
@@ -289,7 +294,10 @@ function App() {
     const competition = currentProject.eventData.competitions.find(c => c.id === competitionId);
     if (competition) {
       setCurrentCompetitionId(competitionId);
-      //setItem('currentCompetitionId', JSON.stringify(competitionId));
+      // Competition ID kept in state only
+
+      // Reset page index to 0 when changing competitions
+      setLivePageIndex(0);
 
       // Clear old data immediately
       setCompetitorsData({ men: [], women: [] });
