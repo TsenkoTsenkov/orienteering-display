@@ -112,7 +112,7 @@ async function extractAllCompetitors(page) {
   let allCompetitors = [];
   let currentPage = 1;
   let hasMorePages = true;
-  const maxPages = 5; // Reduced limit for faster response
+  const maxPages = 20; // Increased limit to ensure we get all competitors
 
   while (hasMorePages && currentPage <= maxPages) {
     console.log(`Extracting page ${currentPage}...`);
