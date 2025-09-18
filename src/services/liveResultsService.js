@@ -288,6 +288,7 @@ class LiveResultsService {
       }
 
       // Fallback to mock data if no data found
+      const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
       console.log('No data found, using mock data');
       return this.getMockCompetitors('startlist', isMenClass);
     } catch (error) {
