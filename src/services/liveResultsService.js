@@ -231,7 +231,7 @@ class LiveResultsService {
           return {
             id: `comp_${index}`,
             startTime: startTime,
-            name: name,
+            name: this.cleanCompetitorName(name),
             club: comp.structured?.club || comp.cells?.[2] || '',
             country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
             bib: comp.structured?.bib || comp.cells?.[4] || '',
@@ -275,7 +275,7 @@ class LiveResultsService {
           return {
             id: `comp_${index}`,
             rank: parseInt(comp.cells?.[0]) || index + 1,
-            name: name,
+            name: this.cleanCompetitorName(name),
             club: comp.structured?.club || comp.cells?.[2] || '',
             country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
             finalTime: comp.cells?.[3] || comp.cells?.[4] || null,
@@ -317,7 +317,7 @@ class LiveResultsService {
 
           return {
             id: `comp_${index}`,
-            name: name,
+            name: this.cleanCompetitorName(name),
             club: comp.structured?.club || comp.cells?.[2] || '',
             country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
             splits: comp.cells?.slice(3) || [], // Split times are typically after name/club
@@ -396,7 +396,7 @@ class LiveResultsService {
             competitor = {
               id: `comp_${competitors.length}`,
               startTime: cleanStartTime,
-              name: cells[1] || 'Unknown',
+              name: this.cleanCompetitorName(cells[1]) || 'Unknown',
               club: cells[2] || '',
               country: countryMatch ? countryMatch[1].toUpperCase() : 'UNK',
               year: cells[3] || '',
@@ -414,7 +414,7 @@ class LiveResultsService {
             competitor = {
               id: `comp_${competitors.length}`,
               rank: parseInt(cells[0]) || null,
-              name: cells[1] || 'Unknown',
+              name: this.cleanCompetitorName(cells[1]) || 'Unknown',
               club: cells[2] || '',
               country: countryMatch ? countryMatch[1].toUpperCase() : 'UNK',
               finalTime: cells[3] || cells[4] || null,
@@ -448,7 +448,7 @@ class LiveResultsService {
           if (nameMatch) {
             competitors.push({
               id: `comp_${competitors.length}`,
-              name: nameMatch[1].trim(),
+              name: this.cleanCompetitorName(nameMatch[1].trim()),
               country: countryMatch ? countryMatch[1] : 'UNK',
               startTime: type === 'startlist' ? (timeMatch ? timeMatch[1] : null) : null,
               finalTime: type === 'results' ? (timeMatch ? timeMatch[1] : null) : null,
@@ -489,6 +489,38 @@ class LiveResultsService {
       if (countryMatch) return countryMatch[0];
     }
     return 'UNK';
+  }
+
+  // Clean competitor name by removing nationality text
+  cleanCompetitorName(name) {
+    if (!name) return name;
+
+    // List of nationalities to remove from names
+    const nationalities = [
+      'United States', 'USA', 'Switzerland', 'SUI', 'Sweden', 'SWE', 'Norway', 'NOR',
+      'Finland', 'FIN', 'France', 'FRA', 'Germany', 'GER', 'Austria', 'AUT',
+      'Czech Republic', 'CZE', 'Denmark', 'DEN', 'Estonia', 'EST', 'Spain', 'ESP',
+      'Italy', 'ITA', 'Poland', 'POL', 'Bulgaria', 'BUL', 'Croatia', 'CRO',
+      'Serbia', 'SRB', 'Slovenia', 'SLO', 'Slovakia', 'SVK', 'Hungary', 'HUN',
+      'Romania', 'ROU', 'Turkey', 'TUR', 'Latvia', 'LAT', 'Lithuania', 'LTU',
+      'Russia', 'RUS', 'Belarus', 'BLR', 'Ukraine', 'UKR', 'Great Britain', 'GBR',
+      'Belgium', 'BEL', 'Netherlands', 'NED', 'Portugal', 'POR', 'Ireland', 'IRL',
+      'Canada', 'CAN', 'Brazil', 'BRA', 'Argentina', 'ARG', 'Australia', 'AUS',
+      'New Zealand', 'NZL', 'Japan', 'JPN', 'China', 'CHN', 'South Korea', 'KOR'
+    ];
+
+    let cleanedName = name;
+
+    // Remove nationality text from the end or anywhere in the name
+    for (const nationality of nationalities) {
+      const regex = new RegExp(`\\s*${nationality}\\s*`, 'gi');
+      cleanedName = cleanedName.replace(regex, ' ').trim();
+    }
+
+    // Remove multiple spaces
+    cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
+
+    return cleanedName;
   }
 
   extractCountryFromClub(club) {
