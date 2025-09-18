@@ -63,7 +63,7 @@ class LiveResultsService {
 
     try {
       const scrapeUrl = `${this.scrapeUrl}${encodeURIComponent(url)}`;
-      const response = await axios.get(scrapeUrl, { timeout: 8000 }); // Reduced timeout further
+      const response = await axios.get(scrapeUrl, { timeout: 12000 }); // 12 second timeout
 
       // Cache the result
       this.cache.set(cacheKey, {
@@ -191,22 +191,11 @@ class LiveResultsService {
 
   // Try quick fetch first, fall back to scraping if needed
   async quickFetchOrScrape(url) {
-    // Skip fetching in development - use mock data for speed
-    if (window.location.hostname === 'localhost') {
-      console.log('Development mode - using mock data for speed');
-      return {
-        competitors: [],
-        html: '',
-        rowCount: 0,
-        hasTable: false
-      };
-    }
-
     // First try quick fetch for faster response
     try {
       if (this.quickFetchUrl) {
         const quickUrl = `${this.quickFetchUrl}${encodeURIComponent(url)}`;
-        const response = await axios.get(quickUrl, { timeout: 3000 });
+        const response = await axios.get(quickUrl, { timeout: 5000 });
         if (response.data && response.data.competitors && response.data.competitors.length > 0) {
           console.log('Quick fetch successful:', response.data.rowCount, 'rows');
           return response.data;
@@ -230,12 +219,6 @@ class LiveResultsService {
       // Try quick fetch first, then fall back to scraping
       const scrapedData = await this.quickFetchOrScrape(url);
       console.log('Data fetched:', scrapedData.rowCount, 'rows found');
-
-      // Always use mock data in development for speed
-      if (window.location.hostname === 'localhost' || !scrapedData.competitors || scrapedData.competitors.length === 0) {
-        console.log('Using mock data for development/fallback');
-        return this.getMockCompetitors('startlist');
-      }
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data - extract name properly
@@ -593,10 +576,10 @@ class LiveResultsService {
 
       // Just fetch the start list for now - skip results and splits for speed
       const competitors = await this.fetchStartList(eventId, competitionId, classId);
-      return competitors;
+      return competitors || [];
     } catch (error) {
       console.error('Error fetching competitors:', error);
-      return this.getMockCompetitors('startlist');
+      return [];
     }
   }
 
@@ -699,14 +682,9 @@ class LiveResultsService {
         competitions: []
       };
 
-      // For development, just use mock data for speed
-      if (window.location.hostname === 'localhost') {
-        console.log('Development mode - using mock data for all competitions');
-        return this.getMockEventData();
-      }
-
       // For each competition, fetch the M21/W21 data
-      for (const comp of competitions.slice(0, 1)) { // Only fetch first competition for speed
+      // Only fetch first competition initially for speed
+      for (const comp of competitions.slice(0, 1)) {
         const competitionData = {
           id: comp.id,
           name: comp.name,
@@ -731,9 +709,9 @@ class LiveResultsService {
           competitionData.women = womenCompetitors.map((c, index) => this.transformCompetitor(c, 'Women', index));
         } catch (err) {
           console.error(`Error fetching data for competition ${comp.name}:`, err);
-          // Use mock data on error
-          competitionData.men = this.getMockCompetitors('startlist').slice(0, 5);
-          competitionData.women = this.getMockCompetitors('startlist').slice(0, 5);
+          // Leave empty on error
+          competitionData.men = [];
+          competitionData.women = [];
         }
 
         eventData.competitions.push(competitionData);
