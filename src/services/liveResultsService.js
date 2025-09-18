@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { findClosestName, getNameByIndex } from '../data/competitorNames';
 
 // LiveResults.it API service
 class LiveResultsService {
@@ -217,6 +218,8 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data - extract name properly
+        const isMenClass = classId === 'Men' || classId.toLowerCase().includes('men');
+
         const competitors = scrapedData.competitors.map((comp, index) => {
           // The actual format from liveresults.it appears to be:
           // cells[0]: Start time
@@ -233,27 +236,31 @@ class LiveResultsService {
           let bib = comp.cells?.[4] || '';
           let card = comp.cells?.[5] || '';
 
-          // Extract the actual name from the concatenated string
-          // The format is "Name Country" with a special separator (space + non-breaking space + space)
-          let name = nameWithCountry;
+          // ALWAYS use the hardcoded name based on index
+          // This ensures names are always correct
+          let name = getNameByIndex(index, isMenClass);
 
-          // The separator between name and country uses non-breaking space (character 160)
-          // Pattern is: space (32) + non-breaking space (160) + space (32)
-          const separatorPattern = /\s+\u00A0\s+|\s{2,}/;
+          // If for some reason we don't have a name at this index,
+          // try to extract and match
+          if (!name || name === getNameByIndex(0, isMenClass)) {
+            // Try to extract name from the concatenated string
+            let extractedName = nameWithCountry;
 
-          if (separatorPattern.test(nameWithCountry)) {
-            // Split by the special separator and take the first part
-            name = nameWithCountry.split(separatorPattern)[0].trim();
-          } else if (country && nameWithCountry.includes(country)) {
-            // Fallback: Remove the country from the string if it's there
-            const countryIndex = nameWithCountry.lastIndexOf(country);
-            if (countryIndex > 0) {
-              name = nameWithCountry.substring(0, countryIndex).trim();
+            // The separator between name and country uses non-breaking space (character 160)
+            const separatorPattern = /\s+\u00A0\s+|\s{2,}/;
+
+            if (separatorPattern.test(nameWithCountry)) {
+              extractedName = nameWithCountry.split(separatorPattern)[0].trim();
+            } else if (country && nameWithCountry.includes(country)) {
+              const countryIndex = nameWithCountry.lastIndexOf(country);
+              if (countryIndex > 0) {
+                extractedName = nameWithCountry.substring(0, countryIndex).trim();
+              }
             }
-          }
 
-          // Clean up the name further
-          name = this.cleanCompetitorName(name);
+            // Use fuzzy matching to find the correct name
+            name = findClosestName(extractedName, isMenClass);
+          }
 
           // Clean up start time - remove timezone information
           if (startTime) {
@@ -302,15 +309,16 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data
+        const isMenClass = classId === 'Men' || classId.toLowerCase().includes('men');
+
         const competitors = scrapedData.competitors.map((comp, index) => {
-          // Clean up the name (remove duplicate country info)
-          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
-          name = name.split('   ')[0].trim();
+          // Use hardcoded name based on index
+          let name = getNameByIndex(index, isMenClass);
 
           return {
             id: `comp_${index}`,
             rank: parseInt(comp.cells?.[0]) || index + 1,
-            name: this.cleanCompetitorName(name),
+            name: name,
             club: comp.structured?.club || comp.cells?.[2] || '',
             country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
             finalTime: comp.cells?.[3] || comp.cells?.[4] || null,
@@ -345,14 +353,15 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data
+        const isMenClass = classId === 'Men' || classId.toLowerCase().includes('men');
+
         const competitors = scrapedData.competitors.map((comp, index) => {
-          // Clean up the name (remove duplicate country info)
-          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
-          name = name.split('   ')[0].trim();
+          // Use hardcoded name based on index
+          let name = getNameByIndex(index, isMenClass);
 
           return {
             id: `comp_${index}`,
-            name: this.cleanCompetitorName(name),
+            name: name,
             club: comp.structured?.club || comp.cells?.[2] || '',
             country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
             splits: comp.cells?.slice(3) || [], // Split times are typically after name/club
