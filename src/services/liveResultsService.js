@@ -81,11 +81,9 @@ class LiveResultsService {
       const url = `https://app.liveresults.it/${eventId}`;
       console.log('Fetching competitions from:', url);
 
-      const scrapedData = await this.scrapeSPAContent(url);
-
-      // Try to parse competitions from the scraped data
-      // This is a fallback - ideally we'd parse the actual competition list
-      // but for now we'll use the known structure with proper IDs
+      await this.scrapeSPAContent(url);
+      // TODO: Parse actual competition list from scrapedData
+      // For now, we'll use the known structure with proper IDs
 
       // For SEEMOC 2025, the competitions are typically:
       // middle, long, relay, sprint

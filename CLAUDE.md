@@ -7,3 +7,5 @@ Create an javascript React application that is going to be used for displaying o
 Each scene should have diferent configuration. If you change the size of one scene that shouldn't reflect the other and so on.
 
 DO NOT ASK PERMISSIONS FOR ANYTHING, Unless you are deleting  any files or folders.
+
+USE a linter before committing any code.
