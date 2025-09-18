@@ -31,6 +31,12 @@ function App() {
   const [previewCategory, setPreviewCategory] = useState('Men');
   const [previewScene, setPreviewScene] = useState('results');
   const [previewControlPoint, setPreviewControlPoint] = useState(1);
+  const [selectedCompetitorId, setSelectedCompetitorId] = useState(null);
+
+  // Reset selected competitor when category changes
+  useEffect(() => {
+    setSelectedCompetitorId(null);
+  }, [previewCategory]);
 
   // Live state (what's being broadcast)
   const [liveCategory, setLiveCategory] = useState('Men');
@@ -38,6 +44,7 @@ function App() {
   const [liveControlPoint, setLiveControlPoint] = useState(1);
   const [livePageIndex, setLivePageIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [liveSelectedCompetitorId, setLiveSelectedCompetitorId] = useState(null);
 
   // Scene configurations (size and position per scene)
   const [sceneConfigs, setSceneConfigs] = useState({
@@ -88,6 +95,7 @@ function App() {
           setLivePageIndex(data.pageIndex || 0);
           setItemsPerPage(data.itemsPerPage || 10);
           setLiveSceneConfig(data.sceneConfig || { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
+          setLiveSelectedCompetitorId(data.selectedCompetitorId || null);
         }
       })
     );
@@ -136,12 +144,13 @@ function App() {
       pageIndex: livePageIndex,
       itemsPerPage: itemsPerPage,
       sceneConfig: liveSceneConfig,
+      selectedCompetitorId: liveSelectedCompetitorId,
       timestamp: Date.now()
     };
 
     console.log('[Control] Saving to Firebase, pageIndex:', livePageIndex);
     saveData('liveState', liveState);
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, isDisplayMode]);
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, isDisplayMode]);
 
   // Save settings to Firebase (only in control mode)
   useEffect(() => {
@@ -229,6 +238,7 @@ function App() {
     setLiveControlPoint(previewControlPoint);
     setLiveSceneConfig(sceneConfigs[previewScene]);
     setLivePageIndex(0); // Reset to first page when pushing new content to live
+    setLiveSelectedCompetitorId(selectedCompetitorId);
   };
 
   const updateSceneConfig = (scene, newSize, newPosition) => {
@@ -559,7 +569,12 @@ function App() {
       case 'results':
         return <ResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'current-runner':
-        return <CurrentRunner competitors={competitors} category={categoryType} sceneTitle={sceneTitle} />;
+        return <CurrentRunner
+          competitors={competitors}
+          category={categoryType}
+          sceneTitle={sceneTitle}
+          selectedCompetitorId={isLive ? liveSelectedCompetitorId : selectedCompetitorId}
+        />;
       case 'split-1':
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={1} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'split-2':
@@ -830,6 +845,9 @@ function App() {
             updateSceneName={updateSceneName}
             sceneConfigs={sceneConfigs}
             updateSceneConfig={updateSceneConfig}
+            competitorsData={competitorsData}
+            selectedCompetitorId={selectedCompetitorId}
+            setSelectedCompetitorId={setSelectedCompetitorId}
           />
         </div>
       </div>

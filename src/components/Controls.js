@@ -20,7 +20,10 @@ const Controls = ({
   customSceneNames,
   updateSceneName,
   sceneConfigs,
-  updateSceneConfig
+  updateSceneConfig,
+  competitorsData,
+  selectedCompetitorId,
+  setSelectedCompetitorId
 }) => {
   const [editingScene, setEditingScene] = useState(null);
   const [tempSceneName, setTempSceneName] = useState('');
@@ -191,6 +194,33 @@ const Controls = ({
         </div>
         <p className="edit-hint">Double-click scene names to edit</p>
       </div>
+
+      {scene === 'current-runner' && (
+        <div className="control-section">
+          <h4>Select Competitor</h4>
+          <select
+            className="competitor-select"
+            value={selectedCompetitorId || ''}
+            onChange={(e) => setSelectedCompetitorId(e.target.value || null)}
+            style={{
+              width: '100%',
+              padding: '8px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              backgroundColor: '#1a1a1a',
+              color: '#fff',
+              fontSize: '14px'
+            }}
+          >
+            <option value="">Auto (Running competitor)</option>
+            {competitorsData[category.toLowerCase()] && competitorsData[category.toLowerCase()].map(competitor => (
+              <option key={competitor.id} value={competitor.id}>
+                {competitor.name} ({competitor.country})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="control-section">
         <h4>Items Per Page</h4>

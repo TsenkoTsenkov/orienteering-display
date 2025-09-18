@@ -1,6 +1,10 @@
 const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
 
+// Set chromium to download automatically if not present
+chromium.setHeadlessMode = true;
+chromium.setGraphicsMode = false;
+
 // Main handler function for Netlify
 exports.handler = async (event) => {
   // Only allow GET requests
@@ -27,10 +31,13 @@ exports.handler = async (event) => {
 
     // Launch browser with optimized settings for serverless
     browser = await puppeteer.launch({
-      args: chromium.args,
+      args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      executablePath: await chromium.executablePath({
+        fallback: true // This allows automatic download if binary not found
+      }),
+      headless: 'new',
+      ignoreHTTPSErrors: true
     });
 
     const page = await browser.newPage();

@@ -232,7 +232,7 @@ class LiveResultsService {
           let startTime = comp.cells?.[0] || null;
           let nameWithCountry = comp.cells?.[1] || 'Unknown';
           let country = comp.cells?.[2] || '';
-          let year = comp.cells?.[3] || '';
+          // let year = comp.cells?.[3] || '';  // eslint-disable-line no-unused-vars
           let bib = comp.cells?.[4] || '';
           let card = comp.cells?.[5] || '';
 

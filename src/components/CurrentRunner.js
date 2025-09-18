@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { countryFlags } from '../data/flags';
 import './SceneStyles.css';
 
-const CurrentRunner = ({ competitors, category, sceneTitle }) => {
+const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  const currentRunner = competitors.find(c => c.status === 'running');
+  // If a specific competitor is selected, use them, otherwise find a running competitor
+  const currentRunner = selectedCompetitorId
+    ? competitors.find(c => c.id === selectedCompetitorId)
+    : competitors.find(c => c.status === 'running');
 
   useEffect(() => {
     if (!currentRunner) return;
@@ -26,7 +29,7 @@ const CurrentRunner = ({ competitors, category, sceneTitle }) => {
           <div className="category-badge">{category}</div>
         </div>
         <div className="no-runner">
-          <p>No runner currently on course</p>
+          <p>{selectedCompetitorId ? 'Selected competitor not found' : 'No runner currently on course'}</p>
         </div>
       </div>
     );
