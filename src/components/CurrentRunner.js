@@ -121,52 +121,31 @@ const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId
   const projectedPosition = getProjectedPosition();
 
   return (
-    <div className="scene-container current-runner">
-      <div className="scene-header">
-        <div className="header-accent"></div>
-        <h2 className="scene-title">{currentRunner.time ? 'FINISHED' : 'ON COURSE NOW'}</h2>
-        <div className="category-badge">{category}</div>
-      </div>
-
-      <div className="runner-spotlight">
-        <div className="runner-info">
-          <div className="runner-country">
-            <span className="large-flag">{countryFlags[currentRunner.country]}</span>
-            <span className="country-name">{currentRunner.country}</span>
-          </div>
-          <h1 className="runner-name">{currentRunner.name.toUpperCase()}</h1>
+    <div className="scene-container current-runner compact">
+      <div className="compact-runner-display">
+        <div className="runner-left">
+          <span className="flag-compact">{countryFlags[currentRunner.country]}</span>
+          <span className="runner-name-compact">{currentRunner.name.toUpperCase()}</span>
+          <span className="country-code">{currentRunner.country}</span>
         </div>
 
-        <div className="time-display">
-          <div className="elapsed-time">
-            <span className="time-label">{currentRunner.time ? 'FINISH TIME' : 'ELAPSED TIME'}</span>
-            <span className="time-value live-time">{currentRunner.time || formatElapsedTime(elapsedTime)}</span>
-          </div>
-
+        <div className="runner-center">
           {lastSplit && (
-            <div className="last-split">
-              <span className="split-label">CONTROL {lastSplit.control}</span>
-              <span className="split-value">{lastSplit.time}</span>
-              {projectedPosition && (
-                <span className="projected-position">
-                  Currently {projectedPosition === 1 ? '1st' : projectedPosition === 2 ? '2nd' : projectedPosition === 3 ? '3rd' : `${projectedPosition}th`}
-                </span>
-              )}
-            </div>
+            <span className="last-control">CP{lastSplit.control}: {lastSplit.time}</span>
+          )}
+          {projectedPosition && (
+            <span className="position-indicator">
+              {projectedPosition === 1 ? '1st' : projectedPosition === 2 ? '2nd' : projectedPosition === 3 ? '3rd' : `${projectedPosition}th`}
+            </span>
           )}
         </div>
 
-        <div className="start-time-info">
-          <span className="start-label">START TIME</span>
-          <span className="start-value">{currentRunner.startTime}</span>
-        </div>
-      </div>
-
-      <div className="scene-footer">
-        <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
-        <div className="live-indicator">
-          <span className="live-dot"></span>
-          LIVE
+        <div className="runner-right">
+          <span className="time-label-compact">{currentRunner.time ? 'FINISH' : 'ELAPSED'}</span>
+          <span className="time-value-compact">{currentRunner.time || formatElapsedTime(elapsedTime)}</span>
+          {!currentRunner.time && (
+            <span className="live-dot-compact"></span>
+          )}
         </div>
       </div>
     </div>
