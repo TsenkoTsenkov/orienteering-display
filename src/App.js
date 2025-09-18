@@ -6,8 +6,6 @@ import CurrentRunner from './components/CurrentRunner';
 import Controls from './components/Controls';
 import SimpleResizable from './components/SimpleResizable';
 import ProjectCreator from './components/ProjectCreator';
-import menData from './data/menData.json';
-import womenData from './data/womenData.json';
 import liveResultsService from './services/liveResultsService';
 import { saveData, listenToData } from './utils/firebaseConfig';
 import './App.css';
@@ -18,32 +16,14 @@ function App() {
 
   // Project state
   const [showProjectCreator, setShowProjectCreator] = useState(false);
-  const [currentProject, setCurrentProject] = useState(() => {
-    // Load current project from localStorage
-    const saved = localStorage.getItem('currentProject');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [currentCompetitionId, setCurrentCompetitionId] = useState(() => {
-    const saved = localStorage.getItem('currentCompetitionId');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [competitorsData, setCompetitorsData] = useState(() => {
-    // Load saved competitor data or use defaults
-    const saved = localStorage.getItem('competitorsData');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return {
-      men: menData.competitors,
-      women: womenData.competitors
-    };
+  const [currentProject, setCurrentProject] = useState(null);
+  const [currentCompetitionId, setCurrentCompetitionId] = useState(null);
+  const [competitorsData, setCompetitorsData] = useState({
+    men: [],
+    women: []
   });
   const [pollingInterval, setPollingInterval] = useState(null);
-  const [projects, setProjects] = useState(() => {
-    // Load projects from localStorage
-    const saved = localStorage.getItem('projects');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [projects, setProjects] = useState([]);
   const [isRefetching, setIsRefetching] = useState(false);
   const [refetchCategory, setRefetchCategory] = useState(null);
 
@@ -251,8 +231,8 @@ function App() {
     setCurrentProject(project);
     setShowProjectCreator(false);
 
-    // Save to localStorage
-    localStorage.setItem('currentProject', JSON.stringify(project));
+    // Save to // localStorage removed for OBS compatibility
+    //setItem('currentProject', JSON.stringify(project));
 
     // Save project to Firebase
     await saveData(`projects/${project.id}`, project);
@@ -261,7 +241,7 @@ function App() {
     setProjects(prev => {
       const filtered = prev.filter(p => p.id !== project.id);
       const updated = [...filtered, project];
-      localStorage.setItem('projects', JSON.stringify(updated));
+      //setItem('projects', JSON.stringify(updated));
       return updated;
     });
 
@@ -270,14 +250,14 @@ function App() {
       const firstCompetition = project.eventData.competitions[0];
       if (firstCompetition) {
         setCurrentCompetitionId(firstCompetition.id);
-        localStorage.setItem('currentCompetitionId', JSON.stringify(firstCompetition.id));
+        //setItem('currentCompetitionId', JSON.stringify(firstCompetition.id));
 
         const newCompetitorsData = {
           men: firstCompetition.men || [],
           women: firstCompetition.women || []
         };
         setCompetitorsData(newCompetitorsData);
-        localStorage.setItem('competitorsData', JSON.stringify(newCompetitorsData));
+        // Data kept in state only
 
         // Start polling for updates if we have a live event
         if (project.eventUrl && pollingInterval) {
@@ -293,7 +273,7 @@ function App() {
               women: updatedData.women || []
             };
             setCompetitorsData(newData);
-            localStorage.setItem('competitorsData', JSON.stringify(newData));
+            //setItem('competitorsData', JSON.stringify(newData));
           },
           30000 // Poll every 30 seconds
         );
@@ -303,20 +283,55 @@ function App() {
   };
 
   // Handle competition change
-  const handleCompetitionChange = (competitionId) => {
+  const handleCompetitionChange = async (competitionId) => {
     if (!currentProject || !currentProject.eventData) return;
 
     const competition = currentProject.eventData.competitions.find(c => c.id === competitionId);
     if (competition) {
       setCurrentCompetitionId(competitionId);
-      localStorage.setItem('currentCompetitionId', JSON.stringify(competitionId));
+      //setItem('currentCompetitionId', JSON.stringify(competitionId));
 
-      const newCompetitorsData = {
-        men: competition.men || [],
-        women: competition.women || []
-      };
-      setCompetitorsData(newCompetitorsData);
-      localStorage.setItem('competitorsData', JSON.stringify(newCompetitorsData));
+      // Clear old data immediately
+      setCompetitorsData({ men: [], women: [] });
+
+      // If we have a URL, fetch fresh data
+      if (currentProject.eventUrl) {
+        try {
+          const eventId = liveResultsService.parseEventIdFromUrl(currentProject.eventUrl);
+          const classes = await liveResultsService.fetchClasses(eventId, competitionId);
+          const { menClass, womenClass } = liveResultsService.findEliteClasses(classes);
+
+          // Fetch fresh data for both categories
+          const [menData, womenData] = await Promise.all([
+            menClass ? liveResultsService.fetchStartList(eventId, competitionId, menClass.id) : [],
+            womenClass ? liveResultsService.fetchStartList(eventId, competitionId, womenClass.id) : []
+          ]);
+
+          const newCompetitorsData = {
+            men: menData,
+            women: womenData
+          };
+          setCompetitorsData(newCompetitorsData);
+          // Data kept in state only
+        } catch (error) {
+          console.error('Error fetching competition data:', error);
+          // Fallback to cached data if available
+          const newCompetitorsData = {
+            men: competition.men || [],
+            women: competition.women || []
+          };
+          setCompetitorsData(newCompetitorsData);
+          // Data kept in state only
+        }
+      } else {
+        // No URL, use cached data
+        const newCompetitorsData = {
+          men: competition.men || [],
+          women: competition.women || []
+        };
+        setCompetitorsData(newCompetitorsData);
+        // Data kept in state only
+      }
 
       // Update polling for new competition
       if (currentProject.eventUrl && pollingInterval) {
@@ -331,7 +346,7 @@ function App() {
               women: updatedData.women || []
             };
             setCompetitorsData(newData);
-            localStorage.setItem('competitorsData', JSON.stringify(newData));
+            //setItem('competitorsData', JSON.stringify(newData));
           },
           30000
         );
@@ -381,9 +396,9 @@ function App() {
         }
       }
 
-      // Update state and localStorage
+      // Update state and // localStorage removed for OBS compatibility
       setCompetitorsData(updatedData);
-      localStorage.setItem('competitorsData', JSON.stringify(updatedData));
+      //setItem('competitorsData', JSON.stringify(updatedData));
 
       // Update the project's event data in memory
       if (currentProject.eventData) {
@@ -393,7 +408,7 @@ function App() {
           currentProject.eventData.competitions[competitionIndex].women = updatedData.women;
 
           // Save updated project
-          localStorage.setItem('currentProject', JSON.stringify(currentProject));
+          //setItem('currentProject', JSON.stringify(currentProject));
           await saveData(`projects/${currentProject.id}`, currentProject);
         }
       }
@@ -418,10 +433,10 @@ function App() {
     // Remove from Firebase
     await saveData(`projects/${projectId}`, null);
 
-    // Remove from local state and localStorage
+    // Remove from local state and // localStorage removed for OBS compatibility
     setProjects(prev => {
       const filtered = prev.filter(p => p.id !== projectId);
-      localStorage.setItem('projects', JSON.stringify(filtered));
+      //setItem('projects', JSON.stringify(filtered));
       return filtered;
     });
 
@@ -430,9 +445,9 @@ function App() {
       setCurrentProject(null);
       setCurrentCompetitionId(null);
       setCompetitorsData({ men: [], women: [] });
-      localStorage.removeItem('currentProject');
-      localStorage.removeItem('currentCompetitionId');
-      localStorage.removeItem('competitorsData');
+      //removeItem('currentProject');
+      //removeItem('currentCompetitionId');
+      //removeItem('competitorsData');
 
       // Stop polling if active
       if (pollingInterval) {

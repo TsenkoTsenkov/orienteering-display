@@ -99,18 +99,18 @@ app.get('/api/scrape', async (req, res) => {
       await page.setViewport({ width: 1920, height: 1080 });
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-      // Navigate to the URL
+      // Navigate to the URL with faster loading
       await page.goto(url, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
+        waitUntil: 'domcontentloaded', // Faster than networkidle0
+        timeout: 15000
       });
 
       // Wait for specific content to load
       try {
-        await page.waitForSelector('table, .competitor-row, .start-list-row', { timeout: 10000 });
+        await page.waitForSelector('table, .competitor-row, .start-list-row, .MuiTableBody-root', { timeout: 5000 });
       } catch (e) {
         console.log('No table found, waiting for content...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
       // Extract all competitors with pagination
@@ -158,14 +158,15 @@ async function extractAllCompetitors(page) {
     // Extract competitors from current page
     const pageCompetitors = await page.evaluate(() => {
       const competitors = [];
-      const rows = document.querySelectorAll('table tr, .competitor-row, .start-list-row, [role="row"]');
+      // More specific selectors for MUI tables
+      const rows = document.querySelectorAll('tbody tr, .MuiTableBody-root tr, table tr:has(td), .competitor-row, .start-list-row');
 
-      rows.forEach((row, index) => {
-        // Skip header rows
-        if (index === 0 && row.querySelector('th')) return;
+      rows.forEach((row) => {
+        // Skip header rows and empty rows
+        if (row.querySelector('th')) return;
 
-        const cells = row.querySelectorAll('td, [role="cell"]');
-        if (cells.length > 0) {
+        const cells = row.querySelectorAll('td, [role="cell"], .MuiTableCell-root');
+        if (cells.length > 0 && cells[0].textContent.trim()) {
           const competitorData = {
             cells: Array.from(cells).map((cell, idx) => {
               let text = cell.textContent.trim();

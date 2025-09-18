@@ -168,7 +168,7 @@ class LiveResultsService {
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/startlist`;
       console.log('Fetching start list from:', url);
 
-      // Use Puppeteer scraping for SPA content
+      // ALWAYS fetch fresh data - no caching for OBS compatibility
       const scrapedData = await this.scrapeSPAContent(url);
       console.log('Scraped data:', scrapedData.rowCount, 'rows found');
 
