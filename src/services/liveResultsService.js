@@ -234,14 +234,22 @@ class LiveResultsService {
           let card = comp.cells?.[5] || '';
 
           // Extract the actual name from the concatenated string
-          // The format is "Name   Country" with multiple spaces
+          // The format is "Name Country" with a special separator (space + non-breaking space + space)
           let name = nameWithCountry;
-          if (nameWithCountry.includes('   ')) {
-            // Split by multiple spaces and take the first part
-            name = nameWithCountry.split('   ')[0].trim();
-          } else if (country && nameWithCountry.endsWith(country)) {
-            // Remove the country from the end if it's there
-            name = nameWithCountry.replace(country, '').trim();
+
+          // The separator between name and country uses non-breaking space (character 160)
+          // Pattern is: space (32) + non-breaking space (160) + space (32)
+          const separatorPattern = /\s+\u00A0\s+|\s{2,}/;
+
+          if (separatorPattern.test(nameWithCountry)) {
+            // Split by the special separator and take the first part
+            name = nameWithCountry.split(separatorPattern)[0].trim();
+          } else if (country && nameWithCountry.includes(country)) {
+            // Fallback: Remove the country from the string if it's there
+            const countryIndex = nameWithCountry.lastIndexOf(country);
+            if (countryIndex > 0) {
+              name = nameWithCountry.substring(0, countryIndex).trim();
+            }
           }
 
           // Clean up the name further
