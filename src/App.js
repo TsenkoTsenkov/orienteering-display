@@ -666,12 +666,14 @@ function App() {
                     <select
                       className="project-selector"
                       value={currentProject?.id || ''}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const project = projects.find(p => p.id === e.target.value);
                         if (project) {
                           setCurrentProject(project);
+                          // Save current project ID to Firebase
+                          await saveData('currentProjectId', project.id);
                           if (project.eventData && project.eventData.competitions[0]) {
-                            handleCompetitionChange(project.eventData.competitions[0].id);
+                            await handleCompetitionChange(project.eventData.competitions[0].id);
                           }
                         }
                       }}
