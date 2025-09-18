@@ -23,38 +23,48 @@ const database = getDatabase(app);
 const menData = JSON.parse(readFileSync(join(__dirname, '..', 'src', 'data', 'menData.json'), 'utf8'));
 const womenData = JSON.parse(readFileSync(join(__dirname, '..', 'src', 'data', 'womenData.json'), 'utf8'));
 
+// The app expects eventData.competitions structure where each competition has men and women arrays
 const demoProject = {
   id: 'demo-woc-2024',
   name: 'Demo - World Championships 2024',
   timestamp: Date.now(),
-  eventName: 'World Orienteering Championships 2024',
-  eventDate: '2024-11-15',
-  location: 'Edinburgh, Scotland',
-  competitions: {
-    'men-elite': {
-      id: 'men-elite',
-      name: 'Men Elite',
-      category: 'Men Elite',
-      courseDetails: menData.courseDetails,
-      competitors: menData.competitors,
-      status: 'live',
-      currentControl: 6,
-      lastUpdate: Date.now()
-    },
-    'women-elite': {
-      id: 'women-elite',
-      name: 'Women Elite',
-      category: 'Women Elite',
-      courseDetails: womenData.courseDetails,
-      competitors: womenData.competitors,
-      status: 'live',
-      currentControl: 6,
-      lastUpdate: Date.now()
+  dataSource: 'manual',
+  eventData: {
+    eventName: 'World Orienteering Championships 2024',
+    eventDate: '2024-11-15',
+    location: 'Edinburgh, Scotland',
+    competitions: [
+      {
+        id: 'middle-distance',
+        name: 'Middle Distance',
+        men: menData.competitors,
+        women: womenData.competitors,
+        status: 'live',
+        currentControl: 6,
+        lastUpdate: Date.now(),
+        courseDetails: {
+          men: menData.courseDetails,
+          women: womenData.courseDetails
+        }
+      },
+      {
+        id: 'long-distance',
+        name: 'Long Distance',
+        men: menData.competitors.map(c => ({ ...c, id: c.id + 100 })), // Different IDs for different competition
+        women: womenData.competitors.map(c => ({ ...c, id: c.id + 100 })),
+        status: 'finished',
+        currentControl: 8,
+        lastUpdate: Date.now(),
+        courseDetails: {
+          men: { ...menData.courseDetails, distance: "18.5 km", climb: "520 m" },
+          women: { ...womenData.courseDetails, distance: "14.2 km", climb: "420 m" }
+        }
+      }
+    ],
+    controls: {
+      'middle-distance': ['Start', 'Control 1', 'Control 2', 'Control 3', 'Control 4', 'Control 5', 'Control 6', 'Finish'],
+      'long-distance': ['Start', 'Control 1', 'Control 2', 'Control 3', 'Control 4', 'Control 5', 'Control 6', 'Control 7', 'Control 8', 'Finish']
     }
-  },
-  controls: {
-    'men-elite': ['Start', 'Control 1', 'Control 2', 'Control 3', 'Control 4', 'Control 5', 'Control 6', 'Finish'],
-    'women-elite': ['Start', 'Control 1', 'Control 2', 'Control 3', 'Control 4', 'Control 5', 'Control 6', 'Finish']
   },
   isDemo: true,
   description: 'Demo data for testing and demonstration purposes. Shows realistic competition data from World Orienteering Championships.'
@@ -67,6 +77,15 @@ async function addDemoData() {
 
     const projectPath = `${dbPrefix}/projects/${demoProject.id}`;
     await set(ref(database, projectPath), demoProject);
+
+    // Also set initial competitors data for immediate display
+    const initialCompetitorsData = {
+      men: demoProject.eventData.competitions[0].men,
+      women: demoProject.eventData.competitions[0].women
+    };
+
+    await set(ref(database, `${dbPrefix}/competitorsData`), initialCompetitorsData);
+    await set(ref(database, `${dbPrefix}/currentCompetitionId`), demoProject.eventData.competitions[0].id);
 
     console.log('✅ Demo project added successfully!');
     console.log(`Project ID: ${demoProject.id}`);
