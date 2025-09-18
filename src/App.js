@@ -586,7 +586,7 @@ function App() {
                         <select
                           className="competition-selector"
                           value={currentCompetitionId || ''}
-                          onChange={(e) => handleCompetitionChange(parseInt(e.target.value))}
+                          onChange={(e) => handleCompetitionChange(e.target.value)}
                         >
                           {currentProject.eventData.competitions.map(comp => (
                             <option key={comp.id} value={comp.id}>
