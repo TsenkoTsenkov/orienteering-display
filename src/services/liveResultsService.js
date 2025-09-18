@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { findClosestName, getNameByIndex } from '../data/competitorNames';
+import { findClosestName, getNameByIndex, correctMenNames, correctWomenNames } from '../data/competitorNames';
 
 // LiveResults.it API service
 class LiveResultsService {
@@ -289,10 +289,11 @@ class LiveResultsService {
 
       // Fallback to mock data if no data found
       console.log('No data found, using mock data');
-      return this.getMockCompetitors('startlist');
+      return this.getMockCompetitors('startlist', isMenClass);
     } catch (error) {
       console.error('Error fetching start list:', error);
-      return this.getMockCompetitors('startlist');
+      const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
+      return this.getMockCompetitors('startlist', isMenClass);
     }
   }
 
@@ -390,7 +391,7 @@ class LiveResultsService {
       // Check if the HTML contains a "No results" or empty message
       if (html.includes('No results') || html.includes('No competitors') || html.includes('not started yet')) {
         console.log('No competitors found for', type);
-        return this.getMockCompetitors(type);
+        return this.getMockCompetitors(type, true);
       }
 
       // Parse HTML table data
@@ -516,13 +517,13 @@ class LiveResultsService {
       // If still no competitors found, return mock data
       if (competitors.length === 0) {
         console.log('No competitors parsed, using mock data for', type);
-        return this.getMockCompetitors(type);
+        return this.getMockCompetitors(type, true);
       }
 
       return competitors;
     } catch (error) {
       console.error('Error parsing competitor data:', error);
-      return this.getMockCompetitors(type);
+      return this.getMockCompetitors(type, true);
     }
   }
 
@@ -643,25 +644,110 @@ class LiveResultsService {
     return null;
   }
 
-  getMockCompetitors(type) {
-    // Mock data based on the actual SEEMOC 2025 structure
-    const baseCompetitors = [
-      { id: 'mock_1', name: 'Gabriel Sljivanac', country: 'CRO', club: 'NT Croatia', bib: '1101', card: '8208231' },
-      { id: 'mock_2', name: 'Stefan Yordanov', country: 'BUL', club: 'NT Bulgaria', bib: '1102', card: '8581023' },
-      { id: 'mock_3', name: 'Aleksa Franjkovic', country: 'SRB', club: 'NT Serbia', bib: '1103', card: '8002494', year: '2001' },
-      { id: 'mock_4', name: 'Josip Vujanic', country: 'CRO', club: 'NT Croatia', bib: '1104', card: '8183010' },
-      { id: 'mock_5', name: 'Sergiu Fala', country: 'MDA', club: 'NT Moldova', bib: '1105', card: '8522822' },
-      { id: 'mock_6', name: 'Lorand Vigh', country: 'ROU', club: 'NT Romania', bib: '1106', card: '8033157' },
-      { id: 'mock_7', name: 'Sabin Demir', country: 'TUR', club: 'NT Turkiye', bib: '1107', card: '8503745' },
-      { id: 'mock_8', name: 'Filip Vujanic', country: 'CRO', club: 'NT Croatia', bib: '1108', card: '8524116' },
-      { id: 'mock_9', name: 'Mihai Andrei Tintar', country: 'ROU', club: 'NT Romania', bib: '1109', card: '8500521' },
-      { id: 'mock_10', name: 'Koray Sahin', country: 'TUR', club: 'NT Turkiye', bib: '1110', card: '8519815' }
-    ];
+  getMockCompetitors(type, isMenClass = true) {
+    // Use actual competitor names from the hardcoded lists
+    const names = isMenClass ? correctMenNames : correctWomenNames;
 
-    // Generate realistic start times (2-minute intervals starting from 11:30)
-    const generateStartTime = (index) => {
+    // Map countries for known competitors
+    const countryMap = {
+      // Men's countries (based on actual mtbowcup2025 data)
+      'Mihkel Mahla': 'EST',
+      'Mihail Stoev': 'BUL',
+      'Sergi Oliveras i Ferrer': 'ESP',
+      'Matteo Traversi Montani': 'ITA',
+      'Marek Hasman': 'CZE',
+      'Daumantas Kiela': 'LTU',
+      'Bernhard Kogler': 'AUT',
+      'Mark Huster': 'GER',
+      'Nikolay Nachev': 'BUL',
+      'Petar Popunkyov': 'BUL',
+      'Jocelin Lauret': 'FRA',
+      'Krzysztof Wroniak': 'POL',
+      'Mathieu Vayssat': 'FRA',
+      'Michele Traversi Montani': 'ITA',
+      'Daniel Marques': 'POR',
+      'Marco Pelov': 'BUL',
+      'Antoine Lesquer': 'FRA',
+      'Juan Sanz': 'ESP',
+      'Rostislav Kostadinov': 'BUL',
+      'Martin Illig': 'GER',
+      'Noah Tristan Hoffmann': 'GER',
+      'Filip Janowski': 'POL',
+      'Per Haehnel': 'GER',
+      'Ildar Mihnev': 'BUL',
+      'Oliver Friis': 'DEN',
+      'Stanimir Belomazhev': 'BUL',
+      'Grzegorz Nowak': 'POL',
+      'Georg Koffler': 'AUT',
+      'Joao Ferreira': 'POR',
+      'Augustin Leclere': 'FRA',
+      'Tomi Nykanen': 'FIN',
+      'Luca Dallavalle': 'ITA',
+      'Teemu Kaksonen': 'FIN',
+      'Flurin Schnyder': 'SUI',
+      'Jussi Laurila': 'FIN',
+      'Noah Rieder': 'SUI',
+      'Jeremi Pourre': 'FRA',
+      'Riccardo Rossetto': 'ITA',
+      'Paul Debray': 'FRA',
+      'Bartosz Niebielski': 'POL',
+      'Vojtech Stransky': 'CZE',
+      'Ignas Ambrazas': 'LTU',
+      'Vojtech Ludvik': 'CZE',
+      'Andreas Waldmann': 'AUT',
+      'Krystof Bogar': 'CZE',
+      'Samuel Pokala': 'FIN',
+      'Jan Hasek': 'CZE',
+      'Hannes Hnilica': 'AUT',
+      'Jonas Maiselis': 'LTU',
+      'Fabiano Bettega': 'ITA',
+      'Armel Berthaud': 'FRA',
+      // Women's countries
+      'Lola Colle': 'FRA',
+      'Gergana Stoycheva': 'BUL',
+      'Vytene Puisyte': 'LTU',
+      'Teodora Tabakova': 'BUL',
+      'Chiara Magni': 'ITA',
+      'Slavena Petkova': 'BUL',
+      'Nerea Garcia Rodriguez': 'ESP',
+      'Greta Dimitrova': 'BUL',
+      'Marii Isabel Allikberg': 'EST',
+      'Ivana Pedeva': 'BUL',
+      'Lou Colle': 'FRA',
+      'Kosara Boteva': 'BUL',
+      'Karolina Mickeviciute Juodisiene': 'LTU',
+      'Marisa Costa': 'POR',
+      'Anna Tkaczuk': 'POL',
+      'Jade Boussier': 'FRA',
+      'Silja YliHietanen': 'FIN',
+      'Jana Luscher Alemany': 'SUI',
+      'Marketa Mulickova': 'CZE',
+      'Lou Garcin': 'FRA',
+      'Ewa Haltof': 'POL',
+      'Jana Hnilica': 'AUT',
+      'Lucie Nedomlelova': 'CZE',
+      'Siiri Rasimus': 'FIN',
+      'Rozalie Kucharova': 'CZE',
+      'Anna Kaminska': 'POL',
+      'Constance Devillers': 'FRA',
+      'Nikoline Splittorff': 'DEN',
+      'Iris Aurora Pecorari': 'ITA',
+      'Caecilie Christoffersen': 'DEN',
+      'Marika Hara': 'FIN',
+      'Camilla Soegaard': 'DEN',
+      'Valerie Kamererova': 'CZE',
+      'Algirda Mickuviene': 'LTU',
+      'Celine Wellenreiter': 'AUT',
+      'Ruska Saarela': 'FIN',
+      'Ursina Jaeggi': 'SUI',
+      'Gabriella Gustafsson': 'SWE'
+    };
+
+    // Generate realistic start times
+    // Men start at 11:30, Women start at 11:31
+    const generateStartTime = (index, isMen) => {
       const baseHour = 11;
-      const baseMinute = 30;
+      const baseMinute = isMen ? 30 : 31;
       const intervalMinutes = 2;
 
       const totalMinutes = baseMinute + (index * intervalMinutes);
@@ -671,14 +757,22 @@ class LiveResultsService {
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
     };
 
-    return baseCompetitors.map((comp, index) => ({
-      ...comp,
+    // Generate competitors from the actual names
+    const competitors = names.slice(0, 10).map((name, index) => ({
+      id: `mock_${index + 1}`,
+      name: name,
+      country: countryMap[name] || 'UNK',
+      club: '',
+      bib: `${isMenClass ? 1100 : 2100 + index + 1}`,
+      card: `${8000000 + Math.floor(Math.random() * 999999)}`,
       rank: type === 'results' ? index + 1 : null,
-      startTime: type === 'startlist' || type === 'splits' ? generateStartTime(index) : null,
+      startTime: type === 'startlist' || type === 'splits' ? generateStartTime(index, isMenClass) : null,
       finalTime: type === 'results' ? `${35 + index * 2}:${String((index * 7) % 60).padStart(2, '0')}` : null,
       status: type === 'results' ? 'finished' : 'not_started',
-      year: comp.year || ''
+      year: ''
     }));
+
+    return competitors;
   }
 
   // Fetch competitors for a class (simplified - just start list for now)

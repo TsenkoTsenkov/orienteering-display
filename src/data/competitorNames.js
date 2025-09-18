@@ -168,3 +168,6 @@ export function getNameByIndex(index, isMen = true) {
     const nameList = isMen ? correctMenNames : correctWomenNames;
     return nameList[index] || nameList[0];
 }
+
+// Export arrays for use in mock data
+export { correctMenNames, correctWomenNames };
