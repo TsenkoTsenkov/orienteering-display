@@ -6,8 +6,21 @@ class LiveResultsService {
     // Using proxy server to bypass CORS restrictions
     this.useMockData = false; // Using real data through proxy
     const proxyBase = process.env.REACT_APP_PROXY_URL || 'http://localhost:3001';
-    this.proxyUrl = `${proxyBase}/api/fetch?url=`;
-    this.scrapeUrl = `${proxyBase}/api/scrape?url=`;
+
+    // Check if we have Lambda function URLs (they end with .on.aws)
+    if (proxyBase.includes('.on.aws')) {
+      // Using Lambda functions directly
+      this.proxyUrl = `${proxyBase}?url=`;
+      // Use separate scrape function URL if available
+      this.scrapeUrl = process.env.REACT_APP_SCRAPE_URL ?
+        `${process.env.REACT_APP_SCRAPE_URL}?url=` :
+        `${proxyBase}/api/scrape?url=`;
+    } else {
+      // Using local proxy server
+      this.proxyUrl = `${proxyBase}/api/fetch?url=`;
+      this.scrapeUrl = `${proxyBase}/api/scrape?url=`;
+    }
+
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
   }
 
