@@ -1,9 +1,0 @@
-{
-  "name": "netlify-functions",
-  "version": "1.0.0",
-  "description": "Netlify Functions for orienteering-display",
-  "dependencies": {
-    "@sparticuz/chromium": "^131.0.1",
-    "puppeteer-core": "^21.0.0"
-  }
-}
