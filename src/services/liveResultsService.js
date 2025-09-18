@@ -179,13 +179,10 @@ class LiveResultsService {
 
   // Fetch classes for a competition
   async fetchClasses(eventId, competitionId) {
-    // For app.liveresults.it, we know the categories are M21 SEEOC and W21 SEEOC
-    // Since the API doesn't provide a list, we'll return these directly
+    // For mtbowcup2025, the URLs use 'Men' and 'Women'
     return [
-      { id: 'M21 SEEOC', name: 'M21 SEEOC', className: 'Men 21' },
-      { id: 'W21 SEEOC', name: 'W21 SEEOC', className: 'Women 21' },
-      { id: 'M21E', name: 'M21E', className: 'Men Elite 21' },
-      { id: 'W21E', name: 'W21E', className: 'Women Elite 21' }
+      { id: 'Men', name: 'Men', className: 'Men' },
+      { id: 'Women', name: 'Women', className: 'Women' }
     ];
   }
 
@@ -583,26 +580,11 @@ class LiveResultsService {
     }
   }
 
-  // Find M21/W21 classes (including variations)
+  // Find Men/Women classes
   findEliteClasses(classes) {
-    // Prioritize M21 SEEOC and W21 SEEOC for this specific event
-    let menClass = classes.find(c => c.name === 'M21 SEEOC');
-    let womenClass = classes.find(c => c.name === 'W21 SEEOC');
-
-    // Fall back to other M21/W21 variations if not found
-    if (!menClass) {
-      menClass = classes.find(c =>
-        c.name?.includes('M21') ||
-        (c.className?.includes('Men') && (c.className?.includes('21') || c.className?.includes('Elite')))
-      );
-    }
-
-    if (!womenClass) {
-      womenClass = classes.find(c =>
-        c.name?.includes('W21') ||
-        (c.className?.includes('Women') && (c.className?.includes('21') || c.className?.includes('Elite')))
-      );
-    }
+    // For mtbowcup2025, classes are simply 'Men' and 'Women'
+    const menClass = classes.find(c => c.name === 'Men' || c.id === 'Men');
+    const womenClass = classes.find(c => c.name === 'Women' || c.id === 'Women');
 
     return { menClass, womenClass };
   }

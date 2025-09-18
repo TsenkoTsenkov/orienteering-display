@@ -105,13 +105,13 @@ app.get('/api/scrape', async (req, res) => {
         timeout: 20000
       });
 
-      // Additional wait for React/Angular to render
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait longer for Angular to render the SPA content
+      await new Promise(resolve => setTimeout(resolve, 7000));
 
       // Wait for specific content to load
       try {
         // More specific selectors for the actual table structure
-        await page.waitForSelector('.MuiTableContainer-root, table tbody tr, .MuiDataGrid-root, [role="grid"]', {
+        await page.waitForSelector('mat-table, table.mat-mdc-table, table tbody tr, .mat-mdc-row, [role="grid"]', {
           timeout: 10000,
           visible: true
         });
@@ -177,10 +177,11 @@ async function extractAllCompetitors(page) {
       // More specific selectors for MUI/React tables
       const rows = document.querySelectorAll(
         'tbody tr, ' +
-        '.MuiTableBody-root tr, ' +
-        '.MuiDataGrid-row, ' +
-        'table tr:not(:first-child), ' +  // Skip header
-        '[role="row"]:not(:first-child), ' +
+        'table.mat-mdc-table tbody tr, ' +
+        'mat-table mat-row, ' +
+        '.mat-mdc-row, ' +
+        'table tr:has(td), ' +
+        '[role="row"]:has([role="cell"]), ' +
         '.table-row, ' +
         '.competitor-row, ' +
         '.start-list-row'
@@ -194,8 +195,8 @@ async function extractAllCompetitors(page) {
           'td, ' +
           '[role="cell"], ' +
           '[role="gridcell"], ' +
-          '.MuiTableCell-root, ' +
-          '.MuiDataGrid-cell, ' +
+          '.mat-mdc-cell, ' +
+          'mat-cell, ' +
           '.table-cell'
         );
         if (cells.length > 0 && cells[0].textContent.trim()) {
