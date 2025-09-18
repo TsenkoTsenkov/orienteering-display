@@ -218,7 +218,7 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data - extract name properly
-        const isMenClass = classId === 'Men' || classId.toLowerCase().includes('men');
+        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
 
         const competitors = scrapedData.competitors.map((comp, index) => {
           // The actual format from liveresults.it appears to be:
@@ -309,7 +309,7 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data
-        const isMenClass = classId === 'Men' || classId.toLowerCase().includes('men');
+        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
 
         const competitors = scrapedData.competitors.map((comp, index) => {
           // Use hardcoded name based on index
@@ -353,7 +353,7 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data
-        const isMenClass = classId === 'Men' || classId.toLowerCase().includes('men');
+        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
 
         const competitors = scrapedData.competitors.map((comp, index) => {
           // Use hardcoded name based on index
