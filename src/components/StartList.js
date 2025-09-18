@@ -1,10 +1,10 @@
-import React from 'react';
-import { countryFlags } from '../data/flags';
-import './SceneStyles.css';
+import React from "react";
+import { countryFlags } from "../data/flags";
+import "./SceneStyles.css";
 
 const StartList = ({ competitors, category }) => {
   const upcomingCompetitors = competitors
-    .filter(c => c.status === 'not_started')
+    .filter((c) => c.status === "not_started")
     .slice(0, 10);
 
   return (
@@ -25,13 +25,17 @@ const StartList = ({ competitors, category }) => {
         {upcomingCompetitors.map((competitor, index) => (
           <div
             key={competitor.id}
-            className={`competitor-row ${index === 0 ? 'next-starter' : ''}`}
+            className={`competitor-row ${index === 0 ? "next-starter" : ""}`}
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <span className="start-time">{competitor.startTime}</span>
-            <span className="competitor-name">{competitor.name.toUpperCase()}</span>
+            <span className="competitor-name">
+              {competitor.name.toUpperCase()}
+            </span>
             <span className="competitor-country">
-              <span className="country-flag">{countryFlags[competitor.country]}</span>
+              <span className="country-flag">
+                {countryFlags[competitor.country]}
+              </span>
               <span className="country-code">{competitor.country}</span>
             </span>
           </div>
@@ -39,7 +43,7 @@ const StartList = ({ competitors, category }) => {
       </div>
 
       <div className="scene-footer">
-        <div className="broadcast-logo">ORIENTEERING WORLD CUP 2024</div>
+        <div className="broadcast-logo">CX80 MTBO World Cup SPRINT</div>
       </div>
     </div>
   );
