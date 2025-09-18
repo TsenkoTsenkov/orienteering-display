@@ -3,10 +3,11 @@ import axios from 'axios';
 // LiveResults.it API service
 class LiveResultsService {
   constructor() {
-    // Using local proxy server to bypass CORS restrictions
+    // Using proxy server to bypass CORS restrictions
     this.useMockData = false; // Using real data through proxy
-    this.proxyUrl = 'http://localhost:3001/api/fetch?url=';
-    this.scrapeUrl = 'http://localhost:3001/api/scrape?url=';
+    const proxyBase = process.env.REACT_APP_PROXY_URL || 'http://localhost:3001';
+    this.proxyUrl = `${proxyBase}/api/fetch?url=`;
+    this.scrapeUrl = `${proxyBase}/api/scrape?url=`;
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
   }
 

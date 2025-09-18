@@ -36,6 +36,14 @@ try {
   console.error("[Firebase] Initialization error:", error);
 }
 
+// Get database prefix based on environment
+const getDbPrefix = () => {
+  const prefix = process.env.REACT_APP_FIREBASE_DB_PREFIX || 'dev';
+  const env = process.env.REACT_APP_ENV || 'development';
+  console.log(`[Firebase] Using database prefix: ${prefix} (env: ${env})`);
+  return prefix;
+};
+
 // Helper functions for database operations
 export const saveData = async (path, data) => {
   if (!database) {
@@ -46,8 +54,9 @@ export const saveData = async (path, data) => {
   }
 
   try {
-    await set(ref(database, path), data);
-    console.log(`[Firebase] Saved to ${path}:`, data);
+    const prefixedPath = `${getDbPrefix()}/${path}`;
+    await set(ref(database, prefixedPath), data);
+    console.log(`[Firebase] Saved to ${prefixedPath}:`, data);
     return true;
   } catch (error) {
     console.error(`[Firebase] Error saving to ${path}:`, error);
@@ -64,12 +73,13 @@ export const getData = async (path) => {
   }
 
   return new Promise((resolve) => {
-    const dataRef = ref(database, path);
+    const prefixedPath = `${getDbPrefix()}/${path}`;
+    const dataRef = ref(database, prefixedPath);
     onValue(
       dataRef,
       (snapshot) => {
         const data = snapshot.val();
-        console.log(`[Firebase] Got data from ${path}:`, data);
+        console.log(`[Firebase] Got data from ${prefixedPath}:`, data);
         resolve(data);
       },
       { onlyOnce: true },
@@ -85,10 +95,11 @@ export const listenToData = (path, callback) => {
     return () => {}; // Return empty unsubscribe function
   }
 
-  const dataRef = ref(database, path);
+  const prefixedPath = `${getDbPrefix()}/${path}`;
+  const dataRef = ref(database, prefixedPath);
   const listener = onValue(dataRef, (snapshot) => {
     const data = snapshot.val();
-    console.log(`[Firebase] Data updated at ${path}:`, data);
+    console.log(`[Firebase] Data updated at ${prefixedPath}:`, data);
     callback(data);
   });
 
