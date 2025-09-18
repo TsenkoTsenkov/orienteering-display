@@ -11,10 +11,47 @@ const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId
     : competitors.find(c => c.status === 'running');
 
   useEffect(() => {
-    if (!currentRunner) return;
+    if (!currentRunner || !currentRunner.startTime) return;
 
+    // If competitor has finished, don't calculate elapsed time
+    if (currentRunner.time) {
+      setElapsedTime(0);
+      return;
+    }
+
+    const calculateElapsedTime = () => {
+      // Parse the start time (format: "HH:MM:SS")
+      const startTimeParts = currentRunner.startTime.split(':');
+      const startHours = parseInt(startTimeParts[0], 10);
+      const startMinutes = parseInt(startTimeParts[1], 10);
+      const startSeconds = parseInt(startTimeParts[2] || 0, 10);
+
+      // Get current time
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      const currentSeconds = now.getSeconds();
+
+      // Calculate elapsed time in seconds
+      const startTotalSeconds = startHours * 3600 + startMinutes * 60 + startSeconds;
+      const currentTotalSeconds = currentHours * 3600 + currentMinutes * 60 + currentSeconds;
+
+      let elapsed = currentTotalSeconds - startTotalSeconds;
+
+      // Handle case where race crosses midnight
+      if (elapsed < 0) {
+        elapsed += 24 * 3600; // Add 24 hours worth of seconds
+      }
+
+      return Math.max(0, elapsed);
+    };
+
+    // Calculate initial elapsed time
+    setElapsedTime(calculateElapsedTime());
+
+    // Update every second
     const interval = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+      setElapsedTime(calculateElapsedTime());
     }, 1000);
 
     return () => clearInterval(interval);
@@ -36,8 +73,13 @@ const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId
   }
 
   const formatElapsedTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -82,7 +124,7 @@ const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId
     <div className="scene-container current-runner">
       <div className="scene-header">
         <div className="header-accent"></div>
-        <h2 className="scene-title">ON COURSE NOW</h2>
+        <h2 className="scene-title">{currentRunner.time ? 'FINISHED' : 'ON COURSE NOW'}</h2>
         <div className="category-badge">{category}</div>
       </div>
 
@@ -97,8 +139,8 @@ const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId
 
         <div className="time-display">
           <div className="elapsed-time">
-            <span className="time-label">ELAPSED TIME</span>
-            <span className="time-value live-time">{formatElapsedTime(elapsedTime)}</span>
+            <span className="time-label">{currentRunner.time ? 'FINISH TIME' : 'ELAPSED TIME'}</span>
+            <span className="time-value live-time">{currentRunner.time || formatElapsedTime(elapsedTime)}</span>
           </div>
 
           {lastSplit && (
