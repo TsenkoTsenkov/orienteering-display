@@ -41,18 +41,18 @@ exports.handler = async (event) => {
     // Navigate to the page and wait for SPA to load
     await page.goto(url, {
       waitUntil: 'networkidle2', // Wait for network to settle (crucial for SPAs)
-      timeout: 15000
+      timeout: 20000
     });
 
-    // Give React/Angular time to render
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Give Angular more time to render the SPA content
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     // Wait for table content
     try {
       await page.waitForSelector(
-        '.MuiTableContainer-root, table tbody tr, .MuiDataGrid-root, [role="grid"], tbody',
+        'mat-table, table.mat-mdc-table, table tbody tr, .mat-mdc-row, [role="grid"], tbody',
         {
-          timeout: 5000,
+          timeout: 8000,
           visible: true
         }
       );
@@ -121,10 +121,11 @@ async function extractAllCompetitors(page) {
       const competitors = [];
       const rows = document.querySelectorAll(
         'tbody tr, ' +
-        '.MuiTableBody-root tr, ' +
-        '.MuiDataGrid-row, ' +
-        'table tr:not(:first-child), ' +
-        '[role="row"]:not(:first-child), ' +
+        'table.mat-mdc-table tbody tr, ' +
+        'mat-table mat-row, ' +
+        '.mat-mdc-row, ' +
+        'table tr:has(td), ' +
+        '[role="row"]:has([role="cell"]), ' +
         '.competitor-row, ' +
         '.start-list-row'
       );
