@@ -218,24 +218,49 @@ class LiveResultsService {
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data - extract name properly
         const competitors = scrapedData.competitors.map((comp, index) => {
+          // Check if we have UTC timezone in cells[1] to determine the format
+          const hasTimezone = comp.cells?.[1] && comp.cells[1].match(/UTC|GMT/i);
+
+          let startTime, name, country, year, bib, card;
+
+          if (hasTimezone) {
+            // Format with timezone column: StartTime | UTC+3 | Name | Country | Year | Bib | Card
+            startTime = comp.cells?.[0] || null;
+            name = comp.cells?.[2] || 'Unknown';
+            country = comp.cells?.[3] || '';
+            year = comp.cells?.[4] || '';
+            bib = comp.cells?.[5] || '';
+            card = comp.cells?.[6] || '';
+          } else {
+            // Format without timezone column: StartTime | Name | Club/Country | Year | Bib | Card
+            startTime = comp.structured?.startTime || comp.cells?.[0] || null;
+            name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
+            country = comp.structured?.club || comp.cells?.[2] || '';
+            year = comp.cells?.[3] || '';
+            bib = comp.structured?.bib || comp.cells?.[4] || '';
+            card = comp.structured?.card || comp.cells?.[5] || '';
+          }
+
           // Clean up the name (remove duplicate country info)
-          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
-          name = name.split('   ')[0].trim(); // Remove duplicate country info
+          name = name.split('   ')[0].trim();
+          name = this.cleanCompetitorName(name);
 
           // Clean up start time - remove timezone information
-          let startTime = comp.structured?.startTime || comp.cells?.[0] || null;
           if (startTime) {
             startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
           }
 
+          // Extract country code - it might be the country name directly
+          const countryCode = this.extractCountryFromClub(country);
+
           return {
             id: `comp_${index}`,
             startTime: startTime,
-            name: this.cleanCompetitorName(name),
-            club: comp.structured?.club || comp.cells?.[2] || '',
-            country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
-            bib: comp.structured?.bib || comp.cells?.[4] || '',
-            card: comp.structured?.card || comp.cells?.[5] || '',
+            name: name,
+            club: '',  // No club info in this format
+            country: countryCode,
+            bib: bib,
+            card: card,
             status: 'not_started',
             rank: null,
             finalTime: null
@@ -569,6 +594,7 @@ class LiveResultsService {
       'Israel': 'ISR',
       'Japan': 'JPN',
       'USA': 'USA',
+      'United States': 'USA',
       'Canada': 'CAN',
       'Australia': 'AUS',
       'New Zealand': 'NZL'
