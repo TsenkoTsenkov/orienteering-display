@@ -658,10 +658,10 @@ class LiveResultsService {
       { id: 'mock_10', name: 'Koray Sahin', country: 'TUR', club: 'NT Turkiye', bib: '1110', card: '8519815' }
     ];
 
-    // Generate realistic start times (2-minute intervals starting from 10:00)
+    // Generate realistic start times (2-minute intervals starting from 11:30)
     const generateStartTime = (index) => {
-      const baseHour = 10;
-      const baseMinute = 0;
+      const baseHour = 11;
+      const baseMinute = 30;
       const intervalMinutes = 2;
 
       const totalMinutes = baseMinute + (index * intervalMinutes);
