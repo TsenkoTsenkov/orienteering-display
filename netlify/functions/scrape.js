@@ -38,20 +38,20 @@ exports.handler = async (event) => {
     // Set user agent
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-    // Navigate to the page
+    // Navigate to the page with faster loading
     await page.goto(url, {
-      waitUntil: 'networkidle0',
-      timeout: 20000
+      waitUntil: 'domcontentloaded', // Much faster than networkidle0
+      timeout: 10000
     });
 
-    // Wait for content
+    // Wait for content with reduced timeout
     try {
-      await page.waitForSelector('table, .competitor-row, .start-list-row', {
-        timeout: 5000
+      await page.waitForSelector('table, .competitor-row, .start-list-row, .MuiTableBody-root', {
+        timeout: 2000
       });
     } catch (e) {
-      console.log('No table found, waiting for content...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('No table found, waiting briefly...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     // Extract competitors with pagination support
@@ -104,7 +104,7 @@ async function extractAllCompetitors(page) {
   let allCompetitors = [];
   let currentPage = 1;
   let hasMorePages = true;
-  const maxPages = 10; // Limit for serverless function timeout
+  const maxPages = 5; // Reduced limit for faster response
 
   while (hasMorePages && currentPage <= maxPages) {
     console.log(`Extracting page ${currentPage}...`);
@@ -199,8 +199,8 @@ async function extractAllCompetitors(page) {
       });
 
       if (clicked) {
-        // Wait for new content
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait for new content with reduced delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         currentPage++;
       } else {
         hasMorePages = false;

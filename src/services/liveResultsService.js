@@ -6,21 +6,28 @@ class LiveResultsService {
     // Using proxy server to bypass CORS restrictions
     this.useMockData = false; // Using real data through proxy
 
+    // Simple in-memory cache with TTL
+    this.cache = new Map();
+    this.cacheTimeout = 30000; // 30 seconds cache
+
     // Determine the environment and set proxy URLs accordingly
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       // Local development - use local proxy server
       const localProxy = process.env.REACT_APP_PROXY_URL || 'http://localhost:3001';
       this.proxyUrl = `${localProxy}/api/fetch?url=`;
       this.scrapeUrl = `${localProxy}/api/scrape?url=`;
+      this.quickFetchUrl = `${localProxy}/api/fetch?url=`; // Use regular fetch locally
     } else if (window.location.hostname.includes('netlify')) {
       // Production on Netlify - use Netlify Functions
       this.proxyUrl = '/.netlify/functions/fetch?url=';
       this.scrapeUrl = '/.netlify/functions/scrape?url=';
+      this.quickFetchUrl = '/.netlify/functions/quick-fetch?url=';
     } else {
       // Other production environments (e.g., custom domain)
       // Assume Netlify functions are available
       this.proxyUrl = '/.netlify/functions/fetch?url=';
       this.scrapeUrl = '/.netlify/functions/scrape?url=';
+      this.quickFetchUrl = '/.netlify/functions/quick-fetch?url=';
     }
 
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
@@ -44,11 +51,26 @@ class LiveResultsService {
     }
   }
 
-  // Scrape SPA content with Puppeteer
+  // Scrape SPA content with Puppeteer (with caching)
   async scrapeSPAContent(url) {
+    // Check cache first
+    const cacheKey = `scrape:${url}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      console.log('Using cached data for:', url);
+      return cached.data;
+    }
+
     try {
       const scrapeUrl = `${this.scrapeUrl}${encodeURIComponent(url)}`;
-      const response = await axios.get(scrapeUrl, { timeout: 35000 }); // Longer timeout for Puppeteer
+      const response = await axios.get(scrapeUrl, { timeout: 15000 }); // Reduced timeout
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now()
+      });
+
       return response.data;
     } catch (error) {
       console.error('Scraping failed:', url, error.message);
@@ -161,6 +183,26 @@ class LiveResultsService {
     ];
   }
 
+  // Try quick fetch first, fall back to scraping if needed
+  async quickFetchOrScrape(url) {
+    // First try quick fetch for faster response
+    try {
+      if (this.quickFetchUrl) {
+        const quickUrl = `${this.quickFetchUrl}${encodeURIComponent(url)}`;
+        const response = await axios.get(quickUrl, { timeout: 6000 });
+        if (response.data && response.data.competitors && response.data.competitors.length > 0) {
+          console.log('Quick fetch successful:', response.data.rowCount, 'rows');
+          return response.data;
+        }
+      }
+    } catch (error) {
+      console.log('Quick fetch failed, trying scrape:', error.message);
+    }
+
+    // Fall back to full scraping
+    return await this.scrapeSPAContent(url);
+  }
+
   // Fetch start list for a class
   async fetchStartList(eventId, competitionId, classId) {
     try {
@@ -168,8 +210,8 @@ class LiveResultsService {
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/startlist`;
       console.log('Fetching start list from:', url);
 
-      // ALWAYS fetch fresh data - no caching for OBS compatibility
-      const scrapedData = await this.scrapeSPAContent(url);
+      // Try quick fetch first, then fall back to scraping
+      const scrapedData = await this.quickFetchOrScrape(url);
       console.log('Scraped data:', scrapedData.rowCount, 'rows found');
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
