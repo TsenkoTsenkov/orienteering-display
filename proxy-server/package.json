@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "npm install && npx puppeteer browsers install chrome",
+    "start:simple": "node server-simple.js",
+    "build": "npm install",
+    "build:full": "npm install && npx puppeteer browsers install chrome",
     "dev": "nodemon server.js"
   },
   "dependencies": {
