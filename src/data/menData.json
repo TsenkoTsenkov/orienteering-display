@@ -1,5 +1,8 @@
 {
-  "category": "Men",
+  "category": "Men Elite",
+  "eventName": "World Orienteering Championships 2024",
+  "eventDate": "2024-11-15",
+  "location": "Edinburgh, Scotland",
   "competitors": [
     {
       "id": 1,
@@ -11,7 +14,9 @@
         "control1": "00:08:23",
         "control2": "00:15:47",
         "control3": "00:24:12",
-        "control4": "00:31:45"
+        "control4": "00:31:45",
+        "control5": "00:36:28",
+        "control6": "00:39:15"
       },
       "finalTime": "00:42:18",
       "status": "finished"
@@ -26,10 +31,13 @@
         "control1": "00:08:45",
         "control2": "00:16:12",
         "control3": "00:24:38",
-        "control4": "00:32:15"
+        "control4": "00:32:15",
+        "control5": "00:37:02",
+        "control6": "00:39:48"
       },
       "finalTime": "00:42:54",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+00:36"
     },
     {
       "id": 3,
@@ -41,10 +49,13 @@
         "control1": "00:08:56",
         "control2": "00:16:34",
         "control3": "00:25:02",
-        "control4": "00:32:48"
+        "control4": "00:32:48",
+        "control5": "00:37:35",
+        "control6": "00:40:15"
       },
       "finalTime": "00:43:21",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+01:03"
     },
     {
       "id": 4,
@@ -56,10 +67,13 @@
         "control1": "00:09:12",
         "control2": "00:17:05",
         "control3": "00:25:33",
-        "control4": "00:33:21"
+        "control4": "00:33:21",
+        "control5": "00:38:08",
+        "control6": "00:40:56"
       },
       "finalTime": "00:44:02",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+01:44"
     },
     {
       "id": 5,
@@ -71,10 +85,13 @@
         "control1": "00:09:23",
         "control2": "00:17:28",
         "control3": "00:25:56",
-        "control4": "00:33:52"
+        "control4": "00:33:52",
+        "control5": "00:38:42",
+        "control6": "00:41:29"
       },
       "finalTime": "00:44:35",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+02:17"
     },
     {
       "id": 6,
@@ -86,10 +103,13 @@
         "control1": "00:09:45",
         "control2": "00:17:52",
         "control3": "00:26:21",
-        "control4": "00:34:18"
+        "control4": "00:34:18",
+        "control5": "00:39:15",
+        "control6": "00:42:06"
       },
       "finalTime": "00:45:12",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+02:54"
     },
     {
       "id": 7,
@@ -101,10 +121,13 @@
         "control1": "00:10:02",
         "control2": "00:18:15",
         "control3": "00:26:48",
-        "control4": "00:34:52"
+        "control4": "00:34:52",
+        "control5": "00:39:48",
+        "control6": "00:42:42"
       },
       "finalTime": "00:45:48",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+03:30"
     },
     {
       "id": 8,
@@ -116,33 +139,208 @@
         "control1": "00:10:18",
         "control2": "00:18:42",
         "control3": "00:27:15",
-        "control4": "00:35:23"
+        "control4": "00:35:23",
+        "control5": "00:40:21",
+        "control6": "00:43:15"
       },
       "finalTime": "00:46:21",
-      "status": "finished"
+      "status": "finished",
+      "timeBehind": "+04:03"
     },
     {
       "id": 9,
-      "rank": null,
+      "rank": 9,
       "name": "Ruslan Glibov",
       "country": "UKR",
       "startTime": "10:16:00",
       "splits": {
         "control1": "00:10:45",
-        "control2": "00:19:08"
+        "control2": "00:19:08",
+        "control3": "00:27:42",
+        "control4": "00:35:56",
+        "control5": "00:40:55",
+        "control6": "00:43:48"
       },
-      "finalTime": null,
-      "status": "running"
+      "finalTime": "00:46:58",
+      "status": "finished",
+      "timeBehind": "+04:40"
     },
     {
       "id": 10,
-      "rank": null,
+      "rank": 10,
       "name": "Joey Hadorn",
       "country": "SUI",
       "startTime": "10:18:00",
+      "splits": {
+        "control1": "00:11:02",
+        "control2": "00:19:35",
+        "control3": "00:28:08",
+        "control4": "00:36:22",
+        "control5": "00:41:18",
+        "control6": "00:44:15"
+      },
+      "finalTime": "00:47:24",
+      "status": "finished",
+      "timeBehind": "+05:06"
+    },
+    {
+      "id": 11,
+      "rank": 11,
+      "name": "Oleksandr Kratov",
+      "country": "UKR",
+      "startTime": "10:20:00",
+      "splits": {
+        "control1": "00:11:18",
+        "control2": "00:19:52",
+        "control3": "00:28:35",
+        "control4": "00:36:48",
+        "control5": "00:41:45",
+        "control6": "00:44:42"
+      },
+      "finalTime": "00:47:51",
+      "status": "finished",
+      "timeBehind": "+05:33"
+    },
+    {
+      "id": 12,
+      "rank": 12,
+      "name": "Frederic Tranchand",
+      "country": "FRA",
+      "startTime": "10:22:00",
+      "splits": {
+        "control1": "00:11:35",
+        "control2": "00:20:08",
+        "control3": "00:28:52",
+        "control4": "00:37:15",
+        "control5": "00:42:12",
+        "control6": "00:45:08"
+      },
+      "finalTime": "00:48:18",
+      "status": "finished",
+      "timeBehind": "+06:00"
+    },
+    {
+      "id": 13,
+      "rank": 13,
+      "name": "Vojtech Kral",
+      "country": "CZE",
+      "startTime": "10:24:00",
+      "splits": {
+        "control1": "00:11:52",
+        "control2": "00:20:35",
+        "control3": "00:29:18",
+        "control4": "00:37:42",
+        "control5": "00:42:38",
+        "control6": "00:45:35"
+      },
+      "finalTime": "00:48:45",
+      "status": "finished",
+      "timeBehind": "+06:27"
+    },
+    {
+      "id": 14,
+      "rank": 14,
+      "name": "Martin Regborn",
+      "country": "SWE",
+      "startTime": "10:26:00",
+      "splits": {
+        "control1": "00:12:08",
+        "control2": "00:20:52",
+        "control3": "00:29:45",
+        "control4": "00:38:08",
+        "control5": "00:43:05",
+        "control6": "00:46:02"
+      },
+      "finalTime": "00:49:12",
+      "status": "finished",
+      "timeBehind": "+06:54"
+    },
+    {
+      "id": 15,
+      "rank": 15,
+      "name": "Eskil Kinneberg",
+      "country": "NOR",
+      "startTime": "10:28:00",
+      "splits": {
+        "control1": "00:12:25",
+        "control2": "00:21:18",
+        "control3": "00:30:12",
+        "control4": "00:38:35",
+        "control5": "00:43:32",
+        "control6": "00:46:28"
+      },
+      "finalTime": "00:49:38",
+      "status": "finished",
+      "timeBehind": "+07:20"
+    },
+    {
+      "id": 16,
+      "rank": null,
+      "name": "Yannick Michiels",
+      "country": "BEL",
+      "startTime": "10:30:00",
+      "splits": {
+        "control1": "00:12:42",
+        "control2": "00:21:45",
+        "control3": "00:30:38"
+      },
+      "finalTime": null,
+      "status": "dnf",
+      "note": "Mispunch at control 4"
+    },
+    {
+      "id": 17,
+      "rank": null,
+      "name": "Tim Robertson",
+      "country": "NZL",
+      "startTime": "10:32:00",
+      "splits": {
+        "control1": "00:13:15",
+        "control2": "00:22:08"
+      },
+      "finalTime": null,
+      "status": "running",
+      "currentControl": 3
+    },
+    {
+      "id": 18,
+      "rank": null,
+      "name": "Ralph Street",
+      "country": "GBR",
+      "startTime": "10:34:00",
+      "splits": {
+        "control1": "00:13:32"
+      },
+      "finalTime": null,
+      "status": "running",
+      "currentControl": 2
+    },
+    {
+      "id": 19,
+      "rank": null,
+      "name": "Elias Kuukka",
+      "country": "FIN",
+      "startTime": "10:36:00",
+      "splits": {},
+      "finalTime": null,
+      "status": "running",
+      "currentControl": 1
+    },
+    {
+      "id": 20,
+      "rank": null,
+      "name": "Lucas Basset",
+      "country": "FRA",
+      "startTime": "10:38:00",
       "splits": {},
       "finalTime": null,
       "status": "not_started"
     }
-  ]
+  ],
+  "courseDetails": {
+    "distance": "15.2 km",
+    "climb": "420 m",
+    "controls": 23,
+    "mapScale": "1:15000"
+  }
 }
