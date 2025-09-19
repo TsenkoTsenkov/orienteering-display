@@ -60,39 +60,42 @@ const LiveTracking = ({
 
     // Initialize demo mode if needed
     if (isDemoMode) {
-      console.log('[LiveTracking] Initializing demo mode for control', controlCode);
+      console.log('[LiveTracking] Setting up demo mode for control', controlCode);
 
       // Create mock server if it doesn't exist
       if (!mockServerRef.current) {
+        console.log('[LiveTracking] Creating new mock server');
         mockServerRef.current = new SportIdentMockServer();
+
+        // Initialize with current competitors - use consistent card numbers
+        const competitorsWithCards = competitors.map((comp, index) => ({
+          ...comp,
+          card: comp.card || (8000000 + index * 100),
+          category
+        }));
+
+        mockServerRef.current.initializeDemoEvent(competitorsWithCards, [controlCode]);
+        mockServerRef.current.startSimulation(20); // Speed up simulation for demo
       }
-
-      // Initialize with current competitors - use consistent card numbers
-      const competitorsWithCards = competitors.map((comp, index) => ({
-        ...comp,
-        card: comp.card || (8000000 + index * 100),
-        category
-      }));
-
-      mockServerRef.current.initializeDemoEvent(competitorsWithCards, [controlCode]);
-      mockServerRef.current.startSimulation(20); // Speed up simulation for demo
 
       // Set the mock server in the service BEFORE starting polling
       sportIdentService.setDemoMode(true, mockServerRef.current);
     }
 
     const handlePunch = (punch) => {
+      console.log(`[LiveTracking] Received punch from card ${punch.card} at control ${punch.code}`);
+
       // Find competitor by card number
       const competitor = competitorMapRef.current.get(punch.card);
       if (!competitor) {
-        console.log(`[LiveTracking] Unknown card: ${punch.card}`);
+        console.log(`[LiveTracking] Unknown card: ${punch.card}, available cards:`, Array.from(competitorMapRef.current.keys()).slice(0, 5));
         return;
       }
 
       // Calculate split time
       const splitTime = calculateSplitTime(competitor.startTime, punch.time);
 
-      console.log(`[LiveTracking] ${competitor.name} punched at ${controlName}: ${splitTime}`);
+      console.log(`[LiveTracking] ${competitor.name} punched at control ${punch.code}: ${splitTime}`);
 
       // Update tracked competitors
       setTrackedCompetitors(prev => {

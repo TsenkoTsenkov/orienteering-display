@@ -246,7 +246,9 @@ export class SportIdentMockServer {
   // Initialize demo event with competitors
   initializeDemoEvent(competitors, controls = [33, 38]) {
     this.runners = competitors.map((comp, index) => {
-      const card = comp.card || (8000000 + index * 100 + Math.floor(Math.random() * 99));
+      // Use the card number provided by the competitor object, or generate consistent one
+      const card = comp.card || (8000000 + index * 100);
+      console.log(`[Mock Server] Runner ${index}: ${comp.name} assigned card ${card}`);
       return {
         ...comp,
         card: card,
@@ -399,13 +401,15 @@ export class SportIdentMockServer {
     if (afterId) {
       const newPunches = this.punches.filter(p => p.id > afterId);
       if (newPunches.length > 0) {
-        console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}`);
+        console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}:`,
+          newPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
       }
       return newPunches;
     }
 
     const recentPunches = this.punches.slice(-10); // Return last 10 punches if no afterId
-    console.log(`[Mock Server] Returning ${recentPunches.length} recent punches (no afterId)`);
+    console.log(`[Mock Server] Returning ${recentPunches.length} recent punches (no afterId):`,
+      recentPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
     return recentPunches;
   }
 
