@@ -595,9 +595,6 @@ function App() {
     const absoluteX = (window.innerWidth / 2) - (displayWidth / 2) + relativeX;
     const absoluteY = (window.innerHeight / 2) - (displayHeight / 2) + relativeY;
 
-    // FINAL SAFEGUARD: Never show results in display mode
-    const safeScene = liveScene === 'results' ? 'start-list' : liveScene;
-
     return (
       <div className="app display-mode">
         {streamVisible && (
@@ -611,7 +608,7 @@ function App() {
               top: `${absoluteY}px`
             }}
           >
-            {renderScene(safeScene, liveCategory, liveControlPoint, true)}
+            {renderScene(liveScene, liveCategory, liveControlPoint, true)}
           </div>
         )}
       </div>
