@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import { countryFlags as flags } from '../data/flags';
 import { SportIdentMockServer } from '../services/sportIdentService';
 import './LiveTracking.css';
@@ -20,12 +19,13 @@ const LiveTracking = ({
   // Build competitor map by card number
   useEffect(() => {
     const map = new Map();
-    competitors.forEach(comp => {
-      if (comp.card) {
-        map.set(parseInt(comp.card), comp);
-      }
+    competitors.forEach((comp, index) => {
+      // Use existing card or generate one for demo
+      const cardNumber = comp.card || (8000000 + index * 100 + Math.floor(Math.random() * 99));
+      map.set(cardNumber, { ...comp, card: cardNumber });
     });
     competitorMapRef.current = map;
+    console.log(`[LiveTracking] Built competitor map with ${map.size} entries`);
 
     // Initialize tracked competitors from existing data
     const initialTracked = competitors
@@ -237,41 +237,41 @@ const LiveTracking = ({
           <div className="diff-col">Diff</div>
         </div>
 
-        <TransitionGroup className="tracking-body">
+        <div className="tracking-body">
           {trackedCompetitors.map((comp, index) => (
-            <CSSTransition
-              key={comp.id}
-              timeout={500}
-              classNames="competitor-row"
+            <div
+              key={comp.id || `comp-${index}`}
+              className={`tracking-row ${comp.isNew ? 'new-punch' : ''} ${index === 0 ? 'leader' : ''}`}
+              style={{
+                animation: comp.isNew ? 'slideIn 0.5s ease-out' : undefined
+              }}
             >
-              <div className={`tracking-row ${comp.isNew ? 'new-punch' : ''} ${index === 0 ? 'leader' : ''}`}>
-                <div className="rank-col">
-                  <span className="rank-number">{index + 1}</span>
-                  {comp.previousRank && comp.previousRank !== index + 1 && (
-                    <span className={`rank-change ${comp.previousRank > index + 1 ? 'up' : 'down'}`}>
-                      {formatRankDiff(comp.previousRank - (index + 1))}
-                    </span>
-                  )}
-                </div>
-                <div className="name-col">
-                  <img
-                    src={flags[comp.country] || flags.UNK}
-                    alt={comp.country}
-                    className="flag-icon"
-                  />
-                  <span className="competitor-name">{comp.name}</span>
-                  {comp.bib && <span className="bib-number">#{comp.bib}</span>}
-                </div>
-                <div className="time-col">
-                  <span className="split-time">{comp.splitTime}</span>
-                </div>
-                <div className="diff-col">
-                  <span className="time-diff">{getTimeDiff(comp.splitTime, leaderTime)}</span>
-                </div>
+              <div className="rank-col">
+                <span className="rank-number">{index + 1}</span>
+                {comp.previousRank && comp.previousRank !== index + 1 && (
+                  <span className={`rank-change ${comp.previousRank > index + 1 ? 'up' : 'down'}`}>
+                    {formatRankDiff(comp.previousRank - (index + 1))}
+                  </span>
+                )}
               </div>
-            </CSSTransition>
+              <div className="name-col">
+                <img
+                  src={flags[comp.country] || flags.UNK}
+                  alt={comp.country}
+                  className="flag-icon"
+                />
+                <span className="competitor-name">{comp.name}</span>
+                {comp.bib && <span className="bib-number">#{comp.bib}</span>}
+              </div>
+              <div className="time-col">
+                <span className="split-time">{comp.splitTime}</span>
+              </div>
+              <div className="diff-col">
+                <span className="time-diff">{getTimeDiff(comp.splitTime, leaderTime)}</span>
+              </div>
+            </div>
           ))}
-        </TransitionGroup>
+        </div>
 
         {trackedCompetitors.length === 0 && (
           <div className="no-data">
