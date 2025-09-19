@@ -115,7 +115,9 @@ function App() {
           console.log('[Display Mode] Live state updated:', data);
           // Validate scene before setting
           const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
-          const scene = validScenes.includes(data.scene) ? data.scene : 'start-list';
+          // Also accept live tracking scenes
+          const isLiveTrackingScene = data.scene && data.scene.startsWith('live-tracking-');
+          const scene = (validScenes.includes(data.scene) || isLiveTrackingScene) ? data.scene : 'start-list';
 
           // Batch update state to prevent intermediate renders
           setLiveCategory(data.category || 'Men');
@@ -331,7 +333,12 @@ function App() {
 
     // Validate scene before pushing to live
     const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
-    if (!validScenes.includes(previewScene)) {
+
+    // Also include dynamic live tracking scenes
+    const liveTrackingSceneIds = liveTrackingScenes.map(scene => scene.id);
+    const allValidScenes = [...validScenes, ...liveTrackingSceneIds];
+
+    if (!allValidScenes.includes(previewScene)) {
       console.error('[Control] Invalid scene attempted to push live:', previewScene);
       alert(`Cannot push invalid scene to live: ${previewScene}`);
       return;
