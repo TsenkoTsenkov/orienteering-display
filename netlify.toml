@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "CI=false npm run build"
   publish = "build"
 
 [functions]
@@ -11,6 +11,21 @@
   external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
 
 [build.environment]
+  # Production environment
+  REACT_APP_ENV = "production"
+  REACT_APP_FIREBASE_DB_PREFIX = "prod"
+
+  # Firebase configuration
+  REACT_APP_FIREBASE_API_KEY = "AIzaSyBcdimQ_ScFa57nSgKRE7KXRE80sWgyS60"
+  REACT_APP_FIREBASE_AUTH_DOMAIN = "orienteering-display.firebaseapp.com"
+  REACT_APP_FIREBASE_DATABASE_URL = "https://orienteering-display-default-rtdb.europe-west1.firebasedatabase.app"
+  REACT_APP_FIREBASE_PROJECT_ID = "orienteering-display"
+  REACT_APP_FIREBASE_STORAGE_BUCKET = "orienteering-display.firebasestorage.app"
+  REACT_APP_FIREBASE_MESSAGING_SENDER_ID = "135957995762"
+  REACT_APP_FIREBASE_APP_ID = "1:135957995762:web:9e6e5373ac43cb6201706b"
+  REACT_APP_FIREBASE_MEASUREMENT_ID = "G-Z05G3F1TPX"
+
+
   # Disable secrets scanning for Firebase configuration
   # These are public client-side configuration values, not secret keys
   SECRETS_SCAN_OMIT_KEYS = "REACT_APP_FIREBASE_API_KEY,REACT_APP_FIREBASE_APP_ID,REACT_APP_FIREBASE_AUTH_DOMAIN,REACT_APP_FIREBASE_DATABASE_URL,REACT_APP_FIREBASE_MEASUREMENT_ID,REACT_APP_FIREBASE_MESSAGING_SENDER_ID,REACT_APP_FIREBASE_PROJECT_ID,REACT_APP_FIREBASE_STORAGE_BUCKET"

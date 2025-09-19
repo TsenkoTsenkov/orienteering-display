@@ -38,9 +38,11 @@ try {
 
 // Get database prefix based on environment
 const getDbPrefix = () => {
-  const prefix = process.env.REACT_APP_FIREBASE_DB_PREFIX || 'dev';
-  const env = process.env.REACT_APP_ENV || 'development';
-  console.log(`[Firebase] Using database prefix: ${prefix} (env: ${env})`);
+  // In production (Netlify), always use 'prod' prefix
+  const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const prefix = isProduction ? 'prod' : (process.env.REACT_APP_FIREBASE_DB_PREFIX || 'dev');
+  const env = isProduction ? 'production' : (process.env.REACT_APP_ENV || 'development');
+  console.log(`[Firebase] Using database prefix: ${prefix} (env: ${env}, hostname: ${window.location.hostname})`);
   return prefix;
 };
 
