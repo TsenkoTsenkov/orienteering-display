@@ -647,7 +647,7 @@ function App() {
 
     return (
       <div className="app display-mode">
-        {streamVisible && sceneInitialized && (
+        {streamVisible && (
           <div
             className="display-output"
             style={{
