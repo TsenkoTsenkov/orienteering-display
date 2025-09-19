@@ -127,9 +127,11 @@ const CurrentRunner = ({ competitors, category, sceneTitle, selectedCompetitorId
           {currentRunner.bib && (
             <span className="bib-number">#{currentRunner.bib}</span>
           )}
-          <span className="flag-compact">{countryFlags[currentRunner.country]}</span>
+          <div className="flag-country-group">
+            <span className="flag-compact">{countryFlags[currentRunner.country]}</span>
+            <span className="country-code">{currentRunner.country}</span>
+          </div>
           <span className="runner-name-compact">{currentRunner.name.toUpperCase()}</span>
-          <span className="country-code">{currentRunner.country}</span>
         </div>
 
         <div className="runner-center">

@@ -229,12 +229,13 @@ class LiveResultsService {
           // cells[4]: Bib
           // cells[5]: Card
 
-          let startTime = comp.cells?.[0] || null;
-          let nameWithCountry = comp.cells?.[1] || 'Unknown';
-          let country = comp.cells?.[2] || '';
+          // Try to use structured data first, fall back to cells array
+          let startTime = comp.structured?.startTime || comp.cells?.[0] || null;
+          let nameWithCountry = comp.structured?.name || comp.cells?.[1] || 'Unknown';
+          let country = comp.structured?.country || comp.cells?.[2] || '';
           // let year = comp.cells?.[3] || '';  // eslint-disable-line no-unused-vars
-          let bib = comp.cells?.[4] || '';
-          let card = comp.cells?.[5] || '';
+          let bib = comp.structured?.bib || comp.cells?.[4] || '';
+          let card = comp.structured?.card || comp.cells?.[5] || '';
 
           // ALWAYS use the hardcoded name based on index
           // This ensures names are always correct
@@ -269,6 +270,11 @@ class LiveResultsService {
 
           // Extract country code
           const countryCode = this.extractCountryFromClub(country);
+
+          // Log first few bib numbers for debugging
+          if (index < 3) {
+            console.log(`Competitor ${index}: name=${name}, bib=${bib}, from structured=${comp.structured?.bib}, from cells[4]=${comp.cells?.[4]}`);
+          }
 
           return {
             id: `comp_${index}`,
@@ -764,7 +770,7 @@ class LiveResultsService {
       name: name,
       country: countryMap[name] || 'UNK',
       club: '',
-      bib: `${isMenClass ? 1100 : 2100 + index + 1}`,
+      bib: `${(isMenClass ? 1100 : 2100) + index + 1}`,
       card: `${8000000 + Math.floor(Math.random() * 999999)}`,
       rank: type === 'results' ? index + 1 : null,
       startTime: type === 'startlist' || type === 'splits' ? generateStartTime(index, isMenClass) : null,

@@ -626,6 +626,12 @@
   text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
 }
 
+.flag-country-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .flag-compact {
   font-size: 28px;
 }
