@@ -371,21 +371,28 @@ export class SportIdentMockServer {
     console.log('[Mock Server] Runners:', this.runners.length, 'Controls:', this.controls);
 
     // For demo, start all runners immediately (ignore actual start times)
-    const demoStartTime = Date.now() - 10 * 60 * 1000; // Started 10 minutes ago
+    const demoStartTime = Date.now();
     this.startTime = demoStartTime;
 
+    let simulationTick = 0;
     const checkInterval = 1000; // Check every second
     this.simulationInterval = setInterval(() => {
-      const elapsed = (Date.now() - this.startTime) * speedMultiplier;
+      simulationTick++;
+      const elapsed = simulationTick * 1000 * speedMultiplier; // Use tick count instead of real time
+
+      // Log every 5 seconds
+      if (simulationTick % 5 === 0) {
+        console.log(`[Mock Server] Simulation tick ${simulationTick}, elapsed: ${Math.round(elapsed/1000)}s`);
+      }
 
       this.runners.forEach((runner, runnerIndex) => {
         // Use each runner's individual time to control
         if (elapsed >= runner.timeToControl && !runner[`passed_control0`]) {
           // Runner has reached the first control
           if (this.controls.length > 0) {
-            this.generatePunch(runner, this.controls[0], 'BcControl', Date.now());
+            const punch = this.generatePunch(runner, this.controls[0], 'BcControl', Date.now());
             runner[`passed_control0`] = true;
-            console.log(`[Mock] ${runner.name} reached control after ${Math.round(elapsed/1000)}s (simulated)`);
+            console.log(`[Mock] ${runner.name} reached control after ${Math.round(elapsed/1000)}s (simulated), punch ID: ${punch.id}`);
           }
         }
       });
@@ -411,11 +418,10 @@ export class SportIdentMockServer {
     };
 
     this.punches.push(punch);
+    console.log(`[Mock] Generated PUNCH #${punch.id}: ${runner.name} (card: ${runner.card}) at control ${controlCode}, total punches: ${this.punches.length}`);
 
     // Notify callbacks
     this.eventCallbacks.forEach(cb => cb(punch));
-
-    console.log(`[Mock] PUNCH #${punch.id}: ${runner.name} (card: ${runner.card}) at control ${controlCode} (${mode})`);
 
     return punch;
   }
@@ -425,18 +431,18 @@ export class SportIdentMockServer {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
 
-    if (afterId === null) {
-      // First poll - return nothing so runners arrive gradually
-      console.log(`[Mock Server] Initial poll - returning no punches to allow gradual arrival`);
-      return [];
-    }
+    console.log(`[Mock Server] fetchPunches called with afterId: ${afterId}, punches available: ${this.punches.length}`);
 
-    // Return new punches since afterId
-    const newPunches = this.punches.filter(p => p.id > afterId);
+    // Return new punches since afterId (or none if no afterId)
+    const newPunches = afterId ? this.punches.filter(p => p.id > afterId) : [];
+
     if (newPunches.length > 0) {
       console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}:`,
         newPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
+    } else {
+      console.log(`[Mock Server] No new punches to return`);
     }
+
     return newPunches;
   }
 
