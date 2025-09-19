@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFlag } from '../data/flags';
-import { SportIdentMockServer } from '../services/sportIdentService';
 import './LiveTracking.css';
 
 const LiveTracking = ({
@@ -14,7 +13,6 @@ const LiveTracking = ({
   const [trackedCompetitors, setTrackedCompetitors] = useState([]);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const competitorMapRef = useRef(new Map());
-  const mockServerRef = useRef(null);
 
   // Build competitor map by card number
   useEffect(() => {
@@ -63,24 +61,9 @@ const LiveTracking = ({
     if (isDemoMode) {
       console.log('[LiveTracking] Setting up demo mode for control', controlCode);
 
-      // Create mock server if it doesn't exist
-      if (!mockServerRef.current) {
-        console.log('[LiveTracking] Creating new mock server');
-        mockServerRef.current = new SportIdentMockServer();
-
-        // Initialize with current competitors - use consistent card numbers
-        const competitorsWithCards = competitors.map((comp, index) => ({
-          ...comp,
-          card: comp.card || (8000000 + index * 100),
-          category
-        }));
-
-        mockServerRef.current.initializeDemoEvent(competitorsWithCards, [controlCode]);
-        mockServerRef.current.startSimulation(20); // Speed up simulation for demo
-      }
-
-      // Set the mock server in the service BEFORE starting polling
-      sportIdentService.setDemoMode(true, mockServerRef.current);
+      // Enable demo mode and initialize
+      sportIdentService.setDemoMode(true);
+      sportIdentService.initializeDemo(competitors, controlCode);
     }
 
     const handlePunch = (punch) => {
@@ -102,16 +85,9 @@ const LiveTracking = ({
 
       // Update tracked competitors
       setTrackedCompetitors(prev => {
-        console.log(`[LiveTracking] Current tracked: ${prev.length} competitors`);
-        if (prev.length > 0) {
-          console.log(`[LiveTracking] Existing IDs:`, prev.map(c => c.id));
-        }
-        console.log(`[LiveTracking] New competitor ID: ${competitor.id}, Name: ${competitor.name}`);
-
-        // Check if competitor already tracked by card number instead of ID
+        // Check if competitor already tracked by card number
         const existing = prev.find(c => c.card === competitor.card);
         if (existing) {
-          console.log(`[LiveTracking] Updating existing entry for ${competitor.name} (card: ${competitor.card})`);
           // Update existing entry
           return prev.map(c =>
             c.card === competitor.card
@@ -124,7 +100,6 @@ const LiveTracking = ({
           });
         }
 
-        console.log(`[LiveTracking] Adding new entry for ${competitor.name}`);
         // Add new entry
         const newEntry = {
           ...competitor,
@@ -144,8 +119,6 @@ const LiveTracking = ({
         updated.forEach((comp, index) => {
           comp.rank = index + 1;
         });
-
-        console.log(`[LiveTracking] Now tracking ${updated.length} competitors`);
 
         // Mark all others as not new after a delay
         setTimeout(() => {
@@ -167,11 +140,7 @@ const LiveTracking = ({
     return () => {
       console.log(`[LiveTracking] Cleaning up polling for control ${controlCode}`);
       sportIdentService.stopPolling(effectiveEventId, controlCode);
-      if (isDemoMode && mockServerRef.current) {
-        mockServerRef.current.stopSimulation();
-        mockServerRef.current = null;
-        sportIdentService.setDemoMode(false);
-      }
+      // Don't stop the mock server - let it persist across component remounts
     };
   }, [sportIdentService, eventId, controlCode, controlName]);
 
@@ -232,11 +201,6 @@ const LiveTracking = ({
   };
 
   const leaderTime = trackedCompetitors[0]?.splitTime;
-
-  console.log(`[LiveTracking] Rendering with ${trackedCompetitors.length} competitors`);
-  if (trackedCompetitors.length > 0) {
-    console.log(`[LiveTracking] First competitor:`, trackedCompetitors[0]);
-  }
 
   return (
     <div className="live-tracking-container">

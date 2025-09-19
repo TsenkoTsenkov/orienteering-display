@@ -223,10 +223,37 @@ class SportIdentService {
   // Set demo mode
   setDemoMode(enabled, mockServer = null) {
     this.demoMode = enabled;
-    this.demoServer = mockServer;
+
+    // Create a new mock server if needed
+    if (enabled && !mockServer && !this.demoServer) {
+      console.log('[SportIdent] Creating internal mock server');
+      this.demoServer = new SportIdentMockServer();
+    } else if (mockServer) {
+      this.demoServer = mockServer;
+    }
 
     if (enabled) {
-      console.log('[SportIdent] Demo mode enabled');
+      console.log('[SportIdent] Demo mode enabled with server:', !!this.demoServer);
+    }
+  }
+
+  // Initialize demo with competitors
+  initializeDemo(competitors, controlCode) {
+    if (!this.demoMode) {
+      this.setDemoMode(true);
+    }
+
+    if (this.demoServer && !this.demoServer.simulationInterval) {
+      console.log('[SportIdent] Initializing demo with', competitors.length, 'competitors for control', controlCode);
+
+      // Add consistent card numbers
+      const competitorsWithCards = competitors.map((comp, index) => ({
+        ...comp,
+        card: comp.card || (8000000 + index * 100)
+      }));
+
+      this.demoServer.initializeDemoEvent(competitorsWithCards, [controlCode]);
+      this.demoServer.startSimulation(20);
     }
   }
 
