@@ -22,14 +22,15 @@ const LiveTracking = ({
     competitors.forEach((comp, index) => {
       // Use existing card or generate consistent card for demo
       const cardNumber = comp.card || (8000000 + index * 100);
-      map.set(cardNumber, { ...comp, card: cardNumber });
+      // Make sure to preserve the ID!
+      map.set(cardNumber, { ...comp, id: comp.id, card: cardNumber });
     });
     competitorMapRef.current = map;
     console.log(`[LiveTracking] Built competitor map with ${map.size} entries`);
     // Log first few entries for debugging
     const entries = Array.from(map.entries()).slice(0, 3);
     entries.forEach(([card, comp]) => {
-      console.log(`[LiveTracking] Card ${card} -> ${comp.name}`);
+      console.log(`[LiveTracking] Card ${card} -> ${comp.name} (ID: ${comp.id})`);
     });
 
     // Initialize tracked competitors from existing data
@@ -85,12 +86,14 @@ const LiveTracking = ({
     const handlePunch = (punch) => {
       console.log(`[LiveTracking] Received punch from card ${punch.card} at control ${punch.code}`);
 
-      // Find competitor by card number
-      const competitor = competitorMapRef.current.get(punch.card);
+      // Find competitor by card number - make sure card is a number
+      const cardNumber = typeof punch.card === 'string' ? parseInt(punch.card) : punch.card;
+      const competitor = competitorMapRef.current.get(cardNumber);
       if (!competitor) {
-        console.log(`[LiveTracking] Unknown card: ${punch.card}, available cards:`, Array.from(competitorMapRef.current.keys()).slice(0, 5));
+        console.log(`[LiveTracking] Unknown card: ${cardNumber}, available cards:`, Array.from(competitorMapRef.current.keys()).slice(0, 5));
         return;
       }
+      console.log(`[LiveTracking] Found competitor:`, competitor);
 
       // Calculate split time
       const splitTime = calculateSplitTime(competitor.startTime, punch.time);
@@ -100,14 +103,18 @@ const LiveTracking = ({
       // Update tracked competitors
       setTrackedCompetitors(prev => {
         console.log(`[LiveTracking] Current tracked: ${prev.length} competitors`);
+        if (prev.length > 0) {
+          console.log(`[LiveTracking] Existing IDs:`, prev.map(c => c.id));
+        }
+        console.log(`[LiveTracking] New competitor ID: ${competitor.id}, Name: ${competitor.name}`);
 
-        // Check if competitor already tracked
-        const existing = prev.find(c => c.id === competitor.id);
+        // Check if competitor already tracked by card number instead of ID
+        const existing = prev.find(c => c.card === competitor.card);
         if (existing) {
-          console.log(`[LiveTracking] Updating existing entry for ${competitor.name}`);
+          console.log(`[LiveTracking] Updating existing entry for ${competitor.name} (card: ${competitor.card})`);
           // Update existing entry
           return prev.map(c =>
-            c.id === competitor.id
+            c.card === competitor.card
               ? { ...c, splitTime, punchTime: punch.time, isNew: true }
               : { ...c, isNew: false }
           ).sort((a, b) => {
