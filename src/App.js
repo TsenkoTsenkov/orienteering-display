@@ -389,23 +389,23 @@ function App() {
       // Initialize demo with more competitors for better demonstration
       const demoCompetitors = [
         // Men's category
-        { name: 'Kjetil Johansen', country: 'NOR', startTime: '10:00:00', category: 'Men' },
-        { name: 'Emil Svensk', country: 'SWE', startTime: '10:01:00', category: 'Men' },
-        { name: 'Thierry Gueorgiou', country: 'FRA', startTime: '10:02:00', category: 'Men' },
-        { name: 'Matthias Kyburz', country: 'SUI', startTime: '10:03:00', category: 'Men' },
-        { name: 'Olav Lundanes', country: 'NOR', startTime: '10:04:00', category: 'Men' },
-        { name: 'Daniel Hubmann', country: 'SUI', startTime: '10:05:00', category: 'Men' },
-        { name: 'Gustav Bergman', country: 'SWE', startTime: '10:06:00', category: 'Men' },
-        { name: 'Magne Daehli', country: 'NOR', startTime: '10:07:00', category: 'Men' },
+        { id: 'demo-m-1', name: 'Kjetil Johansen', country: 'NOR', startTime: '10:00:00', category: 'Men' },
+        { id: 'demo-m-2', name: 'Emil Svensk', country: 'SWE', startTime: '10:01:00', category: 'Men' },
+        { id: 'demo-m-3', name: 'Thierry Gueorgiou', country: 'FRA', startTime: '10:02:00', category: 'Men' },
+        { id: 'demo-m-4', name: 'Matthias Kyburz', country: 'SUI', startTime: '10:03:00', category: 'Men' },
+        { id: 'demo-m-5', name: 'Olav Lundanes', country: 'NOR', startTime: '10:04:00', category: 'Men' },
+        { id: 'demo-m-6', name: 'Daniel Hubmann', country: 'SUI', startTime: '10:05:00', category: 'Men' },
+        { id: 'demo-m-7', name: 'Gustav Bergman', country: 'SWE', startTime: '10:06:00', category: 'Men' },
+        { id: 'demo-m-8', name: 'Magne Daehli', country: 'NOR', startTime: '10:07:00', category: 'Men' },
         // Women's category
-        { name: 'Tove Alexandersson', country: 'SWE', startTime: '10:00:30', category: 'Women' },
-        { name: 'Simona Aebersold', country: 'SUI', startTime: '10:01:30', category: 'Women' },
-        { name: 'Marika Teini', country: 'FIN', startTime: '10:02:30', category: 'Women' },
-        { name: 'Natalia Gemperle', country: 'RUS', startTime: '10:03:30', category: 'Women' },
-        { name: 'Sara Hagstrom', country: 'SWE', startTime: '10:04:30', category: 'Women' },
-        { name: 'Megan Carter Davies', country: 'GBR', startTime: '10:05:30', category: 'Women' },
-        { name: 'Andrine Benjaminsen', country: 'NOR', startTime: '10:06:30', category: 'Women' },
-        { name: 'Elena Roos', country: 'SUI', startTime: '10:07:30', category: 'Women' }
+        { id: 'demo-w-1', name: 'Tove Alexandersson', country: 'SWE', startTime: '10:00:30', category: 'Women' },
+        { id: 'demo-w-2', name: 'Simona Aebersold', country: 'SUI', startTime: '10:01:30', category: 'Women' },
+        { id: 'demo-w-3', name: 'Marika Teini', country: 'FIN', startTime: '10:02:30', category: 'Women' },
+        { id: 'demo-w-4', name: 'Natalia Gemperle', country: 'RUS', startTime: '10:03:30', category: 'Women' },
+        { id: 'demo-w-5', name: 'Sara Hagstrom', country: 'SWE', startTime: '10:04:30', category: 'Women' },
+        { id: 'demo-w-6', name: 'Megan Carter Davies', country: 'GBR', startTime: '10:05:30', category: 'Women' },
+        { id: 'demo-w-7', name: 'Andrine Benjaminsen', country: 'NOR', startTime: '10:06:30', category: 'Women' },
+        { id: 'demo-w-8', name: 'Elena Roos', country: 'SUI', startTime: '10:07:30', category: 'Women' }
       ];
 
       // Add card numbers and bib numbers to demo competitors
@@ -862,6 +862,26 @@ function App() {
         listenToData('currentCompetitionId', (data) => {
           if (data) {
             setCurrentCompetitionId(data);
+          }
+        })
+      );
+
+      // Listen to live tracking scenes
+      unsubscribers.push(
+        listenToData('liveTrackingScenes', (data) => {
+          if (data) {
+            console.log('[Control] Loaded live tracking scenes from Firebase:', data);
+            setLiveTrackingScenes(data);
+          }
+        })
+      );
+
+      // Listen to SportIdent event ID
+      unsubscribers.push(
+        listenToData('sportIdentEventId', (data) => {
+          if (data) {
+            console.log('[Control] Loaded SportIdent event ID from Firebase:', data);
+            setSportIdentEventId(data);
           }
         })
       );

@@ -329,8 +329,8 @@ const Controls = ({
                   const bibB = parseInt(b.bib) || 0;
                   return bibA - bibB;
                 })
-                .map(competitor => (
-                  <option key={competitor.id} value={competitor.id}>
+                .map((competitor, idx) => (
+                  <option key={competitor.id || `comp-${idx}-${competitor.bib}`} value={competitor.id || `comp-${idx}`}>
                     #{competitor.bib} - {competitor.name} ({competitor.country})
                   </option>
                 ))

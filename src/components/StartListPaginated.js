@@ -81,7 +81,7 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
         <div className="page-transition">
           {currentCompetitors.map((competitor, index) => (
             <div
-              key={competitor.id}
+              key={competitor.id || `competitor-${index}-${competitor.name}`}
               className={`competitor-row large-row ${index === 0 && currentPage === 0 ? 'next-starter' : ''}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
