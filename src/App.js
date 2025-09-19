@@ -30,7 +30,7 @@ function App() {
 
   // Preview state (what's being edited in control mode)
   const [previewCategory, setPreviewCategory] = useState('Men');
-  const [previewScene, setPreviewScene] = useState('results');
+  const [previewScene, setPreviewScene] = useState('start-list');
   const [previewControlPoint, setPreviewControlPoint] = useState(1);
   const [selectedCompetitorId, setSelectedCompetitorId] = useState(null);
 
@@ -41,7 +41,7 @@ function App() {
 
   // Live state (what's being broadcast)
   const [liveCategory, setLiveCategory] = useState('Men');
-  const [liveScene, setLiveScene] = useState('results');
+  const [liveScene, setLiveScene] = useState('start-list');
   const [liveControlPoint, setLiveControlPoint] = useState(1);
   const [livePageIndex, setLivePageIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -93,7 +93,7 @@ function App() {
         if (data) {
           console.log('[Display Mode] Live state updated:', data);
           setLiveCategory(data.category || 'Men');
-          setLiveScene(data.scene || 'results');
+          setLiveScene(data.scene || 'start-list');
           setLiveControlPoint(data.controlPoint || 1);
           setLivePageIndex(data.pageIndex || 0);
           setItemsPerPage(data.itemsPerPage || 10);
@@ -576,7 +576,7 @@ function App() {
       case 'split-4':
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={4} sceneTitle={sceneTitle} {...rotationProps} />;
       default:
-        return <ResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
+        return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
     }
   };
 
