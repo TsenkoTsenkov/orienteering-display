@@ -234,8 +234,24 @@ class LiveResultsService {
           let nameWithCountry = comp.structured?.name || comp.cells?.[1] || 'Unknown';
           let country = comp.structured?.country || comp.cells?.[2] || '';
           // let year = comp.cells?.[3] || '';  // eslint-disable-line no-unused-vars
-          let bib = comp.structured?.bib || comp.cells?.[4] || '';
+          let rawBib = comp.structured?.bib || comp.cells?.[4] || '';
           let card = comp.structured?.card || comp.cells?.[5] || '';
+
+          // Process bib number: remove prefixes (11xx for men -> xx, 21xx for women -> 1xx)
+          let bib = rawBib;
+          if (rawBib) {
+            const bibNum = parseInt(rawBib);
+            if (!isNaN(bibNum)) {
+              if (bibNum >= 2100 && bibNum < 2200) {
+                // Women's number: 2101 -> 101, 2138 -> 138
+                bib = `${bibNum - 2000}`;
+              } else if (bibNum >= 1100 && bibNum < 1200) {
+                // Men's number: 1101 -> 1, 1151 -> 51
+                bib = `${bibNum - 1100}`;
+              }
+              // Otherwise keep original bib
+            }
+          }
 
           // ALWAYS use the hardcoded name based on index
           // This ensures names are always correct
@@ -273,7 +289,7 @@ class LiveResultsService {
 
           // Log first few bib numbers for debugging
           if (index < 3) {
-            console.log(`Competitor ${index}: name=${name}, bib=${bib}, from structured=${comp.structured?.bib}, from cells[4]=${comp.cells?.[4]}`);
+            console.log(`Competitor ${index}: name=${name}, processed bib=${bib}, raw bib=${rawBib}`);
           }
 
           return {
@@ -770,7 +786,7 @@ class LiveResultsService {
       name: name,
       country: countryMap[name] || 'UNK',
       club: '',
-      bib: `${(isMenClass ? 1100 : 2100) + index + 1}`,
+      bib: isMenClass ? `${index + 1}` : `${101 + index}`,
       card: `${8000000 + Math.floor(Math.random() * 999999)}`,
       rank: type === 'results' ? index + 1 : null,
       startTime: type === 'startlist' || type === 'splits' ? generateStartTime(index, isMenClass) : null,
