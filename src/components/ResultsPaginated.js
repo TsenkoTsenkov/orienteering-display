@@ -3,7 +3,6 @@ import { getFlag } from '../data/flags';
 import './SceneStyles.css';
 
 const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
-  console.log('[ResultsPaginated] Rendering with', competitors?.length || 0, 'competitors for', category);
   const [currentPage, setCurrentPage] = useState(0);
   const [mounted, setMounted] = useState(false);
   // First place is always shown, so actual items per page for remaining is reduced by 1
@@ -11,16 +10,8 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
   const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
   const finishedCompetitors = (competitors || [])
-    .filter(c => {
-      const isFinished = c.status === 'finished' && c.rank && c.finalTime;
-      if (isFinished) {
-        console.log('[ResultsPaginated] Finished competitor:', c.name, 'rank:', c.rank, 'time:', c.finalTime);
-      }
-      return isFinished;
-    })
+    .filter(c => c.status === 'finished' && c.rank && c.finalTime)
     .sort((a, b) => a.rank - b.rank);
-
-  console.log('[ResultsPaginated] Found', finishedCompetitors.length, 'finished competitors');
 
   // Split into first place and the rest
   const firstPlace = finishedCompetitors[0];

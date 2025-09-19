@@ -58,7 +58,6 @@ export const saveData = async (path, data) => {
   try {
     const prefixedPath = `${getDbPrefix()}/${path}`;
     await set(ref(database, prefixedPath), data);
-    console.log(`[Firebase] Saved to ${prefixedPath}:`, data);
     return true;
   } catch (error) {
     console.error(`[Firebase] Error saving to ${path}:`, error);
@@ -101,7 +100,6 @@ export const listenToData = (path, callback) => {
   const dataRef = ref(database, prefixedPath);
   const listener = onValue(dataRef, (snapshot) => {
     const data = snapshot.val();
-    console.log(`[Firebase] Data updated at ${prefixedPath}:`, data);
     callback(data);
   });
 

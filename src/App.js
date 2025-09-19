@@ -8,7 +8,7 @@ import Controls from './components/Controls';
 import SimpleResizable from './components/SimpleResizable';
 import ProjectCreator from './components/ProjectCreator';
 import liveResultsService from './services/liveResultsService';
-import { saveData, listenToData } from './utils/firebaseConfig';
+import { saveData, listenToData, getData } from './utils/firebaseConfig';
 import './App.css';
 
 function App() {
@@ -143,8 +143,14 @@ function App() {
     unsubscribers.push(
       listenToData('competitorsData', (data) => {
         if (data) {
-          console.log('[Display Mode] Competitors data updated:', data);
+          console.log('[Display Mode] Competitors data updated - Men:', data.men?.length, 'Women:', data.women?.length);
+          // Check for finished competitors
+          const menFinished = data.men?.filter(c => c.status === 'finished').length || 0;
+          const womenFinished = data.women?.filter(c => c.status === 'finished').length || 0;
+          console.log('[Display Mode] Finished competitors - Men:', menFinished, 'Women:', womenFinished);
           setCompetitorsData(data);
+        } else {
+          console.log('[Display Mode] No competitors data in Firebase!');
         }
       })
     );
@@ -159,20 +165,24 @@ function App() {
     if (isDisplayMode) return;
     if (!controlInitialized) return; // Don't save until control is initialized
 
-    const liveState = {
-      category: liveCategory,
-      scene: liveScene,
-      controlPoint: liveControlPoint,
-      pageIndex: livePageIndex,
-      itemsPerPage: itemsPerPage,
-      sceneConfig: liveSceneConfig,
-      selectedCompetitorId: liveSelectedCompetitorId,
-      streamVisible: streamVisible,
-      timestamp: Date.now()
-    };
+    // Debounce the save to prevent rapid Firebase writes
+    const timeoutId = setTimeout(() => {
+      const liveState = {
+        category: liveCategory,
+        scene: liveScene,
+        controlPoint: liveControlPoint,
+        pageIndex: livePageIndex,
+        itemsPerPage: itemsPerPage,
+        sceneConfig: liveSceneConfig,
+        selectedCompetitorId: liveSelectedCompetitorId,
+        streamVisible: streamVisible,
+        timestamp: Date.now()
+      };
 
-    console.log('[Control] Saving to Firebase - Scene:', liveScene, 'StreamVisible:', streamVisible, 'PageIndex:', livePageIndex);
-    saveData('liveState', liveState);
+      saveData('liveState', liveState);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode, controlInitialized]);
 
   // Save settings to Firebase (only in control mode)
@@ -399,8 +409,10 @@ function App() {
             men: transformedMenData,
             women: transformedWomenData
           };
+          console.log('[App] Setting competitors data - Men:', transformedMenData.length, 'Women:', transformedWomenData.length);
           setCompetitorsData(newCompetitorsData);
-          // Save to Firebase for display mode
+          // Save to Firebase for display mode - CRITICAL FOR PRODUCTION
+          console.log('[App] Saving competitors data to Firebase');
           await saveData('competitorsData', newCompetitorsData);
         } catch (error) {
           console.error('Error fetching competition data:', error);
@@ -540,10 +552,12 @@ function App() {
     if (!isDisplayMode) {
       const unsubscribers = [];
 
-      // First, restore the live state from Firebase to avoid overwriting it
-      listenToData('liveState', (data) => {
+      // First, restore the live state from Firebase ONCE to avoid overwriting it
+      // Use onlyOnce flag to prevent continuous updates
+      const loadInitialState = async () => {
+        const data = await getData('liveState');
         if (data && !controlInitialized) {
-          console.log('[Control] Restoring live state from Firebase:', data);
+          console.log('[Control] Restoring live state from Firebase (once):', data);
           setLiveCategory(data.category || 'Men');
           setLiveScene(data.scene || 'start-list');
           setLiveControlPoint(data.controlPoint || 1);
@@ -553,11 +567,13 @@ function App() {
           setLiveSelectedCompetitorId(data.selectedCompetitorId || null);
           setStreamVisible(data.streamVisible !== undefined ? data.streamVisible : true);
           setControlInitialized(true);
-        } else if (!data && !controlInitialized) {
+        } else if (!controlInitialized) {
           // No existing live state, mark as initialized with defaults
           setControlInitialized(true);
         }
-      });
+      };
+
+      loadInitialState();
 
       // Listen to projects and restore current project
       unsubscribers.push(
@@ -585,6 +601,7 @@ function App() {
       unsubscribers.push(
         listenToData('competitorsData', (data) => {
           if (data) {
+            console.log('[Control] Loaded competitors data from Firebase - Men:', data.men?.length, 'Women:', data.women?.length);
             setCompetitorsData(data);
           }
         })
@@ -627,8 +644,6 @@ function App() {
     const rotationProps = isLive ? pageRotationState : { itemsPerPage };
     const sceneTitle = customSceneNames[sceneType] || sceneType;
 
-    // Log the scene being rendered for debugging
-    console.log(`[RenderScene] Rendering ${isLive ? 'LIVE' : 'PREVIEW'} scene: ${sceneType}, category: ${categoryType}`);
 
     switch (sceneType) {
       case 'start-list':
