@@ -93,7 +93,9 @@ function App() {
         if (data) {
           console.log('[Display Mode] Live state updated:', data);
           setLiveCategory(data.category || 'Men');
-          setLiveScene(data.scene || 'start-list');
+          // NEVER show results in display mode - always redirect to start-list
+          const scene = data.scene === 'results' ? 'start-list' : (data.scene || 'start-list');
+          setLiveScene(scene);
           setLiveControlPoint(data.controlPoint || 1);
           setLivePageIndex(data.pageIndex || 0);
           setItemsPerPage(data.itemsPerPage || 10);
@@ -548,6 +550,12 @@ function App() {
     const rotationProps = isLive ? pageRotationState : { itemsPerPage };
     const sceneTitle = customSceneNames[sceneType];
 
+    // NEVER show results in display mode (isLive=true) - redirect to start-list
+    if (isLive && sceneType === 'results') {
+      console.warn('[Display] Attempted to show results, redirecting to start-list');
+      sceneType = 'start-list';
+    }
+
     switch (sceneType) {
       case 'start-list':
         return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
@@ -589,6 +597,9 @@ function App() {
     const absoluteX = (window.innerWidth / 2) - (displayWidth / 2) + relativeX;
     const absoluteY = (window.innerHeight / 2) - (displayHeight / 2) + relativeY;
 
+    // FINAL SAFEGUARD: Never show results in display mode
+    const safeScene = liveScene === 'results' ? 'start-list' : liveScene;
+
     return (
       <div className="app display-mode">
         <div
@@ -601,7 +612,7 @@ function App() {
             top: `${absoluteY}px`
           }}
         >
-          {renderScene(liveScene, liveCategory, liveControlPoint, true)}
+          {renderScene(safeScene, liveCategory, liveControlPoint, true)}
         </div>
       </div>
     );
