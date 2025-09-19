@@ -7,11 +7,16 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
   const [mounted, setMounted] = useState(false);
   // First place is always shown, so actual items per page for remaining is reduced by 1
   const remainingItemsPerPage = Math.max(2, itemsPerPage - 1);
-  const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
+  const pageDuration = rotationInterval || 15000; // Use rotation interval from props or default (15 seconds)
 
   const finishedCompetitors = (competitors || [])
     .filter(c => c.status === 'finished' && c.rank && c.finalTime)
     .sort((a, b) => a.rank - b.rank);
+
+  // Debug logging for women's results
+  if (category === 'Women' && finishedCompetitors.length > 0) {
+    console.log(`[ResultsPaginated] Women's results - Total: ${finishedCompetitors.length}, First: ${finishedCompetitors[0]?.name} (${finishedCompetitors[0]?.finalTime})`);
+  }
 
   // Split into first place and the rest
   const firstPlace = finishedCompetitors[0];

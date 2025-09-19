@@ -19,69 +19,10 @@ function App() {
   const [showProjectCreator, setShowProjectCreator] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
   const [currentCompetitionId, setCurrentCompetitionId] = useState(null);
-  // Hardcoded results for MTBO World Cup 2025
-  const hardcodedResults = {
-    men: [
-      {
-        id: 'hardcoded-men-1',
-        name: 'Andreas Waldmann',
-        country: 'AUT',
-        finalTime: '21:25',
-        rank: 1,
-        status: 'finished',
-        bib: 1
-      },
-      {
-        id: 'hardcoded-men-2',
-        name: 'Hannes Hnilica',
-        country: 'AUT',
-        finalTime: '21:44',
-        rank: 2,
-        status: 'finished',
-        bib: 2
-      },
-      {
-        id: 'hardcoded-men-3',
-        name: 'Vojtech Ludvik',
-        country: 'CZE',
-        finalTime: '21:59',
-        rank: 3,
-        status: 'finished',
-        bib: 3
-      }
-    ],
-    women: [
-      {
-        id: 'hardcoded-women-1',
-        name: 'Nikoline Splittorff',
-        country: 'DEN',
-        finalTime: '21:21',
-        rank: 1,
-        status: 'finished',
-        bib: 1
-      },
-      {
-        id: 'hardcoded-women-2',
-        name: 'Ruska Saarela',
-        country: 'FIN',
-        finalTime: '21:58',
-        rank: 2,
-        status: 'finished',
-        bib: 2
-      },
-      {
-        id: 'hardcoded-women-3',
-        name: 'Camilla Soegaard',
-        country: 'DEN',
-        finalTime: '22:02',
-        rank: 3,
-        status: 'finished',
-        bib: 3
-      }
-    ]
-  };
-
-  const [competitorsData, setCompetitorsData] = useState(hardcodedResults);
+  const [competitorsData, setCompetitorsData] = useState({
+    men: [],
+    women: []
+  });
   const [pollingInterval, setPollingInterval] = useState(null);
   const [projects, setProjects] = useState([]);
   const [isRefetching, setIsRefetching] = useState(false);
@@ -125,7 +66,7 @@ function App() {
 
   const [liveSceneConfig, setLiveSceneConfig] = useState({ size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
   const [autoRotate, setAutoRotate] = useState(true);
-  const [rotationInterval, setRotationInterval] = useState(10000); // 10 seconds between pages
+  const [rotationInterval, setRotationInterval] = useState(15000); // 15 seconds between pages (was too fast at 10)
   const [rotationPaused, setRotationPaused] = useState(false);
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const [customSceneNames, setCustomSceneNames] = useState({
@@ -208,15 +149,9 @@ function App() {
           const womenFinished = data.women?.filter(c => c.status === 'finished').length || 0;
           console.log('[Display Mode] Finished competitors - Men:', menFinished, 'Women:', womenFinished);
 
-          // Merge with hardcoded results if needed
-          const mergedData = {
-            men: data.men?.length > 0 ? data.men : hardcodedResults.men,
-            women: data.women?.length > 0 ? data.women : hardcodedResults.women
-          };
-          setCompetitorsData(mergedData);
+          setCompetitorsData(data);
         } else {
-          console.log('[Display Mode] No competitors data in Firebase! Using hardcoded results.');
-          setCompetitorsData(hardcodedResults);
+          console.log('[Display Mode] No competitors data in Firebase!');
         }
       })
     );
@@ -266,17 +201,6 @@ function App() {
     saveData('settings', settings);
   }, [autoRotate, rotationInterval, itemsPerPage, sceneConfigs, customSceneNames, isDisplayMode]);
 
-  // Save hardcoded competitors data on mount if Firebase is empty (control mode only)
-  useEffect(() => {
-    if (!isDisplayMode && controlInitialized) {
-      getData('competitorsData').then(data => {
-        if (!data || !data.men?.length || !data.women?.length) {
-          console.log('[Control] Saving hardcoded results to Firebase');
-          saveData('competitorsData', hardcodedResults);
-        }
-      });
-    }
-  }, [isDisplayMode, controlInitialized]);
 
   // Auto-rotation effect for live pages
   useEffect(() => {
@@ -488,6 +412,11 @@ function App() {
             women: transformedWomenData
           };
           console.log('[App] Setting competitors data - Men:', transformedMenData.length, 'Women:', transformedWomenData.length);
+
+          // Log women's finished competitors for debugging
+          const womenFinishedDebug = transformedWomenData.filter(c => c.status === 'finished');
+          console.log('[App] Women finished competitors:', womenFinishedDebug.length, 'First 3:', womenFinishedDebug.slice(0, 3).map(c => `${c.name} (${c.finalTime})`));
+
           setCompetitorsData(newCompetitorsData);
           // Save to Firebase for display mode - CRITICAL FOR PRODUCTION
           console.log('[App] Saving competitors data to Firebase');
@@ -678,12 +607,9 @@ function App() {
       // Listen to saved competitor data
       unsubscribers.push(
         listenToData('competitorsData', (data) => {
-          if (data && data.men?.length > 0 && data.women?.length > 0) {
+          if (data) {
             console.log('[Control] Loaded competitors data from Firebase - Men:', data.men?.length, 'Women:', data.women?.length);
             setCompetitorsData(data);
-          } else {
-            console.log('[Control] Using hardcoded results as fallback');
-            // Keep hardcoded results if Firebase is empty
           }
         })
       );
