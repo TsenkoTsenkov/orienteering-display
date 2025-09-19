@@ -19,10 +19,69 @@ function App() {
   const [showProjectCreator, setShowProjectCreator] = useState(false);
   const [currentProject, setCurrentProject] = useState(null);
   const [currentCompetitionId, setCurrentCompetitionId] = useState(null);
-  const [competitorsData, setCompetitorsData] = useState({
-    men: [],
-    women: []
-  });
+  // Hardcoded results for MTBO World Cup 2025
+  const hardcodedResults = {
+    men: [
+      {
+        id: 'hardcoded-men-1',
+        name: 'Andreas Waldmann',
+        country: 'AUT',
+        finalTime: '21:25',
+        rank: 1,
+        status: 'finished',
+        bib: 1
+      },
+      {
+        id: 'hardcoded-men-2',
+        name: 'Hannes Hnilica',
+        country: 'AUT',
+        finalTime: '21:44',
+        rank: 2,
+        status: 'finished',
+        bib: 2
+      },
+      {
+        id: 'hardcoded-men-3',
+        name: 'Vojtech Ludvik',
+        country: 'CZE',
+        finalTime: '21:59',
+        rank: 3,
+        status: 'finished',
+        bib: 3
+      }
+    ],
+    women: [
+      {
+        id: 'hardcoded-women-1',
+        name: 'Nikoline Splittorff',
+        country: 'DEN',
+        finalTime: '21:21',
+        rank: 1,
+        status: 'finished',
+        bib: 1
+      },
+      {
+        id: 'hardcoded-women-2',
+        name: 'Ruska Saarela',
+        country: 'FIN',
+        finalTime: '21:58',
+        rank: 2,
+        status: 'finished',
+        bib: 2
+      },
+      {
+        id: 'hardcoded-women-3',
+        name: 'Camilla Soegaard',
+        country: 'DEN',
+        finalTime: '22:02',
+        rank: 3,
+        status: 'finished',
+        bib: 3
+      }
+    ]
+  };
+
+  const [competitorsData, setCompetitorsData] = useState(hardcodedResults);
   const [pollingInterval, setPollingInterval] = useState(null);
   const [projects, setProjects] = useState([]);
   const [isRefetching, setIsRefetching] = useState(false);
@@ -148,9 +207,16 @@ function App() {
           const menFinished = data.men?.filter(c => c.status === 'finished').length || 0;
           const womenFinished = data.women?.filter(c => c.status === 'finished').length || 0;
           console.log('[Display Mode] Finished competitors - Men:', menFinished, 'Women:', womenFinished);
-          setCompetitorsData(data);
+
+          // Merge with hardcoded results if needed
+          const mergedData = {
+            men: data.men?.length > 0 ? data.men : hardcodedResults.men,
+            women: data.women?.length > 0 ? data.women : hardcodedResults.women
+          };
+          setCompetitorsData(mergedData);
         } else {
-          console.log('[Display Mode] No competitors data in Firebase!');
+          console.log('[Display Mode] No competitors data in Firebase! Using hardcoded results.');
+          setCompetitorsData(hardcodedResults);
         }
       })
     );
@@ -199,6 +265,18 @@ function App() {
 
     saveData('settings', settings);
   }, [autoRotate, rotationInterval, itemsPerPage, sceneConfigs, customSceneNames, isDisplayMode]);
+
+  // Save hardcoded competitors data on mount if Firebase is empty (control mode only)
+  useEffect(() => {
+    if (!isDisplayMode && controlInitialized) {
+      getData('competitorsData').then(data => {
+        if (!data || !data.men?.length || !data.women?.length) {
+          console.log('[Control] Saving hardcoded results to Firebase');
+          saveData('competitorsData', hardcodedResults);
+        }
+      });
+    }
+  }, [isDisplayMode, controlInitialized]);
 
   // Auto-rotation effect for live pages
   useEffect(() => {
@@ -600,9 +678,12 @@ function App() {
       // Listen to saved competitor data
       unsubscribers.push(
         listenToData('competitorsData', (data) => {
-          if (data) {
+          if (data && data.men?.length > 0 && data.women?.length > 0) {
             console.log('[Control] Loaded competitors data from Firebase - Men:', data.men?.length, 'Women:', data.women?.length);
             setCompetitorsData(data);
+          } else {
+            console.log('[Control] Using hardcoded results as fallback');
+            // Keep hardcoded results if Firebase is empty
           }
         })
       );
