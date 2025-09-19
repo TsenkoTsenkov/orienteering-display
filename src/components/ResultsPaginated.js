@@ -67,16 +67,31 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
   };
 
   const getTimeDifference = (time, bestTime) => {
-    if (!time || !bestTime || time === bestTime) return '';
+    if (!time || !bestTime) return '';
+    if (time === bestTime) return ''; // Leader has no diff
 
     const parseTime = (t) => {
+      if (!t || typeof t !== 'string') return 0;
+
       const parts = t.split(':');
-      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+      if (parts.length === 2) {
+        // MM:SS format
+        return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+      } else if (parts.length === 3) {
+        // HH:MM:SS format
+        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+      }
+      return 0;
     };
 
-    const diff = parseTime(time) - parseTime(bestTime);
+    const timeSec = parseTime(time);
+    const bestTimeSec = parseTime(bestTime);
+    const diff = timeSec - bestTimeSec;
+
+    if (diff <= 0) return ''; // Should not happen, but guard against negative diff
+
     const minutes = Math.floor(diff / 60);
-    const seconds = (diff % 60).toFixed(0).padStart(2, '0');
+    const seconds = Math.round(diff % 60).toString().padStart(2, '0');
 
     return `+${minutes}:${seconds}`;
   };

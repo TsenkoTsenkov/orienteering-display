@@ -642,6 +642,9 @@ function App() {
     const absoluteX = (window.innerWidth / 2) - (displayWidth / 2) + relativeX;
     const absoluteY = (window.innerHeight / 2) - (displayHeight / 2) + relativeY;
 
+    // Log stream visibility state for debugging
+    console.log('[Display Mode] streamVisible:', streamVisible, 'sceneInitialized:', sceneInitialized);
+
     return (
       <div className="app display-mode">
         {streamVisible && sceneInitialized && (
