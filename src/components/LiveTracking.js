@@ -46,13 +46,21 @@ const LiveTracking = ({
     setTrackedCompetitors(initialTracked);
   }, [competitors, controlCode]);
 
-  // Initialize demo mode if needed
+  // Initialize demo mode and handle polling
   useEffect(() => {
-    const isDemoMode = !eventId || eventId === 'demo';
+    if (!sportIdentService) return;
 
-    if (isDemoMode && !mockServerRef.current) {
+    const isDemoMode = !eventId || eventId === 'demo';
+    const effectiveEventId = eventId || 'demo';
+
+    // Initialize demo mode if needed
+    if (isDemoMode) {
       console.log('[LiveTracking] Initializing demo mode for control', controlCode);
-      mockServerRef.current = new SportIdentMockServer();
+
+      // Create mock server if it doesn't exist
+      if (!mockServerRef.current) {
+        mockServerRef.current = new SportIdentMockServer();
+      }
 
       // Initialize with current competitors
       const competitorsWithCards = competitors.map((comp, index) => ({
@@ -64,21 +72,9 @@ const LiveTracking = ({
       mockServerRef.current.initializeDemoEvent(competitorsWithCards, [controlCode]);
       mockServerRef.current.startSimulation(20); // Speed up simulation for demo
 
-      // Set the mock server in the service
+      // Set the mock server in the service BEFORE starting polling
       sportIdentService.setDemoMode(true, mockServerRef.current);
     }
-
-    return () => {
-      if (isDemoMode && mockServerRef.current) {
-        mockServerRef.current.stopSimulation();
-        sportIdentService.setDemoMode(false);
-      }
-    };
-  }, [eventId, controlCode, competitors, category, sportIdentService]);
-
-  // Handle incoming punch events
-  useEffect(() => {
-    if (!sportIdentService) return;
 
     const handlePunch = (punch) => {
       // Find competitor by card number
@@ -144,14 +140,17 @@ const LiveTracking = ({
     };
 
     // Start polling for this control
-    const effectiveEventId = eventId || 'demo';
     console.log(`[LiveTracking] Starting polling for control ${controlCode} (${controlName}) on event ${effectiveEventId}`);
     sportIdentService.startPolling(effectiveEventId, controlCode, handlePunch, 3000);
 
     return () => {
       sportIdentService.stopPolling(effectiveEventId, controlCode);
+      if (isDemoMode && mockServerRef.current) {
+        mockServerRef.current.stopSimulation();
+        sportIdentService.setDemoMode(false);
+      }
     };
-  }, [sportIdentService, eventId, controlCode, controlName]);
+  }, [sportIdentService, eventId, controlCode, controlName, competitors, category]);
 
   // Parse split time string to seconds
   const parseSplitTime = (timeStr) => {
