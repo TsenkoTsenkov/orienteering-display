@@ -6,8 +6,11 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   const [currentPage, setCurrentPage] = useState(0);
   const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
-  const upcomingCompetitors = competitors
-    .filter(c => c.status === 'not_started');
+  // Filter for not_started status, but if no status field exists, include all
+  const upcomingCompetitors = competitors.filter(c => {
+    // If no status field or status is 'not_started', include the competitor
+    return !c.status || c.status === 'not_started';
+  });
 
   // Calculate total pages
   const totalPages = upcomingCompetitors.length > 0

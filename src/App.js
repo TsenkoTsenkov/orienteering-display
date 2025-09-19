@@ -180,7 +180,8 @@ function App() {
     // For start list, filter for not_started status (same as StartListPaginated does)
     let relevantCompetitors = competitors;
     if (liveScene === 'start-list') {
-      relevantCompetitors = competitors.filter(c => c.status === 'not_started');
+      // Filter same way as StartListPaginated: include if no status or status is 'not_started'
+      relevantCompetitors = competitors.filter(c => !c.status || c.status === 'not_started');
     }
 
     const totalPages = relevantCompetitors && relevantCompetitors.length > 0

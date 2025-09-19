@@ -4,7 +4,7 @@ import "./SceneStyles.css";
 
 const StartList = ({ competitors, category }) => {
   const upcomingCompetitors = competitors
-    .filter((c) => c.status === "not_started")
+    .filter((c) => !c.status || c.status === "not_started")
     .slice(0, 10);
 
   return (
