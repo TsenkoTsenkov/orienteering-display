@@ -285,17 +285,10 @@ class LiveResultsService {
             }
           }
 
-          // ALWAYS use the hardcoded name based on index
-          // This ensures names are always correct
-          let name = getNameByIndex(index, isMenClass);
-          // Get the country code using the name mapping
-          let countryCode = this.getCountryForCompetitor(name);
-
-          // If for some reason we don't have a name at this index,
-          // try to extract and match
-          if (!name || name === getNameByIndex(0, isMenClass)) {
-            // Try to extract name from the concatenated string
-            let extractedName = nameWithCountry;
+          // Extract the actual name from the scraped data
+          let name = 'Unknown';
+          let extractedName = nameWithCountry;
+          let countryCode = 'UNK';
 
             // The separator between name and country uses non-breaking space (character 160)
             const separatorPattern = /\s+\u00A0\s+|\s{2,}/;
@@ -309,21 +302,32 @@ class LiveResultsService {
               }
             }
 
-            // Use fuzzy matching to find the correct name
-            name = findClosestName(extractedName, isMenClass);
+          // The separator between name and country uses non-breaking space or multiple spaces
+          const separatorPattern = /\s+\u00A0\s+|\s{2,}/;
 
-            // Update country code based on the matched name
-            countryCode = this.getCountryForCompetitor(name);
+          if (separatorPattern.test(nameWithCountry)) {
+            extractedName = nameWithCountry.split(separatorPattern)[0].trim();
+          } else if (country && nameWithCountry.includes(country)) {
+            const countryIndex = nameWithCountry.lastIndexOf(country);
+            if (countryIndex > 0) {
+              extractedName = nameWithCountry.substring(0, countryIndex).trim();
+            }
+          }
 
-            // If still no country code, try to extract from data
-            if (!countryCode || countryCode === 'UNK') {
-              if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
-                // Already a 3-letter country code
-                countryCode = country;
-              } else {
-                // Try to extract from country string
-                countryCode = this.extractCountryFromClub(country);
-              }
+          // Use the actual extracted name
+          name = extractedName || nameWithCountry;
+
+          // Try to get country code from our mapping first
+          countryCode = this.getCountryForCompetitor(name);
+
+          // If not in our mapping, extract from data
+          if (!countryCode || countryCode === 'UNK') {
+            if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
+              // Already a 3-letter country code
+              countryCode = country;
+            } else {
+              // Try to extract from country string
+              countryCode = this.extractCountryFromClub(country);
             }
           }
 
@@ -447,8 +451,8 @@ class LiveResultsService {
             }
           }
 
-          // Use fuzzy matching to find the correct name from hardcoded list
-          let name = findClosestName(nameRaw, isMenClass);
+          // Use the actual name from scraped data
+          let name = nameRaw;
 
           // Get country code - use the hardcoded map by name
           let countryCode = this.getCountryForCompetitor(name);
@@ -482,15 +486,11 @@ class LiveResultsService {
         return competitors;
       }
 
-      console.log('No results data found, using mock results for testing');
-      // Return mock results for demo/testing when scraping fails
-      const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
-      return this.getMockCompetitors('results', isMenClass).slice(0, 10); // Return top 10 mock results
+      console.log('No results data found');
+      return []; // Return empty array when no results yet
     } catch (error) {
       console.error('Error fetching results:', error);
-      // Return mock results for demo/testing when scraping fails
-      const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
-      return this.getMockCompetitors('results', isMenClass).slice(0, 10); // Return top 10 mock results
+      return []; // Return empty array on error
     }
   }
 

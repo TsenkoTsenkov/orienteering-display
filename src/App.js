@@ -392,6 +392,20 @@ function App() {
   const handleCompetitionChange = async (competitionId) => {
     if (!currentProject || !currentProject.eventData) return;
 
+    console.log('[Competition Change] Switching to:', competitionId);
+
+    // Stop any existing polling FIRST
+    if (pollingInterval) {
+      console.log('[Competition Change] Stopping existing polling');
+      liveResultsService.stopPolling(pollingInterval);
+      setPollingInterval(null);
+    }
+
+    // Clear all data IMMEDIATELY
+    console.log('[Competition Change] Clearing all data');
+    setCompetitorsData({ men: [], women: [] });
+    await saveData('competitorsData', { men: [], women: [] });
+
     const competition = currentProject.eventData.competitions.find(c => c.id === competitionId);
     if (competition) {
       setCurrentCompetitionId(competitionId);
@@ -400,9 +414,6 @@ function App() {
 
       // Reset page index to 0 when changing competitions
       setLivePageIndex(0);
-
-      // Clear old data immediately
-      setCompetitorsData({ men: [], women: [] });
 
       // If we have a URL, fetch fresh data
       if (currentProject.eventUrl) {
@@ -446,37 +457,24 @@ function App() {
           // Save to Firebase for display mode - CRITICAL FOR PRODUCTION
           console.log('[App] Saving competitors data to Firebase');
           await saveData('competitorsData', newCompetitorsData);
+
+          // Start polling for results AFTER data is loaded
+          if (currentProject.eventUrl) {
+            startResultsPolling(currentProject.eventUrl, competitionId);
+          }
         } catch (error) {
           console.error('Error fetching competition data:', error);
-          // Fallback to cached data if available
-          const newCompetitorsData = {
-            men: competition.men || [],
-            women: competition.women || []
-          };
+          // Fallback to empty data on error
+          const newCompetitorsData = { men: [], women: [] };
           setCompetitorsData(newCompetitorsData);
-          // Save to Firebase for display mode
           await saveData('competitorsData', newCompetitorsData);
         }
       } else {
-        // No URL, use cached data
-        const newCompetitorsData = {
-          men: competition.men || [],
-          women: competition.women || []
-        };
+        // No URL, no data
+        console.log('[Competition Change] No event URL, clearing data');
+        const newCompetitorsData = { men: [], women: [] };
         setCompetitorsData(newCompetitorsData);
-        // Save to Firebase for display mode
         await saveData('competitorsData', newCompetitorsData);
-      }
-
-      // Stop existing polling and restart for new competition
-      if (pollingInterval) {
-        liveResultsService.stopPolling(pollingInterval);
-        setPollingInterval(null);
-      }
-
-      // Start polling for results (every 30 seconds)
-      if (currentProject.eventUrl) {
-        startResultsPolling(currentProject.eventUrl, competitionId);
       }
     }
   };
