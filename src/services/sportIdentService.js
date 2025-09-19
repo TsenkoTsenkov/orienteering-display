@@ -267,7 +267,7 @@ class SportIdentService {
       }));
 
       this.demoServer.initializeDemoEvent(competitorsWithCards, [controlCode]);
-      this.demoServer.startSimulation(20);
+      this.demoServer.startSimulation(5); // Slower speed for more realistic timing
       this.lastControlCode = controlCode;
     }
   }
@@ -300,13 +300,16 @@ export class SportIdentMockServer {
     this.runners = competitors.map((comp, index) => {
       // Use the card number provided by the competitor object, or generate consistent one
       const card = comp.card || (8000000 + index * 100);
-      console.log(`[Mock Server] Runner ${index}: ${comp.name} assigned card ${card}`);
+      // Each runner has a different time to reach the control
+      const timeToControl = (2 + index * 0.5 + Math.random() * 1) * 60 * 1000; // 2-7 minutes spread
+      console.log(`[Mock Server] Runner ${index}: ${comp.name} will reach control in ${Math.round(timeToControl/1000)}s`);
       return {
         ...comp,
         card: card,
         startTimeMs: this.parseStartTime(comp.startTime),
         currentPosition: 'start',
-        controlsSplit: this.generateRandomSplits(controls.length)
+        controlsSplit: this.generateRandomSplits(controls.length),
+        timeToControl: timeToControl
       };
     });
 
@@ -374,50 +377,19 @@ export class SportIdentMockServer {
       const elapsed = (Date.now() - this.startTime) * speedMultiplier;
 
       this.runners.forEach((runner, runnerIndex) => {
-        // Stagger runner starts slightly for demo
-        const runnerStartOffset = runnerIndex * 30 * 1000; // 30 seconds between runners
-        const runnerElapsed = elapsed - runnerStartOffset;
-
-        if (runnerElapsed > 0) {
-          // Simulate runner progress (typical time 5-10 minutes for demo)
-          const totalTime = (5 + Math.random() * 5) * 60 * 1000; // in ms
-          const progress = Math.min(runnerElapsed / totalTime * 100, 100);
-
-          // Check control passages
-          let cumulativeSplit = 0;
-          for (let i = 0; i < this.controls.length; i++) {
-            cumulativeSplit += runner.controlsSplit[i];
-
-            if (progress >= cumulativeSplit && !runner[`passed_control${i}`]) {
-              // Runner has reached this control
-              this.generatePunch(runner, this.controls[i], 'BcControl', Date.now());
-              runner[`passed_control${i}`] = true;
-            }
-          }
-
-          // Check finish
-          if (progress >= 95 && !runner.finished) {
-            this.generatePunch(runner, 21, 'BcFinish', Date.now());
-            runner.finished = true;
+        // Use each runner's individual time to control
+        if (elapsed >= runner.timeToControl && !runner[`passed_control0`]) {
+          // Runner has reached the first control
+          if (this.controls.length > 0) {
+            this.generatePunch(runner, this.controls[0], 'BcControl', Date.now());
+            runner[`passed_control0`] = true;
+            console.log(`[Mock] ${runner.name} reached control after ${Math.round(elapsed/1000)}s (simulated)`);
           }
         }
       });
     }, checkInterval);
 
-    // Generate initial punches with realistic timing
-    console.log('[Mock Server] Starting gradual punch generation');
-
-    // Stagger initial punches over first 30 seconds
-    this.runners.forEach((runner, index) => {
-      if (index < 3) { // First 3 runners arrive quickly
-        setTimeout(() => {
-          if (this.controls.length > 0 && !runner[`passed_control0`]) {
-            this.generatePunch(runner, this.controls[0], 'BcControl', Date.now());
-            runner[`passed_control0`] = true;
-          }
-        }, index * 3000 + Math.random() * 2000); // 3-5 seconds apart
-      }
-    });
+    console.log('[Mock Server] Simulation started - runners will arrive gradually');
   }
 
   // Generate a punch event
