@@ -82,11 +82,15 @@ class SportIdentService {
         const punches = await this.fetchPunches(effectiveEventId, lastId);
 
         if (punches && punches.length > 0) {
+          console.log(`[SportIdent] Received ${punches.length} punches for event ${effectiveEventId}`);
+
           // Filter punches for the specific control code
           const relevantPunches = punches.filter(p =>
             p.code === controlCode ||
             (controlCode === 'all' || controlCode === null)
           );
+
+          console.log(`[SportIdent] ${relevantPunches.length} relevant punches for control ${controlCode}`);
 
           if (relevantPunches.length > 0) {
             // Update last punch ID
@@ -107,6 +111,7 @@ class SportIdentService {
 
             // Notify all listeners for this control
             const listeners = this.listeners.get(pollingKey) || [];
+            console.log(`[SportIdent] Notifying ${listeners.length} listeners`);
             listeners.forEach(listener => {
               relevantPunches.forEach(punch => listener(punch));
             });
@@ -240,18 +245,23 @@ export class SportIdentMockServer {
 
   // Initialize demo event with competitors
   initializeDemoEvent(competitors, controls = [33, 38]) {
-    this.runners = competitors.map((comp, index) => ({
-      ...comp,
-      card: 8000000 + index * 100 + Math.floor(Math.random() * 99),
-      startTimeMs: this.parseStartTime(comp.startTime),
-      currentPosition: 'start',
-      controlsSplit: this.generateRandomSplits(controls.length)
-    }));
+    this.runners = competitors.map((comp, index) => {
+      const card = comp.card || (8000000 + index * 100 + Math.floor(Math.random() * 99));
+      return {
+        ...comp,
+        card: card,
+        startTimeMs: this.parseStartTime(comp.startTime),
+        currentPosition: 'start',
+        controlsSplit: this.generateRandomSplits(controls.length)
+      };
+    });
 
     this.controls = controls;
     this.startTime = Date.now();
 
-    console.log('[Mock Server] Initialized with', this.runners.length, 'runners and controls:', controls);
+    console.log('[Mock Server] Initialized with', this.runners.length, 'runners');
+    console.log('[Mock Server] Controls:', controls);
+    console.log('[Mock Server] Sample runner:', this.runners[0]);
   }
 
   // Parse start time to milliseconds from start
@@ -299,17 +309,22 @@ export class SportIdentMockServer {
 
     console.log('[Mock Server] Starting simulation with speed multiplier:', speedMultiplier);
 
+    // For demo, start all runners immediately (ignore actual start times)
+    const demoStartTime = Date.now() - 10 * 60 * 1000; // Started 10 minutes ago
+    this.startTime = demoStartTime;
+
     const checkInterval = 1000; // Check every second
     this.simulationInterval = setInterval(() => {
       const elapsed = (Date.now() - this.startTime) * speedMultiplier;
 
-      this.runners.forEach(runner => {
-        // Check if runner should have started
-        if (elapsed >= runner.startTimeMs) {
-          const runnerElapsed = elapsed - runner.startTimeMs;
+      this.runners.forEach((runner, runnerIndex) => {
+        // Stagger runner starts slightly for demo
+        const runnerStartOffset = runnerIndex * 30 * 1000; // 30 seconds between runners
+        const runnerElapsed = elapsed - runnerStartOffset;
 
-          // Simulate runner progress (typical time 35-45 minutes)
-          const totalTime = (35 + Math.random() * 10) * 60 * 1000; // in ms
+        if (runnerElapsed > 0) {
+          // Simulate runner progress (typical time 5-10 minutes for demo)
+          const totalTime = (5 + Math.random() * 5) * 60 * 1000; // in ms
           const progress = Math.min(runnerElapsed / totalTime * 100, 100);
 
           // Check control passages
@@ -319,19 +334,35 @@ export class SportIdentMockServer {
 
             if (progress >= cumulativeSplit && runner.currentPosition !== `control${i}`) {
               // Runner has reached this control
-              this.generatePunch(runner, this.controls[i], 'BcControl', elapsed);
+              this.generatePunch(runner, this.controls[i], 'BcControl', Date.now());
               runner.currentPosition = `control${i}`;
             }
           }
 
           // Check finish
           if (progress >= 95 && runner.currentPosition !== 'finish') {
-            this.generatePunch(runner, 21, 'BcFinish', elapsed);
+            this.generatePunch(runner, 21, 'BcFinish', Date.now());
             runner.currentPosition = 'finish';
           }
         }
       });
     }, checkInterval);
+
+    // Generate some initial punches immediately for testing
+    console.log('[Mock Server] Generating initial punches for testing');
+    if (this.runners.length > 0 && this.controls.length > 0) {
+      // First runner reaches first control immediately
+      this.generatePunch(this.runners[0], this.controls[0], 'BcControl', Date.now());
+      this.runners[0].currentPosition = `control0`;
+
+      // Second runner if exists
+      if (this.runners.length > 1) {
+        setTimeout(() => {
+          this.generatePunch(this.runners[1], this.controls[0], 'BcControl', Date.now());
+          this.runners[1].currentPosition = `control0`;
+        }, 2000);
+      }
+    }
   }
 
   // Generate a punch event
@@ -355,7 +386,7 @@ export class SportIdentMockServer {
     // Notify callbacks
     this.eventCallbacks.forEach(cb => cb(punch));
 
-    console.log(`[Mock] PUNCH: ${runner.name} at control ${controlCode} (${mode})`);
+    console.log(`[Mock] PUNCH #${punch.id}: ${runner.name} (card: ${runner.card}) at control ${controlCode} (${mode})`);
 
     return punch;
   }
@@ -366,10 +397,16 @@ export class SportIdentMockServer {
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
 
     if (afterId) {
-      return this.punches.filter(p => p.id > afterId);
+      const newPunches = this.punches.filter(p => p.id > afterId);
+      if (newPunches.length > 0) {
+        console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}`);
+      }
+      return newPunches;
     }
 
-    return this.punches.slice(-10); // Return last 10 punches if no afterId
+    const recentPunches = this.punches.slice(-10); // Return last 10 punches if no afterId
+    console.log(`[Mock Server] Returning ${recentPunches.length} recent punches (no afterId)`);
+    return recentPunches;
   }
 
   // Subscribe to punch events
