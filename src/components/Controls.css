@@ -669,3 +669,143 @@
   text-align: center;
   font-style: italic;
 }
+
+/* SportIdent Configuration */
+.sportident-config-section {
+  margin-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}
+
+.sportident-config-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.sportident-config-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+}
+
+.sportident-config-panel {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.sportident-config-panel .form-group {
+  margin-bottom: 15px;
+}
+
+.sportident-config-panel label {
+  display: block;
+  margin-bottom: 5px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sportident-config-panel .form-input {
+  width: 100%;
+  padding: 8px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.live-tracking-list {
+  margin-bottom: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.live-tracking-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+.live-tracking-item .scene-name {
+  flex: 1;
+  color: #fff;
+  font-size: 13px;
+}
+
+.live-tracking-item .control-code {
+  color: #10b981;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-right: 10px;
+}
+
+.live-tracking-item .remove-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border: none;
+  color: #ef4444;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-live-tracking {
+  display: flex;
+  gap: 5px;
+}
+
+.add-live-tracking .control-code-input {
+  width: 80px;
+  padding: 6px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.add-live-tracking .control-name-input {
+  flex: 1;
+  padding: 6px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.add-live-tracking .add-btn {
+  padding: 6px 12px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 4px;
+  color: #10b981;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-live-tracking .add-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+}

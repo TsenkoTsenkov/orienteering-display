@@ -91,8 +91,9 @@ function App() {
     'live-tracking-4': 'Live: Control 4'
   });
 
-  // SportIdent configuration
-  const [sportIdentConfig, setSportIdentConfig] = useState(null);
+  // SportIdent Live Tracking configuration
+  const [liveTrackingScenes, setLiveTrackingScenes] = useState([]);
+  const [sportIdentEventId, setSportIdentEventId] = useState('');
   const [mockServer, setMockServer] = useState(null); // eslint-disable-line no-unused-vars
 
   // Current preview size and position
@@ -149,6 +150,12 @@ function App() {
           }
           if (data.customSceneNames) {
             setCustomSceneNames(data.customSceneNames);
+          }
+          if (data.liveTrackingScenes) {
+            setLiveTrackingScenes(data.liveTrackingScenes);
+          }
+          if (data.sportIdentEventId) {
+            setSportIdentEventId(data.sportIdentEventId);
           }
         }
       })
@@ -372,20 +379,6 @@ function App() {
       return updated;
     });
 
-    // Handle SportIdent configuration
-    if (projectWithTimestamp.dataSource === 'sportident' && projectWithTimestamp.sportIdentConfig) {
-      setSportIdentConfig(projectWithTimestamp.sportIdentConfig);
-
-      // Update scene names for live tracking controls
-      const updatedSceneNames = { ...customSceneNames };
-      projectWithTimestamp.sportIdentConfig.controls.forEach((control, index) => {
-        if (index < 4) {
-          updatedSceneNames[`live-tracking-${index + 1}`] = control.name || `Live: Control ${index + 1}`;
-        }
-      });
-      setCustomSceneNames(updatedSceneNames);
-    }
-
     // Start demo mode if manual project
     if (projectWithTimestamp.dataSource === 'manual') {
       console.log('[App] Starting demo mode');
@@ -412,14 +405,6 @@ function App() {
       setCompetitorsData(newCompetitorsData);
       await saveData('competitorsData', newCompetitorsData);
 
-      // Set SportIdent config for demo
-      setSportIdentConfig({
-        eventId: 'demo',
-        controls: [
-          { code: 33, name: 'Demo Control 1' },
-          { code: 38, name: 'Demo Control 2' }
-        ]
-      });
     }
 
     if (projectWithTimestamp.dataSource === 'liveresults' && projectWithTimestamp.eventData) {
@@ -855,12 +840,14 @@ function App() {
   }, [pollingInterval]);
 
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
+    // Check if it's a live tracking scene
+    const liveTrackingScene = liveTrackingScenes.find(s => s.id === sceneType);
+
     // Add validation to ensure we only render valid scenes
     const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner',
-                        'split-1', 'split-2', 'split-3', 'split-4',
-                        'live-tracking-1', 'live-tracking-2', 'live-tracking-3', 'live-tracking-4'];
+                        'split-1', 'split-2', 'split-3', 'split-4'];
 
-    if (!validScenes.includes(sceneType)) {
+    if (!validScenes.includes(sceneType) && !liveTrackingScene) {
       console.warn(`[RenderScene] Invalid scene type: ${sceneType}, defaulting to start-list`);
       sceneType = 'start-list';
     }
@@ -899,26 +886,23 @@ function App() {
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={3} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'split-4':
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={4} sceneTitle={sceneTitle} {...rotationProps} />;
-      case 'live-tracking-1':
-      case 'live-tracking-2':
-      case 'live-tracking-3':
-      case 'live-tracking-4':
-        const controlIndex = parseInt(sceneType.split('-')[2]) - 1;
-        const control = sportIdentConfig?.controls?.[controlIndex];
-        if (!control || !sportIdentConfig) {
-          return <div style={{color: 'white', padding: '20px'}}>SportIdent not configured</div>;
-        }
-        return (
-          <LiveTracking
-            competitors={competitors}
-            category={categoryType}
-            controlCode={control.code}
-            controlName={control.name || sceneTitle}
-            sportIdentService={sportIdentService}
-            eventId={sportIdentConfig.eventId}
-          />
-        );
       default:
+        // Check if it's a live tracking scene
+        if (liveTrackingScene) {
+          if (!sportIdentEventId) {
+            return <div style={{color: 'white', padding: '20px', textAlign: 'center'}}>SportIdent Event ID not configured</div>;
+          }
+          return (
+            <LiveTracking
+              competitors={competitors}
+              category={categoryType}
+              controlCode={liveTrackingScene.controlCode}
+              controlName={liveTrackingScene.name || sceneTitle}
+              sportIdentService={sportIdentService}
+              eventId={sportIdentEventId}
+            />
+          );
+        }
         console.error(`[RenderScene] Unhandled scene type after validation: ${sceneType}`);
         return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
     }
@@ -1225,6 +1209,10 @@ function App() {
             setSelectedCompetitorId={setSelectedCompetitorId}
             streamVisible={streamVisible}
             setStreamVisible={setStreamVisible}
+            liveTrackingScenes={liveTrackingScenes}
+            setLiveTrackingScenes={setLiveTrackingScenes}
+            sportIdentEventId={sportIdentEventId}
+            setSportIdentEventId={setSportIdentEventId}
           />
         </div>
       </div>

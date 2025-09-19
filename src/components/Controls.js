@@ -25,10 +25,17 @@ const Controls = ({
   selectedCompetitorId,
   setSelectedCompetitorId,
   streamVisible,
-  setStreamVisible
+  setStreamVisible,
+  liveTrackingScenes,
+  setLiveTrackingScenes,
+  sportIdentEventId,
+  setSportIdentEventId
 }) => {
   const [editingScene, setEditingScene] = useState(null);
   const [tempSceneName, setTempSceneName] = useState('');
+  const [showSportIdentConfig, setShowSportIdentConfig] = useState(false);
+  const [newControlCode, setNewControlCode] = useState('');
+  const [newControlName, setNewControlName] = useState('');
 
   const scenes = [
     { id: 'start-list', name: customSceneNames['start-list'] || 'Start List', icon: <Users size={18} /> },
@@ -39,7 +46,15 @@ const Controls = ({
     { id: 'split-3', name: customSceneNames['split-3'] || 'Control 3', icon: <MapPin size={18} /> },
     { id: 'split-4', name: customSceneNames['split-4'] || 'Control 4', icon: <MapPin size={18} /> },
     { id: 'preliminary-results', name: customSceneNames['preliminary-results'] || 'Preliminary Results', icon: <Trophy size={18} /> },
-    { id: 'results', name: customSceneNames['results'] || 'Results', icon: <Trophy size={18} /> }
+    { id: 'results', name: customSceneNames['results'] || 'Results', icon: <Trophy size={18} /> },
+    // Add dynamic live tracking scenes
+    ...(liveTrackingScenes || []).map(lts => ({
+      id: lts.id,
+      name: customSceneNames[lts.id] || lts.name,
+      icon: <MapPin size={18} />,
+      isLiveTracking: true,
+      controlCode: lts.controlCode
+    }))
   ];
 
 
@@ -204,6 +219,87 @@ const Controls = ({
           ))}
         </div>
         <p className="edit-hint">Double-click scene names to edit</p>
+
+        {/* SportIdent Live Tracking Configuration */}
+        <div className="sportident-config-section">
+          <button
+            className="sportident-config-btn"
+            onClick={() => setShowSportIdentConfig(!showSportIdentConfig)}
+          >
+            <MapPin size={16} />
+            {showSportIdentConfig ? 'Hide' : 'Configure'} Live Tracking
+          </button>
+
+          {showSportIdentConfig && (
+            <div className="sportident-config-panel">
+              <div className="form-group">
+                <label>SportIdent Event ID</label>
+                <input
+                  type="text"
+                  value={sportIdentEventId || ''}
+                  onChange={(e) => setSportIdentEventId(e.target.value)}
+                  placeholder="e.g., 20636"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Live Tracking Scenes</label>
+                <div className="live-tracking-list">
+                  {(liveTrackingScenes || []).map((scene, index) => (
+                    <div key={scene.id} className="live-tracking-item">
+                      <span className="scene-name">{scene.name}</span>
+                      <span className="control-code">Control {scene.controlCode}</span>
+                      <button
+                        onClick={() => {
+                          const updated = liveTrackingScenes.filter(s => s.id !== scene.id);
+                          setLiveTrackingScenes(updated);
+                        }}
+                        className="remove-btn"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="add-live-tracking">
+                  <input
+                    type="number"
+                    value={newControlCode}
+                    onChange={(e) => setNewControlCode(e.target.value)}
+                    placeholder="Control code"
+                    className="control-code-input"
+                  />
+                  <input
+                    type="text"
+                    value={newControlName}
+                    onChange={(e) => setNewControlName(e.target.value)}
+                    placeholder="Scene name"
+                    className="control-name-input"
+                  />
+                  <button
+                    onClick={() => {
+                      if (newControlCode && newControlName) {
+                        const newScene = {
+                          id: `live-tracking-${Date.now()}`,
+                          name: newControlName,
+                          controlCode: parseInt(newControlCode)
+                        };
+                        setLiveTrackingScenes([...(liveTrackingScenes || []), newScene]);
+                        setNewControlCode('');
+                        setNewControlName('');
+                      }
+                    }}
+                    className="add-btn"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {(scene === 'current-runner' || scene === 'runner-pre-start') && (
