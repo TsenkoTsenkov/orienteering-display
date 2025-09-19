@@ -4,6 +4,7 @@ import './SceneStyles.css';
 
 const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const remainingItemsPerPage = Math.max(2, itemsPerPage - 1); // Leader is always shown
   const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
@@ -52,17 +53,23 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, 
     }
   }
 
+  // Track mount status
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // Handle internal rotation for preview mode only
   useEffect(() => {
-    // Skip if external control or only 1 page
-    if (currentPageIndex !== undefined || totalPages <= 1) return;
+    // Skip if not mounted, external control or only 1 page
+    if (!mounted || currentPageIndex !== undefined || totalPages <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => (prev + 1) % totalPages);
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [totalPages, pageDuration, currentPageIndex]);
+  }, [mounted, totalPages, pageDuration, currentPageIndex]);
 
   const startIndex = pageToShow * remainingItemsPerPage;
   const currentRemainingCompetitors = remaining.slice(startIndex, startIndex + remainingItemsPerPage);

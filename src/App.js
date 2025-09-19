@@ -47,6 +47,7 @@ function App() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [liveSelectedCompetitorId, setLiveSelectedCompetitorId] = useState(null);
   const [streamVisible, setStreamVisible] = useState(true); // New state for stream visibility
+  const [sceneInitialized, setSceneInitialized] = useState(false); // Track if scene has been properly initialized
 
   // Scene configurations (size and position per scene)
   const [sceneConfigs, setSceneConfigs] = useState({
@@ -93,8 +94,11 @@ function App() {
       listenToData('liveState', (data) => {
         if (data) {
           console.log('[Display Mode] Live state updated:', data);
+          // Validate scene before setting
+          const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+          const scene = validScenes.includes(data.scene) ? data.scene : 'start-list';
+
           setLiveCategory(data.category || 'Men');
-          const scene = data.scene || 'start-list';
           setLiveScene(scene);
           setLiveControlPoint(data.controlPoint || 1);
           setLivePageIndex(data.pageIndex || 0);
@@ -102,6 +106,7 @@ function App() {
           setLiveSceneConfig(data.sceneConfig || { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
           setLiveSelectedCompetitorId(data.selectedCompetitorId || null);
           setStreamVisible(data.streamVisible !== undefined ? data.streamVisible : true);
+          setSceneInitialized(true);
         }
       })
     );
@@ -178,14 +183,23 @@ function App() {
   useEffect(() => {
     if (!autoRotate || rotationPaused || isDisplayMode) return;
 
+    // Only auto-rotate for paginated scenes
+    const paginatedScenes = ['start-list', 'results', 'split-1', 'split-2', 'split-3', 'split-4'];
+    if (!paginatedScenes.includes(liveScene)) {
+      console.log('[Control] Scene', liveScene, 'does not support pagination, skipping auto-rotation');
+      return;
+    }
+
     // Calculate actual number of pages based on current data and scene
     const competitors = liveCategory === 'Men' ? competitorsData.men : competitorsData.women;
 
-    // For start list, filter for not_started status (same as StartListPaginated does)
     let relevantCompetitors = competitors;
     if (liveScene === 'start-list') {
       // Filter same way as StartListPaginated: include if no status or status is 'not_started'
       relevantCompetitors = competitors.filter(c => !c.status || c.status === 'not_started');
+    } else if (liveScene === 'results') {
+      // Filter same way as ResultsPaginated: only finished competitors with rank
+      relevantCompetitors = competitors.filter(c => c.status === 'finished' && c.rank);
     }
 
     const totalPages = relevantCompetitors && relevantCompetitors.length > 0
@@ -247,7 +261,16 @@ function App() {
   };
 
   const handleGoLive = () => {
-    console.log('[Control] Pushing to live');
+    console.log('[Control] Pushing to live - Scene:', previewScene, 'Category:', previewCategory);
+
+    // Validate scene before pushing to live
+    const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+    if (!validScenes.includes(previewScene)) {
+      console.error('[Control] Invalid scene attempted to push live:', previewScene);
+      alert(`Cannot push invalid scene to live: ${previewScene}`);
+      return;
+    }
+
     setLiveCategory(previewCategory);
     setLiveScene(previewScene);
     setLiveControlPoint(previewControlPoint);
@@ -562,11 +585,20 @@ function App() {
   }, [pollingInterval]);
 
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
+    // Add validation to ensure we only render valid scenes
+    const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+
+    if (!validScenes.includes(sceneType)) {
+      console.warn(`[RenderScene] Invalid scene type: ${sceneType}, defaulting to start-list`);
+      sceneType = 'start-list';
+    }
+
     const competitors = categoryType === 'Men' ? competitorsData.men : competitorsData.women;
     const rotationProps = isLive ? pageRotationState : { itemsPerPage };
-    const sceneTitle = customSceneNames[sceneType];
+    const sceneTitle = customSceneNames[sceneType] || sceneType;
 
-    // Allow results to be shown now that we properly fetch them
+    // Log the scene being rendered for debugging
+    console.log(`[RenderScene] Rendering ${isLive ? 'LIVE' : 'PREVIEW'} scene: ${sceneType}, category: ${categoryType}`);
 
     switch (sceneType) {
       case 'start-list':
@@ -596,6 +628,7 @@ function App() {
       case 'split-4':
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={4} sceneTitle={sceneTitle} {...rotationProps} />;
       default:
+        console.error(`[RenderScene] Unhandled scene type after validation: ${sceneType}`);
         return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
     }
   };
@@ -611,7 +644,7 @@ function App() {
 
     return (
       <div className="app display-mode">
-        {streamVisible && (
+        {streamVisible && sceneInitialized && (
           <div
             className="display-output"
             style={{

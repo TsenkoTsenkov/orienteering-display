@@ -4,6 +4,7 @@ import './SceneStyles.css';
 
 const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
 
   // Filter for not_started status, but if no status field exists, include all
@@ -35,10 +36,16 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
     'PageToShow:', pageToShow,
     'TotalPages:', totalPages);
 
+  // Track mount status
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // Handle internal rotation for preview mode only
   useEffect(() => {
-    // Skip if external control or no pages
-    if (currentPageIndex !== undefined || totalPages <= 1 || upcomingCompetitors.length === 0) return;
+    // Skip if not mounted, external control or no pages
+    if (!mounted || currentPageIndex !== undefined || totalPages <= 1 || upcomingCompetitors.length === 0) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => {
@@ -49,7 +56,7 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [totalPages, pageDuration, currentPageIndex, upcomingCompetitors.length]);
+  }, [mounted, totalPages, pageDuration, currentPageIndex, upcomingCompetitors.length]);
 
   const startIndex = pageToShow * itemsPerPage;
   const currentCompetitors = upcomingCompetitors.slice(startIndex, startIndex + itemsPerPage);

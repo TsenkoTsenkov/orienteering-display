@@ -4,6 +4,7 @@ import './SceneStyles.css';
 
 const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotationPaused, currentPageIndex, rotationInterval, setCurrentPageIndex, itemsPerPage = 10 }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [mounted, setMounted] = useState(false);
   // First place is always shown, so actual items per page for remaining is reduced by 1
   const remainingItemsPerPage = Math.max(2, itemsPerPage - 1);
   const pageDuration = rotationInterval || 10000; // Use rotation interval from props or default (10 seconds)
@@ -34,17 +35,23 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
     }
   }
 
+  // Track mount status
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // Handle internal rotation for preview mode only
   useEffect(() => {
-    // Skip if external control or only 1 page
-    if (currentPageIndex !== undefined || totalPages <= 1) return;
+    // Skip if not mounted, external control, or only 1 page
+    if (!mounted || currentPageIndex !== undefined || totalPages <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => (prev + 1) % totalPages);
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [totalPages, pageDuration, currentPageIndex]);
+  }, [mounted, totalPages, pageDuration, currentPageIndex]);
 
   const startIndex = pageToShow * remainingItemsPerPage;
   const endIndex = startIndex + remainingItemsPerPage;
@@ -73,6 +80,11 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
 
     return `+${minutes}:${seconds}`;
   };
+
+  // Don't render until properly mounted
+  if (!mounted && currentPageIndex === undefined) {
+    return null;
+  }
 
   return (
     <div className="scene-container results paginated">
