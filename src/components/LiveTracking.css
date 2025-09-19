@@ -111,26 +111,32 @@
   border-color: rgba(255, 215, 0, 0.3);
 }
 
-.tracking-row.new-punch {
-  animation: slideIn 0.5s ease, flash 1s ease;
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 255, 136, 0.05));
-  border-color: rgba(0, 255, 136, 0.5);
+/* New punch highlight animation */
+.competitor-row.new-punch {
+  animation: newArrival 3s ease-out;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
+@keyframes newArrival {
+  0% {
+    transform: translateX(-20px);
     opacity: 0;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.4), rgba(0, 255, 136, 0.2));
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
   }
-  to {
+  10% {
     transform: translateX(0);
     opacity: 1;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 255, 136, 0.15));
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
   }
-}
-
-@keyframes flash {
-  0%, 100% { background: rgba(0, 255, 136, 0.15); }
-  50% { background: rgba(0, 255, 136, 0.3); }
+  50% {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1));
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
 }
 
 .rank-col {

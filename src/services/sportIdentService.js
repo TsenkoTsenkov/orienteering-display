@@ -243,6 +243,15 @@ class SportIdentService {
       this.setDemoMode(true);
     }
 
+    // Reset if control code changed
+    if (this.demoServer && this.lastControlCode !== controlCode) {
+      console.log('[SportIdent] Control changed, resetting mock server');
+      this.demoServer.reset();
+      this.demoServer = null;
+      this.setDemoMode(true); // This will create a new server
+    }
+    this.lastControlCode = controlCode;
+
     if (this.demoServer && !this.demoServer.simulationInterval) {
       console.log('[SportIdent] Initializing demo with', competitors.length, 'competitors for control', controlCode);
 
@@ -382,21 +391,20 @@ export class SportIdentMockServer {
       });
     }, checkInterval);
 
-    // Generate some initial punches immediately for testing
-    console.log('[Mock Server] Generating initial punches for testing');
-    if (this.runners.length > 0 && this.controls.length > 0) {
-      // First runner reaches first control immediately
-      this.generatePunch(this.runners[0], this.controls[0], 'BcControl', Date.now());
-      this.runners[0][`passed_control0`] = true;
+    // Generate initial punches with realistic timing
+    console.log('[Mock Server] Starting gradual punch generation');
 
-      // Second runner if exists
-      if (this.runners.length > 1) {
+    // Stagger initial punches over first 30 seconds
+    this.runners.forEach((runner, index) => {
+      if (index < 3) { // First 3 runners arrive quickly
         setTimeout(() => {
-          this.generatePunch(this.runners[1], this.controls[0], 'BcControl', Date.now());
-          this.runners[1][`passed_control0`] = true;
-        }, 2000);
+          if (this.controls.length > 0 && !runner[`passed_control0`]) {
+            this.generatePunch(runner, this.controls[0], 'BcControl', Date.now());
+            runner[`passed_control0`] = true;
+          }
+        }, index * 3000 + Math.random() * 2000); // 3-5 seconds apart
       }
-    }
+    });
   }
 
   // Generate a punch event

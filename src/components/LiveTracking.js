@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { getFlag } from '../data/flags';
 import './LiveTracking.css';
 
@@ -214,43 +214,41 @@ const LiveTracking = ({
         )}
       </div>
 
-      <div className="tracking-list">
-        <div className="tracking-header">
-          <div className="rank-col">Rank</div>
-          <div className="name-col">Competitor</div>
-          <div className="time-col">Time</div>
-          <div className="diff-col">Diff</div>
+      <div className="competitors-list-paginated">
+        <div className="list-header">
+          <span className="header-rank">RANK</span>
+          <span className="header-name">NAME</span>
+          <span className="header-country">NATION</span>
+          <span className="header-time">TIME</span>
+          <span className="header-diff">DIFF</span>
         </div>
 
-        <div className="tracking-body">
-          {trackedCompetitors.map((comp, index) => (
-            <div
-              key={comp.id || `comp-${index}`}
-              className={`tracking-row ${comp.isNew ? 'new-punch' : ''} ${index === 0 ? 'leader' : ''}`}
-              style={{
-                animation: comp.isNew ? 'slideIn 0.5s ease-out' : undefined
-              }}
-            >
-              <div className="rank-col">
-                <span className="rank-number">{index + 1}</span>
-                {comp.previousRank && comp.previousRank !== index + 1 && (
-                  <span className={`rank-change ${comp.previousRank > index + 1 ? 'up' : 'down'}`}>
-                    {formatRankDiff(comp.previousRank - (index + 1))}
-                  </span>
-                )}
+        <div className="page-transition">
+          {trackedCompetitors.map((competitor, index) => (
+            <React.Fragment key={competitor.card || `comp-${index}`}>
+              <div
+                className={`competitor-row split-row large-row ${index === 0 ? 'leader' : ''} ${competitor.isNew ? 'new-punch' : ''}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <span className="rank large-rank">
+                  {index === 0 && <span className="leader-icon">👑</span>}
+                  <span className="rank-number">{index + 1}</span>
+                </span>
+                <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
+                <span className="competitor-country">
+                  <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
+                  <span className="country-code">{competitor.country}</span>
+                </span>
+                <span className="split-time large-time">{competitor.splitTime}</span>
+                <span className="time-diff large-diff">
+                  {getTimeDiff(competitor.splitTime, leaderTime)}
+                </span>
               </div>
-              <div className="name-col">
-                <span className="flag-icon">{getFlag(comp.country)}</span>
-                <span className="competitor-name">{comp.name}</span>
-                {comp.bib && <span className="bib-number">#{comp.bib}</span>}
-              </div>
-              <div className="time-col">
-                <span className="split-time">{comp.splitTime}</span>
-              </div>
-              <div className="diff-col">
-                <span className="time-diff">{getTimeDiff(comp.splitTime, leaderTime)}</span>
-              </div>
-            </div>
+              {/* Add separator line after leader */}
+              {index === 0 && trackedCompetitors.length > 1 && (
+                <div className="top-three-separator-line"></div>
+              )}
+            </React.Fragment>
           ))}
         </div>
 
