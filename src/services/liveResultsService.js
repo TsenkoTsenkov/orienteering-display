@@ -345,6 +345,10 @@ class LiveResultsService {
 
         // Filter out competitors who haven't finished (no final time)
         const finishedCompetitors = scrapedData.competitors.filter(comp => {
+          // Must have a valid rank (numeric)
+          const hasValidRank = comp.structured?.rank && !isNaN(comp.structured.rank);
+          if (!hasValidRank) return false;
+
           // Check if we have a final time in structured data
           if (comp.structured?.finalTime) {
             return true;
@@ -374,6 +378,12 @@ class LiveResultsService {
           let country = comp.structured?.country || comp.cells?.[3] || '';
           let finalTime = comp.structured?.finalTime;
 
+          // Clean up name - remove country if it's duplicated in the name
+          if (nameRaw && country && nameRaw.includes(country)) {
+            // Remove trailing country name (might have multiple spaces)
+            nameRaw = nameRaw.replace(new RegExp(`\\s+${country}\\s*$`), '').trim();
+          }
+
           // If no final time in structured data, look for it in cells
           if (!finalTime && comp.cells) {
             for (let i = comp.cells.length - 1; i >= 6; i--) {
@@ -382,6 +392,14 @@ class LiveResultsService {
                 finalTime = cellText;
                 break;
               }
+            }
+          }
+
+          // Clean up final time - extract just the time part (remove +XX:XX (X) notation)
+          if (finalTime) {
+            const timeMatch = finalTime.match(/^(\d+:\d{2}(:\d{2})?)/);
+            if (timeMatch) {
+              finalTime = timeMatch[1];
             }
           }
 
