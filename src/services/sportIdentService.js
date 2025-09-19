@@ -332,17 +332,17 @@ export class SportIdentMockServer {
           for (let i = 0; i < this.controls.length; i++) {
             cumulativeSplit += runner.controlsSplit[i];
 
-            if (progress >= cumulativeSplit && runner.currentPosition !== `control${i}`) {
+            if (progress >= cumulativeSplit && !runner[`passed_control${i}`]) {
               // Runner has reached this control
               this.generatePunch(runner, this.controls[i], 'BcControl', Date.now());
-              runner.currentPosition = `control${i}`;
+              runner[`passed_control${i}`] = true;
             }
           }
 
           // Check finish
-          if (progress >= 95 && runner.currentPosition !== 'finish') {
+          if (progress >= 95 && !runner.finished) {
             this.generatePunch(runner, 21, 'BcFinish', Date.now());
-            runner.currentPosition = 'finish';
+            runner.finished = true;
           }
         }
       });
@@ -353,13 +353,13 @@ export class SportIdentMockServer {
     if (this.runners.length > 0 && this.controls.length > 0) {
       // First runner reaches first control immediately
       this.generatePunch(this.runners[0], this.controls[0], 'BcControl', Date.now());
-      this.runners[0].currentPosition = `control0`;
+      this.runners[0][`passed_control0`] = true;
 
       // Second runner if exists
       if (this.runners.length > 1) {
         setTimeout(() => {
           this.generatePunch(this.runners[1], this.controls[0], 'BcControl', Date.now());
-          this.runners[1].currentPosition = `control0`;
+          this.runners[1][`passed_control0`] = true;
         }, 2000);
       }
     }
