@@ -242,9 +242,9 @@ function App() {
 
     let relevantCompetitors = competitors;
     if (liveScene === 'start-list') {
-      // Filter same way as StartListPaginated: include if no status or status is 'not_started'
-      relevantCompetitors = competitors.filter(c => !c.status || c.status === 'not_started');
-    } else if (liveScene === 'results') {
+      // Start list shows ALL competitors - no filtering
+      relevantCompetitors = competitors;
+    } else if (liveScene === 'results' || liveScene === 'preliminary-results') {
       // Filter same way as ResultsPaginated: only finished competitors with rank
       relevantCompetitors = competitors.filter(c => c.status === 'finished' && c.rank);
     }

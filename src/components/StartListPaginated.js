@@ -7,15 +7,18 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   const [mounted, setMounted] = useState(false);
   const pageDuration = rotationInterval || 15000; // Use rotation interval from props or default (15 seconds)
 
-  // Filter for not_started status, but if no status field exists, include all
-  const upcomingCompetitors = competitors.filter(c => {
-    // If no status field or status is 'not_started', include the competitor
-    return !c.status || c.status === 'not_started';
+  // Start list shows ALL competitors - no filtering by status
+  // Sort by start time if available
+  const sortedCompetitors = [...competitors].sort((a, b) => {
+    if (a.startTime && b.startTime) {
+      return a.startTime.localeCompare(b.startTime);
+    }
+    return 0;
   });
 
   // Calculate total pages
-  const totalPages = upcomingCompetitors.length > 0
-    ? Math.ceil(upcomingCompetitors.length / itemsPerPage)
+  const totalPages = sortedCompetitors.length > 0
+    ? Math.ceil(sortedCompetitors.length / itemsPerPage)
     : 1; // At least 1 page even if empty
 
   // Determine page to show based on mode
@@ -30,7 +33,6 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   }
 
   console.log('[StartListPaginated] Total competitors:', competitors.length,
-    'Filtered (not_started):', upcomingCompetitors.length,
     'Category:', category,
     'CurrentPageIndex:', currentPageIndex,
     'PageToShow:', pageToShow,
@@ -45,7 +47,7 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   // Handle internal rotation for preview mode only
   useEffect(() => {
     // Skip if not mounted, external control or no pages
-    if (!mounted || currentPageIndex !== undefined || totalPages <= 1 || upcomingCompetitors.length === 0) return;
+    if (!mounted || currentPageIndex !== undefined || totalPages <= 1 || sortedCompetitors.length === 0) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => {
@@ -56,10 +58,10 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [mounted, totalPages, pageDuration, currentPageIndex, upcomingCompetitors.length]);
+  }, [mounted, totalPages, pageDuration, currentPageIndex, sortedCompetitors.length]);
 
   const startIndex = pageToShow * itemsPerPage;
-  const currentCompetitors = upcomingCompetitors.slice(startIndex, startIndex + itemsPerPage);
+  const currentCompetitors = sortedCompetitors.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="scene-container start-list paginated">
