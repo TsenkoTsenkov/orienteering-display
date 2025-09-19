@@ -299,21 +299,8 @@ function App() {
           liveResultsService.stopPolling(pollingInterval);
         }
 
-        const interval = liveResultsService.startPolling(
-          projectWithTimestamp.eventUrl,
-          firstCompetition.id,
-          async (updatedData) => {
-            const newData = {
-              men: updatedData.men || [],
-              women: updatedData.women || []
-            };
-            setCompetitorsData(newData);
-            // Save updated data to Firebase
-            await saveData('competitorsData', newData);
-          },
-          30000 // Poll every 30 seconds
-        );
-        setPollingInterval(interval);
+        // Don't set up polling - start list is static
+        console.log('[Start List] Data loaded, no polling needed for start list');
       }
     }
   };
@@ -377,25 +364,11 @@ function App() {
         await saveData('competitorsData', newCompetitorsData);
       }
 
-      // Update polling for new competition
-      if (currentProject.eventUrl && pollingInterval) {
+      // Stop any existing polling when changing competition
+      if (pollingInterval) {
         liveResultsService.stopPolling(pollingInterval);
-
-        const interval = liveResultsService.startPolling(
-          currentProject.eventUrl,
-          competitionId,
-          async (updatedData) => {
-            const newData = {
-              men: updatedData.men || [],
-              women: updatedData.women || []
-            };
-            setCompetitorsData(newData);
-            // Save updated data to Firebase
-            await saveData('competitorsData', newData);
-          },
-          30000
-        );
-        setPollingInterval(interval);
+        setPollingInterval(null);
+        console.log('[Competition Change] Stopped polling, start list is static');
       }
     }
   };
