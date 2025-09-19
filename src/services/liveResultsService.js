@@ -343,24 +343,90 @@ class LiveResultsService {
         // Parse scraped data
         const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
 
-        const competitors = scrapedData.competitors.map((comp, index) => {
-          // Use hardcoded name based on index
-          let name = getNameByIndex(index, isMenClass);
+        // Filter out competitors who haven't finished (no final time)
+        const finishedCompetitors = scrapedData.competitors.filter(comp => {
+          // Check if we have a final time in structured data
+          if (comp.structured?.finalTime) {
+            return true;
+          }
+
+          // Otherwise check cells for a time in the last few positions
+          if (comp.cells && comp.cells.length > 0) {
+            // Look for a time format in the last 3 cells
+            for (let i = comp.cells.length - 1; i >= Math.max(0, comp.cells.length - 3); i--) {
+              const cellText = comp.cells[i];
+              if (cellText && /^\d+:\d{2}(:\d{2})?/.test(cellText)) {
+                return true; // Found a final time
+              }
+            }
+          }
+
+          return false; // No final time found
+        });
+
+        console.log(`Filtered to ${finishedCompetitors.length} finished competitors out of ${scrapedData.competitors.length} total`);
+
+        const competitors = finishedCompetitors.map((comp, index) => {
+          // Extract data from structured format if available
+          let rank = comp.structured?.rank || parseInt(comp.cells?.[0]) || index + 1;
+          let bib = comp.structured?.bib || comp.cells?.[1] || '';
+          let nameRaw = comp.structured?.name || comp.cells?.[2] || 'Unknown';
+          let country = comp.structured?.country || comp.cells?.[3] || '';
+          let finalTime = comp.structured?.finalTime;
+
+          // If no final time in structured data, look for it in cells
+          if (!finalTime && comp.cells) {
+            for (let i = comp.cells.length - 1; i >= 6; i--) {
+              const cellText = comp.cells[i];
+              if (cellText && /^\d+:\d{2}(:\d{2})?/.test(cellText)) {
+                finalTime = cellText;
+                break;
+              }
+            }
+          }
+
+          // Process bib number: remove prefixes (11xx for men -> xx, 21xx for women -> 1xx)
+          if (bib) {
+            const bibNum = parseInt(bib);
+            if (!isNaN(bibNum)) {
+              if (bibNum >= 2100 && bibNum < 2200) {
+                // Women's number: 2101 -> 101, 2138 -> 138
+                bib = `${bibNum - 2000}`;
+              } else if (bibNum >= 1100 && bibNum < 1200) {
+                // Men's number: 1101 -> 1, 1151 -> 51
+                bib = `${bibNum - 1100}`;
+              }
+            }
+          }
+
+          // Use fuzzy matching to find the correct name from hardcoded list
+          let name = findClosestName(nameRaw, isMenClass);
+
+          // Get country code - use hardcoded or extract from data
+          let countryCode = getCountryByIndex(finishedCompetitors.indexOf(comp), isMenClass);
+          if (!countryCode || countryCode === 'UNK') {
+            if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
+              countryCode = country;
+            } else {
+              countryCode = this.extractCountryFromClub(country);
+            }
+          }
 
           return {
             id: `comp_${index}`,
-            rank: parseInt(comp.cells?.[0]) || index + 1,
+            rank: rank,
             name: name,
-            club: comp.structured?.club || comp.cells?.[2] || '',
-            country: this.extractCountryFromClub(comp.structured?.club || comp.cells?.[2] || ''),
-            finalTime: comp.cells?.[3] || comp.cells?.[4] || null,
+            club: '',
+            country: countryCode,
+            finalTime: finalTime,
             startTime: null, // Results don't have start time
-            bib: comp.structured?.bib || comp.cells?.[5] || '',
-            card: comp.structured?.card || comp.cells?.[6] || '',
+            bib: bib,
+            card: '',
             status: 'finished'
           };
         });
-        console.log(`Parsed ${competitors.length} competitors from results`);
+
+        console.log(`Parsed ${competitors.length} finished competitors from results`);
         return competitors;
       }
 
@@ -806,14 +872,52 @@ class LiveResultsService {
     return competitors;
   }
 
-  // Fetch competitors for a class (simplified - just start list for now)
+  // Fetch competitors for a class - fetch both start list and results, merge them
   async fetchCompetitors(eventId, competitionId, classId) {
     try {
       console.log(`Fetching competitors for event ${eventId}, competition ${competitionId}, class ${classId}`);
 
-      // Just fetch the start list for now - skip results and splits for speed
-      const competitors = await this.fetchStartList(eventId, competitionId, classId);
-      return competitors || [];
+      // Fetch both start list and results in parallel
+      const [startList, results] = await Promise.all([
+        this.fetchStartList(eventId, competitionId, classId),
+        this.fetchResults(eventId, competitionId, classId)
+      ]);
+
+      // If we have results, merge them with start list data
+      if (results && results.length > 0) {
+        console.log(`Merging ${results.length} results with ${startList.length} start list entries`);
+
+        // Create a map of results by name for quick lookup
+        const resultsMap = new Map();
+        results.forEach(r => resultsMap.set(r.name, r));
+
+        // Merge data: update start list entries with results data where available
+        const mergedCompetitors = startList.map(competitor => {
+          const result = resultsMap.get(competitor.name);
+          if (result) {
+            // Competitor has finished - merge the data
+            return {
+              ...competitor,
+              rank: result.rank,
+              finalTime: result.finalTime,
+              status: 'finished'
+            };
+          }
+          return competitor;
+        });
+
+        // Add any results entries that weren't in the start list
+        results.forEach(result => {
+          if (!startList.find(s => s.name === result.name)) {
+            mergedCompetitors.push(result);
+          }
+        });
+
+        return mergedCompetitors;
+      }
+
+      // No results yet, just return start list
+      return startList || [];
     } catch (error) {
       console.error('Error fetching competitors:', error);
       return [];

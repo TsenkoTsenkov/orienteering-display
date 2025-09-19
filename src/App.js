@@ -93,8 +93,7 @@ function App() {
         if (data) {
           console.log('[Display Mode] Live state updated:', data);
           setLiveCategory(data.category || 'Men');
-          // NEVER show results in display mode - always redirect to start-list
-          const scene = data.scene === 'results' ? 'start-list' : (data.scene || 'start-list');
+          const scene = data.scene || 'start-list';
           setLiveScene(scene);
           setLiveControlPoint(data.controlPoint || 1);
           setLivePageIndex(data.pageIndex || 0);
@@ -550,11 +549,7 @@ function App() {
     const rotationProps = isLive ? pageRotationState : { itemsPerPage };
     const sceneTitle = customSceneNames[sceneType];
 
-    // NEVER show results in display mode (isLive=true) - redirect to start-list
-    if (isLive && sceneType === 'results') {
-      console.warn('[Display] Attempted to show results, redirecting to start-list');
-      sceneType = 'start-list';
-    }
+    // Allow results to be shown now that we properly fetch them
 
     switch (sceneType) {
       case 'start-list':

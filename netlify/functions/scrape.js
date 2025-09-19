@@ -154,21 +154,50 @@ async function extractAllCompetitors(page) {
             })
           };
 
-          // Extract structured data
+          // Extract structured data - handle both start list and results formats
           if (cells.length >= 2) {
-            let startTime = cells[0]?.textContent.trim();
-            if (startTime) {
-              startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
-            }
+            // Check if this is a results page (first cell is rank number)
+            const firstCellText = cells[0]?.textContent.trim();
+            const isResultsPage = /^\d+$/.test(firstCellText);
 
-            competitorData.structured = {
-              startTime: startTime,
-              name: cells[1]?.textContent.trim(),
-              club: cells[2]?.textContent.trim(),
-              country: cells[3]?.textContent.trim() || cells[2]?.textContent.match(/[A-Z]{3}/)?.[0],
-              bib: cells[4]?.textContent.trim(),
-              card: cells[5]?.textContent.trim(),
-            };
+            if (isResultsPage) {
+              // Results page format
+              competitorData.structured = {
+                rank: parseInt(firstCellText) || null,
+                bib: cells[1]?.textContent.trim(),
+                name: cells[2]?.textContent.trim(),
+                country: cells[3]?.textContent.trim() || cells[2]?.textContent.match(/[A-Z]{3}/)?.[0],
+                birthYear: cells[4]?.textContent.trim(),
+                startTime: cells[5]?.textContent.trim()?.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim(),
+                // Final time is in the last visible cell with time format
+                finalTime: null
+              };
+
+              // Find the final time - look for time format in later cells
+              for (let i = cells.length - 1; i >= 6; i--) {
+                const cellText = cells[i]?.textContent.trim();
+                // Check for time format (MM:SS or HH:MM:SS)
+                if (cellText && /^\d+:\d{2}(:\d{2})?/.test(cellText)) {
+                  competitorData.structured.finalTime = cellText;
+                  break;
+                }
+              }
+            } else {
+              // Start list format
+              let startTime = cells[0]?.textContent.trim();
+              if (startTime) {
+                startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
+              }
+
+              competitorData.structured = {
+                startTime: startTime,
+                name: cells[1]?.textContent.trim(),
+                club: cells[2]?.textContent.trim(),
+                country: cells[3]?.textContent.trim() || cells[2]?.textContent.match(/[A-Z]{3}/)?.[0],
+                bib: cells[4]?.textContent.trim(),
+                card: cells[5]?.textContent.trim(),
+              };
+            }
           }
 
           competitors.push(competitorData);
