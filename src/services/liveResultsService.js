@@ -288,8 +288,8 @@ class LiveResultsService {
           // ALWAYS use the hardcoded name based on index
           // This ensures names are always correct
           let name = getNameByIndex(index, isMenClass);
-          // Also get the hardcoded country code
-          let countryCode = getCountryByIndex(index, isMenClass);
+          // Get the country code using the name mapping
+          let countryCode = this.getCountryForCompetitor(name);
 
           // If for some reason we don't have a name at this index,
           // try to extract and match
@@ -312,13 +312,18 @@ class LiveResultsService {
             // Use fuzzy matching to find the correct name
             name = findClosestName(extractedName, isMenClass);
 
-            // If we had to find the name, also try to extract country
-            if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
-              // Already a 3-letter country code
-              countryCode = country;
-            } else {
-              // Try to extract from country string
-              countryCode = this.extractCountryFromClub(country);
+            // Update country code based on the matched name
+            countryCode = this.getCountryForCompetitor(name);
+
+            // If still no country code, try to extract from data
+            if (!countryCode || countryCode === 'UNK') {
+              if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
+                // Already a 3-letter country code
+                countryCode = country;
+              } else {
+                // Try to extract from country string
+                countryCode = this.extractCountryFromClub(country);
+              }
             }
           }
 
@@ -445,12 +450,16 @@ class LiveResultsService {
           // Use fuzzy matching to find the correct name from hardcoded list
           let name = findClosestName(nameRaw, isMenClass);
 
-          // Get country code - use hardcoded or extract from data
-          let countryCode = getCountryByIndex(finishedCompetitors.indexOf(comp), isMenClass);
+          // Get country code - use the hardcoded map by name
+          let countryCode = this.getCountryForCompetitor(name);
+
+          // If not found in map, try other methods
           if (!countryCode || countryCode === 'UNK') {
             if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
+              // Use the country code from scraped data if valid
               countryCode = country;
             } else {
+              // Try to extract from club/country field
               countryCode = this.extractCountryFromClub(country);
             }
           }
@@ -710,6 +719,106 @@ class LiveResultsService {
     cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
 
     return cleanedName;
+  }
+
+  // Get country code for a specific competitor name
+  getCountryForCompetitor(name) {
+    // Map of known competitor names to their countries
+    const competitorCountryMap = {
+      // Men's countries (based on actual mtbowcup2025 data)
+      'Mihkel Mahla': 'EST',
+      'Mihail Stoev': 'BUL',
+      'Sergi Oliveras i Ferrer': 'ESP',
+      'Matteo Traversi Montani': 'ITA',
+      'Marek Hasman': 'CZE',
+      'Daumantas Kiela': 'LTU',
+      'Bernhard Kogler': 'AUT',
+      'Mark Huster': 'GER',
+      'Nikolay Nachev': 'BUL',
+      'Petar Popunkyov': 'BUL',
+      'Jocelin Lauret': 'FRA',
+      'Krzysztof Wroniak': 'POL',
+      'Mathieu Vayssat': 'FRA',
+      'Michele Traversi Montani': 'ITA',
+      'Daniel Marques': 'POR',
+      'Marco Pelov': 'BUL',
+      'Antoine Lesquer': 'FRA',
+      'Juan Sanz': 'ESP',
+      'Rostislav Kostadinov': 'BUL',
+      'Martin Illig': 'GER',
+      'Noah Tristan Hoffmann': 'GER',
+      'Filip Janowski': 'POL',
+      'Per Haehnel': 'GER',
+      'Ildar Mihnev': 'BUL',
+      'Oliver Friis': 'DEN',
+      'Stanimir Belomazhev': 'BUL',
+      'Grzegorz Nowak': 'POL',
+      'Georg Koffler': 'AUT',
+      'Joao Ferreira': 'POR',
+      'Augustin Leclere': 'FRA',
+      'Tomi Nykanen': 'FIN',
+      'Luca Dallavalle': 'ITA',
+      'Teemu Kaksonen': 'FIN',
+      'Flurin Schnyder': 'SUI',
+      'Jussi Laurila': 'FIN',
+      'Noah Rieder': 'SUI',
+      'Jeremi Pourre': 'FRA',
+      'Riccardo Rossetto': 'ITA',
+      'Paul Debray': 'FRA',
+      'Bartosz Niebielski': 'POL',
+      'Vojtech Stransky': 'CZE',
+      'Ignas Ambrazas': 'LTU',
+      'Vojtech Ludvik': 'CZE',
+      'Andreas Waldmann': 'AUT',
+      'Krystof Bogar': 'CZE',
+      'Samuel Pokala': 'FIN',
+      'Jan Hasek': 'CZE',
+      'Hannes Hnilica': 'AUT',
+      'Jonas Maiselis': 'LTU',
+      'Fabiano Bettega': 'ITA',
+      'Armel Berthaud': 'FRA',
+      // Women's countries
+      'Lola Colle': 'FRA',
+      'Gergana Stoycheva': 'BUL',
+      'Vytene Puisyte': 'LTU',
+      'Teodora Tabakova': 'BUL',
+      'Chiara Magni': 'ITA',
+      'Slavena Petkova': 'BUL',
+      'Nerea Garcia Rodriguez': 'ESP',
+      'Greta Dimitrova': 'BUL',
+      'Marii Isabel Allikberg': 'EST',
+      'Ivana Pedeva': 'BUL',
+      'Lou Colle': 'FRA',
+      'Kosara Boteva': 'BUL',
+      'Karolina Mickeviciute Juodisiene': 'LTU',
+      'Marisa Costa': 'POR',
+      'Anna Tkaczuk': 'POL',
+      'Jade Boussier': 'FRA',
+      'Silja YliHietanen': 'FIN',
+      'Jana Luscher Alemany': 'SUI',
+      'Marketa Mulickova': 'CZE',
+      'Lou Garcin': 'FRA',
+      'Ewa Haltof': 'POL',
+      'Jana Hnilica': 'AUT',
+      'Lucie Nedomlelova': 'CZE',
+      'Siiri Rasimus': 'FIN',
+      'Rozalie Kucharova': 'CZE',
+      'Anna Kaminska': 'POL',
+      'Constance Devillers': 'FRA',
+      'Nikoline Splittorff': 'DEN',
+      'Iris Aurora Pecorari': 'ITA',
+      'Caecilie Christoffersen': 'DEN',
+      'Marika Hara': 'FIN',
+      'Camilla Soegaard': 'DEN',
+      'Valerie Kamererova': 'CZE',
+      'Algirda Mickuviene': 'LTU',
+      'Celine Wellenreiter': 'AUT',
+      'Ruska Saarela': 'FIN',
+      'Ursina Jaeggi': 'SUI',
+      'Gabriella Gustafsson': 'SWE'
+    };
+
+    return competitorCountryMap[name] || 'UNK';
   }
 
   extractCountryFromClub(club) {
