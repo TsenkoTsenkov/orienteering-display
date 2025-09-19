@@ -197,7 +197,7 @@ const Controls = ({
 
       {scene === 'current-runner' && (
         <div className="control-section">
-          <h4>Select Competitor</h4>
+          <h4>Select Competitor by Start Number</h4>
           <select
             className="competitor-select"
             value={selectedCompetitorId || ''}
@@ -213,11 +213,21 @@ const Controls = ({
             }}
           >
             <option value="">Auto (Running competitor)</option>
-            {competitorsData[category.toLowerCase()] && competitorsData[category.toLowerCase()].map(competitor => (
-              <option key={competitor.id} value={competitor.id}>
-                {competitor.name} ({competitor.country})
-              </option>
-            ))}
+            {competitorsData[category.toLowerCase()] &&
+              competitorsData[category.toLowerCase()]
+                .filter(competitor => competitor.bib) // Only show competitors with bib numbers
+                .sort((a, b) => {
+                  // Sort by bib number numerically
+                  const bibA = parseInt(a.bib) || 0;
+                  const bibB = parseInt(b.bib) || 0;
+                  return bibA - bibB;
+                })
+                .map(competitor => (
+                  <option key={competitor.id} value={competitor.id}>
+                    #{competitor.bib} - {competitor.name} ({competitor.country})
+                  </option>
+                ))
+            }
           </select>
         </div>
       )}
