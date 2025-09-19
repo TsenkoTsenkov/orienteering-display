@@ -41,19 +41,19 @@ exports.handler = async (event) => {
 
     // Navigate to the page and wait for SPA to load
     await page.goto(url, {
-      waitUntil: 'networkidle2', // Wait for network to settle (crucial for SPAs)
-      timeout: 20000
+      waitUntil: 'networkidle0', // Wait for network to be completely idle
+      timeout: 10000 // Reduce timeout to fail faster
     });
 
-    // Give Angular more time to render the SPA content
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Give Angular less time to render to avoid overall timeout
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Wait for table content
     try {
       await page.waitForSelector(
         'mat-table, table.mat-mdc-table, table tbody tr, .mat-mdc-row, [role="grid"], tbody',
         {
-          timeout: 8000,
+          timeout: 3000, // Reduce timeout
           visible: true
         }
       );

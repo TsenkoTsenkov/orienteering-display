@@ -18,17 +18,20 @@ class LiveResultsService {
       this.proxyUrl = `${localProxy}/api/fetch?url=`;
       this.scrapeUrl = `${localProxy}/api/scrape?url=`;
       this.quickFetchUrl = `${localProxy}/api/fetch?url=`; // Use regular fetch locally
+      this.liteScrapUrl = `${localProxy}/api/fetch?url=`; // Use regular fetch as lite scraper locally
     } else if (window.location.hostname.includes('netlify')) {
       // Production on Netlify - use Netlify Functions
       this.proxyUrl = '/.netlify/functions/fetch?url=';
       this.scrapeUrl = '/.netlify/functions/scrape?url=';
       this.quickFetchUrl = '/.netlify/functions/quick-fetch?url=';
+      this.liteScrapUrl = '/.netlify/functions/scrape-lite?url=';
     } else {
       // Other production environments (e.g., custom domain)
       // Assume Netlify functions are available
       this.proxyUrl = '/.netlify/functions/fetch?url=';
       this.scrapeUrl = '/.netlify/functions/scrape?url=';
       this.quickFetchUrl = '/.netlify/functions/quick-fetch?url=';
+      this.liteScrapUrl = '/.netlify/functions/scrape-lite?url=';
     }
 
     this.baseUrl = 'https://liveresults.orienteering.sport/api.php';
@@ -64,7 +67,7 @@ class LiveResultsService {
 
     try {
       const scrapeUrl = `${this.scrapeUrl}${encodeURIComponent(url)}`;
-      const response = await axios.get(scrapeUrl, { timeout: 12000 }); // 12 second timeout
+      const response = await axios.get(scrapeUrl, { timeout: 25000 }); // 25 second timeout for Netlify functions
 
       // Cache the result
       this.cache.set(cacheKey, {
@@ -75,6 +78,35 @@ class LiveResultsService {
       return response.data;
     } catch (error) {
       console.error('Scraping failed:', url, error.message);
+
+      // Try quick fetch as fallback
+      try {
+        console.log('Falling back to quick fetch for:', url);
+        const quickUrl = `${this.quickFetchUrl}${encodeURIComponent(url)}`;
+        const quickResponse = await axios.get(quickUrl, { timeout: 5000 });
+        if (quickResponse.data && quickResponse.data.competitors) {
+          console.log('Quick fetch fallback successful');
+          return quickResponse.data;
+        }
+      } catch (quickError) {
+        console.error('Quick fetch fallback also failed:', quickError.message);
+
+        // Try lite scraper as final fallback
+        if (this.liteScrapUrl) {
+          try {
+            console.log('Trying lite scraper as final fallback for:', url);
+            const liteUrl = `${this.liteScrapUrl}${encodeURIComponent(url)}`;
+            const liteResponse = await axios.get(liteUrl, { timeout: 10000 });
+            if (liteResponse.data) {
+              console.log('Lite scraper fallback successful');
+              return liteResponse.data;
+            }
+          } catch (liteError) {
+            console.error('Lite scraper also failed:', liteError.message);
+          }
+        }
+      }
+
       // Return empty data instead of throwing
       return {
         competitors: [],
