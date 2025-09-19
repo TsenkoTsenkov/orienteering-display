@@ -349,8 +349,8 @@ function App() {
     setSceneConfigs(prev => ({
       ...prev,
       [scene]: {
-        size: newSize || prev[scene].size,
-        position: newPosition || prev[scene].position
+        size: newSize || prev[scene]?.size || { width: 1920, height: 1080 },
+        position: newPosition || prev[scene]?.position || { x: 0, y: 0 }
       }
     }));
   };
