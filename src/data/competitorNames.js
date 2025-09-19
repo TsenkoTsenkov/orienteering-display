@@ -53,6 +53,16 @@ export const correctMenNames = [
     "Armel Berthaud"
 ];
 
+// Hardcoded country codes for men competitors (by index)
+export const menCountries = [
+    "EST", "BUL", "ESP", "ITA", "CZE", "LTU", "AUT", "GER", "BUL", "BUL",
+    "FRA", "POL", "FRA", "ITA", "POR", "BUL", "FRA", "ESP", "BUL", "GER",
+    "GER", "POL", "GER", "BUL", "DEN", "BUL", "POL", "AUT", "POR", "FRA",
+    "FIN", "ITA", "FIN", "SUI", "FIN", "SUI", "FRA", "ITA", "FRA", "POL",
+    "CZE", "LTU", "CZE", "AUT", "CZE", "FIN", "CZE", "AUT", "LTU", "ITA",
+    "FRA"
+];
+
 export const correctWomenNames = [
     "Lola Colle",
     "Gergana Stoycheva",
@@ -92,6 +102,14 @@ export const correctWomenNames = [
     "Ruska Saarela",
     "Ursina Jaeggi",
     "Gabriella Gustafsson"
+];
+
+// Hardcoded country codes for women competitors (by index)
+export const womenCountries = [
+    "FRA", "BUL", "LTU", "BUL", "ITA", "BUL", "ESP", "BUL", "EST", "BUL",
+    "FRA", "BUL", "LTU", "POR", "POL", "FRA", "FIN", "SUI", "CZE", "FRA",
+    "POL", "AUT", "CZE", "FIN", "CZE", "POL", "FRA", "DEN", "ITA", "DEN",
+    "FIN", "DEN", "CZE", "LTU", "AUT", "FIN", "SUI", "SWE"
 ];
 
 // Simple fuzzy matching function to find the closest name
@@ -167,4 +185,10 @@ export function findClosestName(extractedName, isMen = true) {
 export function getNameByIndex(index, isMen = true) {
     const nameList = isMen ? correctMenNames : correctWomenNames;
     return nameList[index] || nameList[0];
+}
+
+// Get country code by index (0-based)
+export function getCountryByIndex(index, isMen = true) {
+    const countryList = isMen ? menCountries : womenCountries;
+    return countryList[index] || 'UNK';
 }

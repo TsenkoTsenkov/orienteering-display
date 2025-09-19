@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { findClosestName, getNameByIndex, correctMenNames, correctWomenNames } from '../data/competitorNames';
+import { findClosestName, getNameByIndex, getCountryByIndex, correctMenNames, correctWomenNames } from '../data/competitorNames';
 
 // LiveResults.it API service
 class LiveResultsService {
@@ -256,6 +256,8 @@ class LiveResultsService {
           // ALWAYS use the hardcoded name based on index
           // This ensures names are always correct
           let name = getNameByIndex(index, isMenClass);
+          // Also get the hardcoded country code
+          let countryCode = getCountryByIndex(index, isMenClass);
 
           // If for some reason we don't have a name at this index,
           // try to extract and match
@@ -277,6 +279,15 @@ class LiveResultsService {
 
             // Use fuzzy matching to find the correct name
             name = findClosestName(extractedName, isMenClass);
+
+            // If we had to find the name, also try to extract country
+            if (country && country.length === 3 && /^[A-Z]{3}$/.test(country)) {
+              // Already a 3-letter country code
+              countryCode = country;
+            } else {
+              // Try to extract from country string
+              countryCode = this.extractCountryFromClub(country);
+            }
           }
 
           // Clean up start time - remove timezone information
@@ -284,12 +295,9 @@ class LiveResultsService {
             startTime = startTime.replace(/\s*(UTC|GMT)[+-]?\d*/gi, '').trim();
           }
 
-          // Extract country code
-          const countryCode = this.extractCountryFromClub(country);
-
-          // Log first few bib numbers for debugging
+          // Log first few competitors for debugging
           if (index < 3) {
-            console.log(`Competitor ${index}: name=${name}, processed bib=${bib}, raw bib=${rawBib}`);
+            console.log(`Competitor ${index}: name=${name}, country=${countryCode}, raw country="${country}", processed bib=${bib}, raw bib=${rawBib}`);
           }
 
           return {
