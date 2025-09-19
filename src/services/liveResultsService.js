@@ -375,29 +375,12 @@ class LiveResultsService {
         // Parse scraped data
         const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
 
-        // Filter out competitors who haven't finished (no final time)
+        // Process all competitors from results page - they should all have results
+        // More lenient filtering - just need a valid rank
         const finishedCompetitors = scrapedData.competitors.filter(comp => {
-          // Must have a valid rank (numeric)
+          // Must have a valid rank (numeric) - that's the main indicator of a result
           const hasValidRank = comp.structured?.rank && !isNaN(comp.structured.rank);
-          if (!hasValidRank) return false;
-
-          // Check if we have a final time in structured data
-          if (comp.structured?.finalTime) {
-            return true;
-          }
-
-          // Otherwise check cells for a time in the last few positions
-          if (comp.cells && comp.cells.length > 0) {
-            // Look for a time format in the last 3 cells
-            for (let i = comp.cells.length - 1; i >= Math.max(0, comp.cells.length - 3); i--) {
-              const cellText = comp.cells[i];
-              if (cellText && /^\d+:\d{2}(:\d{2})?/.test(cellText)) {
-                return true; // Found a final time
-              }
-            }
-          }
-
-          return false; // No final time found
+          return hasValidRank;
         });
 
         console.log(`Filtered to ${finishedCompetitors.length} finished competitors out of ${scrapedData.competitors.length} total`);
@@ -418,11 +401,16 @@ class LiveResultsService {
 
           // If no final time in structured data, look for it in cells
           if (!finalTime && comp.cells) {
-            for (let i = comp.cells.length - 1; i >= 6; i--) {
+            // Search all cells for time format
+            for (let i = comp.cells.length - 1; i >= 0; i--) {
               const cellText = comp.cells[i];
-              if (cellText && /^\d+:\d{2}(:\d{2})?/.test(cellText)) {
-                finalTime = cellText;
-                break;
+              if (cellText && /\d+:\d{2}/.test(cellText)) {
+                // Extract time part
+                const timeMatch = cellText.match(/(\d+:\d{2}(:\d{2})?)/);
+                if (timeMatch) {
+                  finalTime = timeMatch[1];
+                  break;
+                }
               }
             }
           }
@@ -433,6 +421,11 @@ class LiveResultsService {
             if (timeMatch) {
               finalTime = timeMatch[1];
             }
+          } else {
+            // If still no final time but we have a rank, use a placeholder
+            // This ensures the competitor shows as finished
+            console.log(`Warning: No final time found for rank ${rank}, using placeholder`);
+            finalTime = '--:--';
           }
 
           // Process bib number: remove prefixes (11xx for men -> xx, 21xx for women -> 1xx)

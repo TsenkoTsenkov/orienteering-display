@@ -173,13 +173,17 @@ async function extractAllCompetitors(page) {
                 finalTime: null
               };
 
-              // Find the final time - look for time format in later cells
-              for (let i = cells.length - 1; i >= 6; i--) {
+              // Find the final time - more aggressive search
+              for (let i = cells.length - 1; i >= 0; i--) {
                 const cellText = cells[i]?.textContent.trim();
-                // Check for time format (MM:SS or HH:MM:SS)
-                if (cellText && /^\d+:\d{2}(:\d{2})?/.test(cellText)) {
-                  competitorData.structured.finalTime = cellText;
-                  break;
+                // Check for any time format (MM:SS, HH:MM:SS, or with +)
+                if (cellText && /\d+:\d{2}/.test(cellText)) {
+                  // Extract just the time part
+                  const timeMatch = cellText.match(/(\d+:\d{2}(:\d{2})?)/);;
+                  if (timeMatch) {
+                    competitorData.structured.finalTime = timeMatch[1];
+                    break;
+                  }
                 }
               }
             } else {
