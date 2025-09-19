@@ -9,6 +9,10 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   const upcomingCompetitors = competitors
     .filter(c => c.status === 'not_started');
 
+  console.log('[StartListPaginated] Total competitors:', competitors.length,
+    'Filtered (not_started):', upcomingCompetitors.length,
+    'Category:', category);
+
   // Calculate total pages
   const totalPages = upcomingCompetitors.length > 0
     ? Math.ceil(upcomingCompetitors.length / itemsPerPage)

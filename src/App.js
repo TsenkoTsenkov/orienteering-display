@@ -344,6 +344,7 @@ function App() {
             womenClass ? liveResultsService.fetchStartList(eventId, competitionId, womenClass.id) : []
           ]);
 
+          console.log('[App] Fetched competitors - Men:', menData.length, 'Women:', womenData.length);
           const newCompetitorsData = {
             men: menData,
             women: womenData

@@ -243,6 +243,12 @@ const Controls = ({
           >
             15 Items
           </button>
+          <button
+            className={`control-btn ${itemsPerPage === 100 ? 'active' : ''}`}
+            onClick={() => setItemsPerPage(100)}
+          >
+            Show All
+          </button>
         </div>
       </div>
 

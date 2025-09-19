@@ -758,8 +758,8 @@ class LiveResultsService {
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
     };
 
-    // Generate competitors from the actual names
-    const competitors = names.slice(0, 10).map((name, index) => ({
+    // Generate competitors from the actual names - use all available names
+    const competitors = names.map((name, index) => ({
       id: `mock_${index + 1}`,
       name: name,
       country: countryMap[name] || 'UNK',
