@@ -386,25 +386,67 @@ function App() {
       setMockServer(server);
       sportIdentService.setDemoMode(true, server);
 
-      // Initialize demo with sample competitors
+      // Initialize demo with more competitors for better demonstration
       const demoCompetitors = [
-        { name: 'Demo Runner 1', country: 'NOR', startTime: '10:00:00', category: 'Men' },
-        { name: 'Demo Runner 2', country: 'SWE', startTime: '10:02:00', category: 'Men' },
-        { name: 'Demo Runner 3', country: 'FIN', startTime: '10:04:00', category: 'Women' },
-        { name: 'Demo Runner 4', country: 'SUI', startTime: '10:06:00', category: 'Women' }
+        // Men's category
+        { name: 'Kjetil Johansen', country: 'NOR', startTime: '10:00:00', category: 'Men' },
+        { name: 'Emil Svensk', country: 'SWE', startTime: '10:01:00', category: 'Men' },
+        { name: 'Thierry Gueorgiou', country: 'FRA', startTime: '10:02:00', category: 'Men' },
+        { name: 'Matthias Kyburz', country: 'SUI', startTime: '10:03:00', category: 'Men' },
+        { name: 'Olav Lundanes', country: 'NOR', startTime: '10:04:00', category: 'Men' },
+        { name: 'Daniel Hubmann', country: 'SUI', startTime: '10:05:00', category: 'Men' },
+        { name: 'Gustav Bergman', country: 'SWE', startTime: '10:06:00', category: 'Men' },
+        { name: 'Magne Daehli', country: 'NOR', startTime: '10:07:00', category: 'Men' },
+        // Women's category
+        { name: 'Tove Alexandersson', country: 'SWE', startTime: '10:00:30', category: 'Women' },
+        { name: 'Simona Aebersold', country: 'SUI', startTime: '10:01:30', category: 'Women' },
+        { name: 'Marika Teini', country: 'FIN', startTime: '10:02:30', category: 'Women' },
+        { name: 'Natalia Gemperle', country: 'RUS', startTime: '10:03:30', category: 'Women' },
+        { name: 'Sara Hagstrom', country: 'SWE', startTime: '10:04:30', category: 'Women' },
+        { name: 'Megan Carter Davies', country: 'GBR', startTime: '10:05:30', category: 'Women' },
+        { name: 'Andrine Benjaminsen', country: 'NOR', startTime: '10:06:30', category: 'Women' },
+        { name: 'Elena Roos', country: 'SUI', startTime: '10:07:30', category: 'Women' }
       ];
 
-      server.initializeDemoEvent(demoCompetitors, [33, 38]);
-      server.startSimulation(30); // 30x speed for demo
+      // Add card numbers and bib numbers to demo competitors
+      const demoCompetitorsWithCards = demoCompetitors.map((c, index) => ({
+        ...c,
+        card: 8000000 + index * 100 + Math.floor(Math.random() * 50),
+        bib: index + 1
+      }));
+
+      server.initializeDemoEvent(demoCompetitorsWithCards, [33, 38, 45, 52]);
+      server.startSimulation(20); // 20x speed for demo - slightly slower for better visualization
 
       // Set demo competitors
       const newCompetitorsData = {
-        men: demoCompetitors.filter(c => c.category === 'Men'),
-        women: demoCompetitors.filter(c => c.category === 'Women')
+        men: demoCompetitorsWithCards.filter(c => c.category === 'Men'),
+        women: demoCompetitorsWithCards.filter(c => c.category === 'Women')
       };
       setCompetitorsData(newCompetitorsData);
       await saveData('competitorsData', newCompetitorsData);
 
+      // Set demo SportIdent event ID and create demo scenes
+      setSportIdentEventId('demo');
+      const demoLiveScenes = [
+        { id: 'live-tracking-demo-1', name: 'Live: Forest Entry (CP 33)', controlCode: 33 },
+        { id: 'live-tracking-demo-2', name: 'Live: Hill Top (CP 38)', controlCode: 38 },
+        { id: 'live-tracking-demo-3', name: 'Live: River Crossing (CP 45)', controlCode: 45 },
+        { id: 'live-tracking-demo-4', name: 'Live: Final Sprint (CP 52)', controlCode: 52 }
+      ];
+      setLiveTrackingScenes(demoLiveScenes);
+
+      // Also update custom scene names for the live tracking scenes
+      const updatedNames = { ...customSceneNames };
+      demoLiveScenes.forEach(scene => {
+        updatedNames[scene.id] = scene.name;
+      });
+      setCustomSceneNames(updatedNames);
+
+      // Save to Firebase for display mode
+      await saveData('liveTrackingScenes', demoLiveScenes);
+      await saveData('sportIdentEventId', 'demo');
+      await saveData('customSceneNames', updatedNames);
     }
 
     if (projectWithTimestamp.dataSource === 'liveresults' && projectWithTimestamp.eventData) {
