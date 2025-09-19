@@ -161,12 +161,32 @@ function App() {
     };
   }, [isDisplayMode]);
 
-  // Save live state to Firebase (only in control mode and after initialization)
+  // Save streamVisible changes immediately for instant response
   useEffect(() => {
     if (isDisplayMode) return;
-    if (!controlInitialized) return; // Don't save until control is initialized
+    if (!controlInitialized) return;
 
-    // Debounce the save to prevent rapid Firebase writes
+    const liveState = {
+      category: liveCategory,
+      scene: liveScene,
+      controlPoint: liveControlPoint,
+      pageIndex: livePageIndex,
+      itemsPerPage: itemsPerPage,
+      sceneConfig: liveSceneConfig,
+      selectedCompetitorId: liveSelectedCompetitorId,
+      streamVisible: streamVisible,
+      timestamp: Date.now()
+    };
+
+    saveData('liveState', liveState);
+    console.log('[Control] Stream visibility changed to:', streamVisible);
+  }, [streamVisible, isDisplayMode, controlInitialized]);
+
+  // Save other live state changes with debounce
+  useEffect(() => {
+    if (isDisplayMode) return;
+    if (!controlInitialized) return;
+
     const timeoutId = setTimeout(() => {
       const liveState = {
         category: liveCategory,
@@ -181,10 +201,10 @@ function App() {
       };
 
       saveData('liveState', liveState);
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode, controlInitialized]);
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, isDisplayMode, controlInitialized]);
 
   // Save settings to Firebase (only in control mode)
   useEffect(() => {
@@ -352,13 +372,14 @@ function App() {
         await saveData('competitorsData', newCompetitorsData);
         await saveData('currentCompetitionId', firstCompetition.id);
 
-        // Start polling for updates if we have a live event
-        if (projectWithTimestamp.eventUrl && pollingInterval) {
+        // Stop any existing polling
+        if (pollingInterval) {
           liveResultsService.stopPolling(pollingInterval);
+          setPollingInterval(null);
         }
 
-        // Don't set up polling - start list is static
-        console.log('[Start List] Data loaded, no polling needed for start list');
+        // Set up polling for results only (every 30 seconds)
+        startResultsPolling(projectWithTimestamp.eventUrl, firstCompetition.id);
       }
     }
   };
@@ -443,13 +464,98 @@ function App() {
         await saveData('competitorsData', newCompetitorsData);
       }
 
-      // Stop any existing polling when changing competition
+      // Stop existing polling and restart for new competition
       if (pollingInterval) {
         liveResultsService.stopPolling(pollingInterval);
         setPollingInterval(null);
-        console.log('[Competition Change] Stopped polling, start list is static');
+      }
+
+      // Start polling for results (every 30 seconds)
+      if (currentProject.eventUrl) {
+        startResultsPolling(currentProject.eventUrl, competitionId);
       }
     }
+  };
+
+  // Start polling for results only (not start list)
+  const startResultsPolling = (eventUrl, competitionId) => {
+    console.log('[Polling] Starting results polling for competition:', competitionId);
+
+    const pollResults = async () => {
+      try {
+        const eventId = liveResultsService.parseEventIdFromUrl(eventUrl);
+        if (!eventId) return;
+
+        const classes = await liveResultsService.fetchClasses(eventId, competitionId);
+        const { menClass, womenClass } = liveResultsService.findEliteClasses(classes);
+
+        // Fetch only results (not start list) for both categories
+        const [menResults, womenResults] = await Promise.all([
+          menClass ? liveResultsService.fetchResults(eventId, competitionId, menClass.id) : [],
+          womenClass ? liveResultsService.fetchResults(eventId, competitionId, womenClass.id) : []
+        ]);
+
+        // Update only the results in existing competitor data
+        setCompetitorsData(prevData => {
+          const updatedData = { ...prevData };
+
+          // Merge results with existing start list data for men
+          if (menResults.length > 0) {
+            const resultsMap = new Map(menResults.map(r => [r.name, r]));
+            updatedData.men = prevData.men.map(competitor => {
+              const result = resultsMap.get(competitor.name);
+              if (result) {
+                return {
+                  ...competitor,
+                  rank: result.rank,
+                  finalTime: result.finalTime,
+                  status: 'finished'
+                };
+              }
+              return competitor;
+            });
+          }
+
+          // Merge results with existing start list data for women
+          if (womenResults.length > 0) {
+            const resultsMap = new Map(womenResults.map(r => [r.name, r]));
+            updatedData.women = prevData.women.map(competitor => {
+              const result = resultsMap.get(competitor.name);
+              if (result) {
+                return {
+                  ...competitor,
+                  rank: result.rank,
+                  finalTime: result.finalTime,
+                  status: 'finished'
+                };
+              }
+              return competitor;
+            });
+          }
+
+          // Save updated data to Firebase
+          saveData('competitorsData', updatedData);
+
+          console.log('[Polling] Results updated - Men finished:',
+            updatedData.men.filter(c => c.status === 'finished').length,
+            'Women finished:',
+            updatedData.women.filter(c => c.status === 'finished').length);
+
+          return updatedData;
+        });
+      } catch (error) {
+        console.error('[Polling] Error fetching results:', error);
+      }
+    };
+
+    // Initial poll
+    pollResults();
+
+    // Set up interval (30 seconds)
+    const intervalId = setInterval(pollResults, 30000);
+    setPollingInterval(intervalId);
+
+    return intervalId;
   };
 
   // Handle refetch for specific competition and category
