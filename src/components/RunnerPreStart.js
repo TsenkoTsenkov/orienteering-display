@@ -47,7 +47,7 @@ const RunnerPreStart = ({ competitors, category, sceneTitle, selectedCompetitorI
         </div>
 
         <div className="runner-right">
-          <span className="pre-start-badge">PRE START</span>
+          <span className="pre-start-badge">READY</span>
         </div>
       </div>
     </div>
