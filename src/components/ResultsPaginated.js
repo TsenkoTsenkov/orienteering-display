@@ -96,9 +96,25 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
     return `+${minutes}:${seconds}`;
   };
 
-  // Don't render until properly mounted
+  // Don't render until properly mounted and we have data
   if (!mounted && currentPageIndex === undefined) {
     return null;
+  }
+
+  // Don't render if no finished competitors
+  if (finishedCompetitors.length === 0) {
+    return (
+      <div className="scene-container results paginated">
+        <div className="scene-header">
+          <div className="header-accent"></div>
+          <h2 className="scene-title">{sceneTitle || 'RESULTS'}</h2>
+          <div className="category-badge">{category}</div>
+        </div>
+        <div className="no-results-message" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+          No finished competitors yet
+        </div>
+      </div>
+    );
   }
 
   return (

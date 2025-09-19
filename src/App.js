@@ -34,6 +34,9 @@ function App() {
   const [previewControlPoint, setPreviewControlPoint] = useState(1);
   const [selectedCompetitorId, setSelectedCompetitorId] = useState(null);
 
+  // Track if control mode has been initialized to prevent default states from being pushed
+  const [controlInitialized, setControlInitialized] = useState(false);
+
   // Reset selected competitor when category changes
   useEffect(() => {
     setSelectedCompetitorId(null);
@@ -98,6 +101,7 @@ function App() {
           const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
           const scene = validScenes.includes(data.scene) ? data.scene : 'start-list';
 
+          // Batch update state to prevent intermediate renders
           setLiveCategory(data.category || 'Men');
           setLiveScene(scene);
           setLiveControlPoint(data.controlPoint || 1);
@@ -105,7 +109,13 @@ function App() {
           setItemsPerPage(data.itemsPerPage || 10);
           setLiveSceneConfig(data.sceneConfig || { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
           setLiveSelectedCompetitorId(data.selectedCompetitorId || null);
-          setStreamVisible(data.streamVisible !== undefined ? data.streamVisible : true);
+
+          // Ensure stream visibility is properly synced
+          const newStreamVisible = data.streamVisible !== undefined ? data.streamVisible : true;
+          console.log('[Display Mode] Setting streamVisible to:', newStreamVisible);
+          setStreamVisible(newStreamVisible);
+
+          // Mark as initialized only after all state is set
           setSceneInitialized(true);
         }
       })
@@ -144,9 +154,10 @@ function App() {
     };
   }, [isDisplayMode]);
 
-  // Save live state to Firebase (only in control mode)
+  // Save live state to Firebase (only in control mode and after initialization)
   useEffect(() => {
     if (isDisplayMode) return;
+    if (!controlInitialized) return; // Don't save until control is initialized
 
     const liveState = {
       category: liveCategory,
@@ -160,9 +171,9 @@ function App() {
       timestamp: Date.now()
     };
 
-    console.log('[Control] Saving to Firebase, pageIndex:', livePageIndex);
+    console.log('[Control] Saving to Firebase - Scene:', liveScene, 'StreamVisible:', streamVisible, 'PageIndex:', livePageIndex);
     saveData('liveState', liveState);
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode]);
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode, controlInitialized]);
 
   // Save settings to Firebase (only in control mode)
   useEffect(() => {
@@ -529,6 +540,25 @@ function App() {
     if (!isDisplayMode) {
       const unsubscribers = [];
 
+      // First, restore the live state from Firebase to avoid overwriting it
+      listenToData('liveState', (data) => {
+        if (data && !controlInitialized) {
+          console.log('[Control] Restoring live state from Firebase:', data);
+          setLiveCategory(data.category || 'Men');
+          setLiveScene(data.scene || 'start-list');
+          setLiveControlPoint(data.controlPoint || 1);
+          setLivePageIndex(data.pageIndex || 0);
+          setItemsPerPage(data.itemsPerPage || 10);
+          setLiveSceneConfig(data.sceneConfig || { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
+          setLiveSelectedCompetitorId(data.selectedCompetitorId || null);
+          setStreamVisible(data.streamVisible !== undefined ? data.streamVisible : true);
+          setControlInitialized(true);
+        } else if (!data && !controlInitialized) {
+          // No existing live state, mark as initialized with defaults
+          setControlInitialized(true);
+        }
+      });
+
       // Listen to projects and restore current project
       unsubscribers.push(
         listenToData('projects', (data) => {
@@ -573,7 +603,7 @@ function App() {
         unsubscribers.forEach(unsub => unsub());
       };
     }
-  }, [isDisplayMode, currentProject]);
+  }, [isDisplayMode, currentProject, controlInitialized]);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -647,7 +677,7 @@ function App() {
 
     return (
       <div className="app display-mode">
-        {streamVisible && (
+        {streamVisible && sceneInitialized && (
           <div
             className="display-output"
             style={{
