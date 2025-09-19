@@ -46,6 +46,7 @@ function App() {
   const [livePageIndex, setLivePageIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [liveSelectedCompetitorId, setLiveSelectedCompetitorId] = useState(null);
+  const [streamVisible, setStreamVisible] = useState(true); // New state for stream visibility
 
   // Scene configurations (size and position per scene)
   const [sceneConfigs, setSceneConfigs] = useState({
@@ -100,6 +101,7 @@ function App() {
           setItemsPerPage(data.itemsPerPage || 10);
           setLiveSceneConfig(data.sceneConfig || { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } });
           setLiveSelectedCompetitorId(data.selectedCompetitorId || null);
+          setStreamVisible(data.streamVisible !== undefined ? data.streamVisible : true);
         }
       })
     );
@@ -149,12 +151,13 @@ function App() {
       itemsPerPage: itemsPerPage,
       sceneConfig: liveSceneConfig,
       selectedCompetitorId: liveSelectedCompetitorId,
+      streamVisible: streamVisible,
       timestamp: Date.now()
     };
 
     console.log('[Control] Saving to Firebase, pageIndex:', livePageIndex);
     saveData('liveState', liveState);
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, isDisplayMode]);
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode]);
 
   // Save settings to Firebase (only in control mode)
   useEffect(() => {
@@ -597,18 +600,20 @@ function App() {
 
     return (
       <div className="app display-mode">
-        <div
-          className="display-output"
-          style={{
-            width: `${displayWidth}px`,
-            height: `${displayHeight}px`,
-            position: 'absolute',
-            left: `${absoluteX}px`,
-            top: `${absoluteY}px`
-          }}
-        >
-          {renderScene(safeScene, liveCategory, liveControlPoint, true)}
-        </div>
+        {streamVisible && (
+          <div
+            className="display-output"
+            style={{
+              width: `${displayWidth}px`,
+              height: `${displayHeight}px`,
+              position: 'absolute',
+              left: `${absoluteX}px`,
+              top: `${absoluteY}px`
+            }}
+          >
+            {renderScene(safeScene, liveCategory, liveControlPoint, true)}
+          </div>
+        )}
       </div>
     );
   }
@@ -851,6 +856,8 @@ function App() {
             competitorsData={competitorsData}
             selectedCompetitorId={selectedCompetitorId}
             setSelectedCompetitorId={setSelectedCompetitorId}
+            streamVisible={streamVisible}
+            setStreamVisible={setStreamVisible}
           />
         </div>
       </div>

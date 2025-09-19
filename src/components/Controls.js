@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Monitor, Users, Timer, Trophy, MapPin, Play, Pause } from 'lucide-react';
+import { Settings, Monitor, Users, Timer, Trophy, MapPin, Play, Pause, Eye, EyeOff } from 'lucide-react';
 import './Controls.css';
 
 const Controls = ({
@@ -23,7 +23,9 @@ const Controls = ({
   updateSceneConfig,
   competitorsData,
   selectedCompetitorId,
-  setSelectedCompetitorId
+  setSelectedCompetitorId,
+  streamVisible,
+  setStreamVisible
 }) => {
   const [editingScene, setEditingScene] = useState(null);
   const [tempSceneName, setTempSceneName] = useState('');
@@ -84,6 +86,13 @@ const Controls = ({
         <button className="go-live-control-btn" onClick={onGoLive}>
           <span className="live-icon">📡</span>
           PUSH PREVIEW TO LIVE
+        </button>
+        <button
+          className={`stream-toggle-btn ${streamVisible ? 'stream-on' : 'stream-off'}`}
+          onClick={() => setStreamVisible(!streamVisible)}
+        >
+          {streamVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+          {streamVisible ? 'STREAM ON' : 'STREAM OFF'}
         </button>
       </div>
 
