@@ -174,13 +174,20 @@ function App() {
   useEffect(() => {
     if (!autoRotate || rotationPaused || isDisplayMode) return;
 
-    // Calculate actual number of pages based on current data
+    // Calculate actual number of pages based on current data and scene
     const competitors = liveCategory === 'Men' ? competitorsData.men : competitorsData.women;
-    const totalPages = competitors && competitors.length > 0
-      ? Math.ceil(competitors.length / itemsPerPage)
+
+    // For start list, filter for not_started status (same as StartListPaginated does)
+    let relevantCompetitors = competitors;
+    if (liveScene === 'start-list') {
+      relevantCompetitors = competitors.filter(c => c.status === 'not_started');
+    }
+
+    const totalPages = relevantCompetitors && relevantCompetitors.length > 0
+      ? Math.ceil(relevantCompetitors.length / itemsPerPage)
       : 1;
 
-    console.log('[Control] Starting auto-rotation, interval:', rotationInterval, 'totalPages:', totalPages);
+    console.log('[Control] Starting auto-rotation, scene:', liveScene, 'interval:', rotationInterval, 'totalPages:', totalPages, 'competitors:', relevantCompetitors.length);
     const interval = setInterval(() => {
       setLivePageIndex(prev => {
         // Wrap around to 0 when reaching the last page

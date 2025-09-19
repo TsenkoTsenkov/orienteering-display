@@ -9,39 +9,44 @@ const StartListPaginated = ({ competitors, category, sceneTitle, autoRotate, rot
   const upcomingCompetitors = competitors
     .filter(c => c.status === 'not_started');
 
-  console.log('[StartListPaginated] Total competitors:', competitors.length,
-    'Filtered (not_started):', upcomingCompetitors.length,
-    'Category:', category);
-
   // Calculate total pages
   const totalPages = upcomingCompetitors.length > 0
     ? Math.ceil(upcomingCompetitors.length / itemsPerPage)
-    : 0; // 0 pages if no competitors
+    : 1; // At least 1 page even if empty
 
   // Determine page to show based on mode
   let pageToShow = 0;
 
-  if (totalPages > 0) {
-    if (currentPageIndex !== undefined) {
-      // External control mode (live)
-      pageToShow = currentPageIndex % totalPages;
-    } else {
-      // Internal control mode (preview)
-      pageToShow = currentPage;
-    }
+  if (currentPageIndex !== undefined) {
+    // External control mode (live)
+    pageToShow = Math.min(currentPageIndex, totalPages - 1);
+  } else {
+    // Internal control mode (preview)
+    pageToShow = currentPage % totalPages;
   }
+
+  console.log('[StartListPaginated] Total competitors:', competitors.length,
+    'Filtered (not_started):', upcomingCompetitors.length,
+    'Category:', category,
+    'CurrentPageIndex:', currentPageIndex,
+    'PageToShow:', pageToShow,
+    'TotalPages:', totalPages);
 
   // Handle internal rotation for preview mode only
   useEffect(() => {
     // Skip if external control or no pages
-    if (currentPageIndex !== undefined || totalPages <= 1) return;
+    if (currentPageIndex !== undefined || totalPages <= 1 || upcomingCompetitors.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentPage(prev => (prev + 1) % totalPages);
+      setCurrentPage(prev => {
+        const next = (prev + 1) % totalPages;
+        console.log('[StartListPaginated Internal] Rotating from', prev, 'to', next, 'of', totalPages);
+        return next;
+      });
     }, pageDuration);
 
     return () => clearInterval(interval);
-  }, [totalPages, pageDuration, currentPageIndex]);
+  }, [totalPages, pageDuration, currentPageIndex, upcomingCompetitors.length]);
 
   const startIndex = pageToShow * itemsPerPage;
   const currentCompetitors = upcomingCompetitors.slice(startIndex, startIndex + itemsPerPage);
