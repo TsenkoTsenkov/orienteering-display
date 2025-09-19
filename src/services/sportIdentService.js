@@ -243,17 +243,20 @@ class SportIdentService {
       this.setDemoMode(true);
     }
 
-    // Reset if control code changed
-    if (this.demoServer && this.lastControlCode !== controlCode) {
-      console.log('[SportIdent] Control changed, resetting mock server');
-      this.demoServer.reset();
-      this.demoServer = null;
-      this.setDemoMode(true); // This will create a new server
-    }
-    this.lastControlCode = controlCode;
-
-    if (this.demoServer && !this.demoServer.simulationInterval) {
+    // Only initialize if not already running for this control
+    if (!this.demoServer || !this.demoServer.simulationInterval || this.lastControlCode !== controlCode) {
       console.log('[SportIdent] Initializing demo with', competitors.length, 'competitors for control', controlCode);
+
+      // Reset for new control
+      if (this.demoServer) {
+        this.demoServer.reset();
+      } else {
+        this.demoServer = new SportIdentMockServer();
+      }
+
+      // Clear cached punch IDs for demo
+      this.lastPunchIds.clear();
+      this.punchCache.clear();
 
       // Add consistent card numbers
       const competitorsWithCards = competitors.map((comp, index) => ({
@@ -263,6 +266,7 @@ class SportIdentService {
 
       this.demoServer.initializeDemoEvent(competitorsWithCards, [controlCode]);
       this.demoServer.startSimulation(20);
+      this.lastControlCode = controlCode;
     }
   }
 
@@ -277,7 +281,7 @@ class SportIdentService {
 export class SportIdentMockServer {
   constructor() {
     this.punches = [];
-    this.currentId = 1000;
+    this.currentId = Date.now(); // Use timestamp to avoid ID conflicts
     this.runners = [];
     this.startTime = null;
     this.simulationInterval = null;
@@ -468,9 +472,10 @@ export class SportIdentMockServer {
 
   // Reset simulation
   reset() {
+    console.log('[Mock Server] Resetting simulation');
     this.stopSimulation();
     this.punches = [];
-    this.currentId = 1000;
+    this.currentId = Date.now(); // Use timestamp to avoid ID conflicts
     this.runners = [];
     this.eventCallbacks = [];
   }

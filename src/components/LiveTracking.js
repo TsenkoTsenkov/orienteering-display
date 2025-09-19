@@ -57,7 +57,7 @@ const LiveTracking = ({
     const isDemoMode = !eventId || eventId === 'demo';
     const effectiveEventId = eventId || 'demo';
 
-    // Initialize demo mode if needed
+    // Initialize demo mode if needed (only once per control)
     if (isDemoMode) {
       console.log('[LiveTracking] Setting up demo mode for control', controlCode);
 
@@ -231,7 +231,6 @@ const LiveTracking = ({
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <span className="rank large-rank">
-                  {index === 0 && <span className="leader-icon">👑</span>}
                   <span className="rank-number">{index + 1}</span>
                 </span>
                 <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
