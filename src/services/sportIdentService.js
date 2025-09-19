@@ -29,10 +29,13 @@ class SportIdentService {
       // Always use demo mode if eventId is demo or empty
       const isDemoMode = !eventId || eventId === 'demo';
 
+      console.log(`[SportIdent] fetchPunches called for event ${eventId}, isDemoMode: ${isDemoMode}, hasDemoServer: ${!!this.demoServer}`);
+
       // In demo mode, use mock server
       if (isDemoMode || (this.demoMode && this.demoServer)) {
         if (this.demoServer) {
-          return this.demoServer.fetchPunches(afterId);
+          console.log('[SportIdent] Using mock server for fetching');
+          return await this.demoServer.fetchPunches(afterId);
         }
         console.warn('[SportIdent] Demo mode but no mock server initialized');
         return [];
@@ -79,7 +82,9 @@ class SportIdentService {
     const poll = async () => {
       try {
         const lastId = this.lastPunchIds.get(pollingKey);
+        console.log(`[SportIdent] Polling for control ${controlCode}, lastId: ${lastId}`);
         const punches = await this.fetchPunches(effectiveEventId, lastId);
+        console.log(`[SportIdent] Poll returned ${punches ? punches.length : 0} punches`);
 
         if (punches && punches.length > 0) {
           console.log(`[SportIdent] Received ${punches.length} punches for event ${effectiveEventId}`);
