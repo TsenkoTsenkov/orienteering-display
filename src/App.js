@@ -8,7 +8,9 @@ import RunnerPreStart from './components/RunnerPreStart';
 import Controls from './components/Controls';
 import SimpleResizable from './components/SimpleResizable';
 import ProjectCreator from './components/ProjectCreator';
+import LiveTracking from './components/LiveTracking';
 import liveResultsService from './services/liveResultsService';
+import sportIdentService, { SportIdentMockServer } from './services/sportIdentService';
 import { saveData, listenToData, getData } from './utils/firebaseConfig';
 import './App.css';
 
@@ -82,8 +84,16 @@ function App() {
     'split-1': 'Control Point 1',
     'split-2': 'Control Point 2',
     'split-3': 'Control Point 3',
-    'split-4': 'Control Point 4'
+    'split-4': 'Control Point 4',
+    'live-tracking-1': 'Live: Control 1',
+    'live-tracking-2': 'Live: Control 2',
+    'live-tracking-3': 'Live: Control 3',
+    'live-tracking-4': 'Live: Control 4'
   });
+
+  // SportIdent configuration
+  const [sportIdentConfig, setSportIdentConfig] = useState(null);
+  const [mockServer, setMockServer] = useState(null); // eslint-disable-line no-unused-vars
 
   // Current preview size and position
   const previewSize = sceneConfigs[previewScene]?.size || { width: 1920, height: 1080 };
@@ -361,6 +371,56 @@ function App() {
       const updated = [...filtered, projectWithTimestamp];
       return updated;
     });
+
+    // Handle SportIdent configuration
+    if (projectWithTimestamp.dataSource === 'sportident' && projectWithTimestamp.sportIdentConfig) {
+      setSportIdentConfig(projectWithTimestamp.sportIdentConfig);
+
+      // Update scene names for live tracking controls
+      const updatedSceneNames = { ...customSceneNames };
+      projectWithTimestamp.sportIdentConfig.controls.forEach((control, index) => {
+        if (index < 4) {
+          updatedSceneNames[`live-tracking-${index + 1}`] = control.name || `Live: Control ${index + 1}`;
+        }
+      });
+      setCustomSceneNames(updatedSceneNames);
+    }
+
+    // Start demo mode if manual project
+    if (projectWithTimestamp.dataSource === 'manual') {
+      console.log('[App] Starting demo mode');
+      const server = new SportIdentMockServer();
+      setMockServer(server);
+      sportIdentService.setDemoMode(true, server);
+
+      // Initialize demo with sample competitors
+      const demoCompetitors = [
+        { name: 'Demo Runner 1', country: 'NOR', startTime: '10:00:00', category: 'Men' },
+        { name: 'Demo Runner 2', country: 'SWE', startTime: '10:02:00', category: 'Men' },
+        { name: 'Demo Runner 3', country: 'FIN', startTime: '10:04:00', category: 'Women' },
+        { name: 'Demo Runner 4', country: 'SUI', startTime: '10:06:00', category: 'Women' }
+      ];
+
+      server.initializeDemoEvent(demoCompetitors, [33, 38]);
+      server.startSimulation(30); // 30x speed for demo
+
+      // Set demo competitors
+      const newCompetitorsData = {
+        men: demoCompetitors.filter(c => c.category === 'Men'),
+        women: demoCompetitors.filter(c => c.category === 'Women')
+      };
+      setCompetitorsData(newCompetitorsData);
+      await saveData('competitorsData', newCompetitorsData);
+
+      // Set SportIdent config for demo
+      setSportIdentConfig({
+        eventId: 'demo',
+        controls: [
+          { code: 33, name: 'Demo Control 1' },
+          { code: 38, name: 'Demo Control 2' }
+        ]
+      });
+    }
 
     if (projectWithTimestamp.dataSource === 'liveresults' && projectWithTimestamp.eventData) {
       // Set the first competition as current
@@ -796,7 +856,9 @@ function App() {
 
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
     // Add validation to ensure we only render valid scenes
-    const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+    const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner',
+                        'split-1', 'split-2', 'split-3', 'split-4',
+                        'live-tracking-1', 'live-tracking-2', 'live-tracking-3', 'live-tracking-4'];
 
     if (!validScenes.includes(sceneType)) {
       console.warn(`[RenderScene] Invalid scene type: ${sceneType}, defaulting to start-list`);
@@ -837,6 +899,25 @@ function App() {
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={3} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'split-4':
         return <SplitTimesPaginated competitors={competitors} category={categoryType} controlPoint={4} sceneTitle={sceneTitle} {...rotationProps} />;
+      case 'live-tracking-1':
+      case 'live-tracking-2':
+      case 'live-tracking-3':
+      case 'live-tracking-4':
+        const controlIndex = parseInt(sceneType.split('-')[2]) - 1;
+        const control = sportIdentConfig?.controls?.[controlIndex];
+        if (!control || !sportIdentConfig) {
+          return <div style={{color: 'white', padding: '20px'}}>SportIdent not configured</div>;
+        }
+        return (
+          <LiveTracking
+            competitors={competitors}
+            category={categoryType}
+            controlCode={control.code}
+            controlName={control.name || sceneTitle}
+            sportIdentService={sportIdentService}
+            eventId={sportIdentConfig.eventId}
+          />
+        );
       default:
         console.error(`[RenderScene] Unhandled scene type after validation: ${sceneType}`);
         return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;

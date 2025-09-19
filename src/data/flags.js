@@ -72,3 +72,6 @@ export const countryFlags = {
 export const getFlag = (countryCode) => {
   return countryFlags[countryCode] || countryFlags.DEFAULT;
 };
+
+// Default export for backward compatibility
+export default countryFlags;

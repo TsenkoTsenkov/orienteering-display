@@ -5,10 +5,19 @@ import './ProjectCreator.css';
 const ProjectCreator = ({ onProjectCreated, onCancel }) => {
   const [projectName, setProjectName] = useState('');
   const [eventUrl, setEventUrl] = useState('');
-  const [dataSource, setDataSource] = useState('liveresults'); // 'liveresults' or 'manual'
+  const [dataSource, setDataSource] = useState('liveresults'); // 'liveresults', 'sportident' or 'manual'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [eventData, setEventData] = useState(null);
+
+  // SportIdent configuration
+  const [sportIdentConfig, setSportIdentConfig] = useState({
+    eventId: '',
+    controls: [
+      { code: 33, name: 'Control Point 1' },
+      { code: 38, name: 'Control Point 2' }
+    ]
+  });
 
   const handleFetchEvent = async () => {
     if (!eventUrl) {
@@ -50,6 +59,7 @@ const ProjectCreator = ({ onProjectCreated, onCancel }) => {
       dataSource,
       eventUrl: dataSource === 'liveresults' ? eventUrl : null,
       eventData: dataSource === 'liveresults' ? eventData : null,
+      sportIdentConfig: dataSource === 'sportident' ? sportIdentConfig : null,
       createdAt: new Date().toISOString()
     };
 
@@ -91,6 +101,15 @@ const ProjectCreator = ({ onProjectCreated, onCancel }) => {
               <label className="radio-label">
                 <input
                   type="radio"
+                  value="sportident"
+                  checked={dataSource === 'sportident'}
+                  onChange={(e) => setDataSource(e.target.value)}
+                />
+                <span>SportIdent Live Tracking</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
                   value="manual"
                   checked={dataSource === 'manual'}
                   onChange={(e) => setDataSource(e.target.value)}
@@ -99,6 +118,79 @@ const ProjectCreator = ({ onProjectCreated, onCancel }) => {
               </label>
             </div>
           </div>
+
+          {dataSource === 'sportident' && (
+            <>
+              <div className="form-group">
+                <label>SportIdent Event ID</label>
+                <input
+                  type="text"
+                  value={sportIdentConfig.eventId}
+                  onChange={(e) => setSportIdentConfig(prev => ({ ...prev, eventId: e.target.value }))}
+                  placeholder="e.g., 20636"
+                  className="form-input"
+                />
+                <small className="help-text">
+                  Enter the SportIdent event ID (numeric ID from SportIdent Center)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>Control Points</label>
+                <div className="controls-config">
+                  {sportIdentConfig.controls.map((control, index) => (
+                    <div key={index} className="control-item">
+                      <input
+                        type="number"
+                        value={control.code}
+                        onChange={(e) => {
+                          const newControls = [...sportIdentConfig.controls];
+                          newControls[index].code = parseInt(e.target.value) || 0;
+                          setSportIdentConfig(prev => ({ ...prev, controls: newControls }));
+                        }}
+                        placeholder="Code"
+                        className="control-code-input"
+                      />
+                      <input
+                        type="text"
+                        value={control.name}
+                        onChange={(e) => {
+                          const newControls = [...sportIdentConfig.controls];
+                          newControls[index].name = e.target.value;
+                          setSportIdentConfig(prev => ({ ...prev, controls: newControls }));
+                        }}
+                        placeholder="Name"
+                        className="control-name-input"
+                      />
+                      {sportIdentConfig.controls.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newControls = sportIdentConfig.controls.filter((_, i) => i !== index);
+                            setSportIdentConfig(prev => ({ ...prev, controls: newControls }));
+                          }}
+                          className="remove-control-btn"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const newControls = [...sportIdentConfig.controls, { code: '', name: '' }];
+                      setSportIdentConfig(prev => ({ ...prev, controls: newControls }));
+                    }}
+                    className="add-control-btn"
+                  >
+                    + Add Control Point
+                  </button>
+                </div>
+                <small className="help-text">
+                  Configure control points to track (e.g., 33 for Control 3, 21 for Finish)
+                </small>
+              </div>
+            </>
+          )}
 
           {dataSource === 'liveresults' && (
             <>
