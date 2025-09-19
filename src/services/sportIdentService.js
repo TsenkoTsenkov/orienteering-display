@@ -71,8 +71,10 @@ class SportIdentService {
     // Initialize last punch ID if not set (or reset for demo mode)
     const isDemoMode = !eventId || eventId === 'demo';
     if (!this.lastPunchIds.has(pollingKey) || isDemoMode) {
-      console.log(`[SportIdent] Initializing lastPunchId for ${pollingKey} to null`);
-      this.lastPunchIds.set(pollingKey, null);
+      // For demo mode, set initial ID to current timestamp to only get new punches
+      const initialId = isDemoMode ? Date.now() - 1 : null;
+      console.log(`[SportIdent] Initializing lastPunchId for ${pollingKey} to ${initialId}`);
+      this.lastPunchIds.set(pollingKey, initialId);
     }
 
     // Store the listener
@@ -423,19 +425,19 @@ export class SportIdentMockServer {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
 
-    if (afterId) {
-      const newPunches = this.punches.filter(p => p.id > afterId);
-      if (newPunches.length > 0) {
-        console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}:`,
-          newPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
-      }
-      return newPunches;
+    if (afterId === null) {
+      // First poll - return nothing so runners arrive gradually
+      console.log(`[Mock Server] Initial poll - returning no punches to allow gradual arrival`);
+      return [];
     }
 
-    const recentPunches = this.punches.slice(-10); // Return last 10 punches if no afterId
-    console.log(`[Mock Server] Returning ${recentPunches.length} recent punches (no afterId):`,
-      recentPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
-    return recentPunches;
+    // Return new punches since afterId
+    const newPunches = this.punches.filter(p => p.id > afterId);
+    if (newPunches.length > 0) {
+      console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}:`,
+        newPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
+    }
+    return newPunches;
   }
 
   // Subscribe to punch events
