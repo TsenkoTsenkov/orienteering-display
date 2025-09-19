@@ -24,6 +24,8 @@ function App() {
     men: [],
     women: []
   });
+  // Cache to store data for all competitions (days) in the event
+  const [competitionsDataCache, setCompetitionsDataCache] = useState({});
   const [pollingInterval, setPollingInterval] = useState(null);
   const [projects, setProjects] = useState([]);
   const [isRefetching, setIsRefetching] = useState(false);
@@ -371,6 +373,11 @@ function App() {
           women: firstCompetition.women || []
         };
         setCompetitorsData(newCompetitorsData);
+        // Cache the data for this competition
+        setCompetitionsDataCache(prev => ({
+          ...prev,
+          [firstCompetition.id]: newCompetitorsData
+        }));
 
         // Save competitors data to Firebase
         await saveData('competitorsData', newCompetitorsData);
@@ -401,8 +408,27 @@ function App() {
       setPollingInterval(null);
     }
 
-    // Clear all data IMMEDIATELY
-    console.log('[Competition Change] Clearing all data');
+    // Check if we have cached data for this competition
+    const cachedData = competitionsDataCache[competitionId];
+    if (cachedData) {
+      console.log('[Competition Change] Using cached data for competition:', competitionId);
+      setCurrentCompetitionId(competitionId);
+      setCompetitorsData(cachedData);
+      await saveData('currentCompetitionId', competitionId);
+      await saveData('competitorsData', cachedData);
+
+      // Reset page index to 0 when changing competitions
+      setLivePageIndex(0);
+
+      // Start polling for results AFTER loading cached data
+      if (currentProject.eventUrl) {
+        startResultsPolling(currentProject.eventUrl, competitionId);
+      }
+      return;
+    }
+
+    // No cached data, fetch fresh data
+    console.log('[Competition Change] No cached data, fetching fresh data');
     setCompetitorsData({ men: [], women: [] });
     await saveData('competitorsData', { men: [], women: [] });
 
@@ -454,6 +480,11 @@ function App() {
           console.log('[App] Women finished competitors:', womenFinishedDebug.length, 'First 3:', womenFinishedDebug.slice(0, 3).map(c => `${c.name} (${c.finalTime})`));
 
           setCompetitorsData(newCompetitorsData);
+          // Cache the data for this competition
+          setCompetitionsDataCache(prev => ({
+            ...prev,
+            [competitionId]: newCompetitorsData
+          }));
           // Save to Firebase for display mode - CRITICAL FOR PRODUCTION
           console.log('[App] Saving competitors data to Firebase');
           await saveData('competitorsData', newCompetitorsData);
@@ -535,6 +566,12 @@ function App() {
             });
           }
 
+          // Update cache for this competition
+          setCompetitionsDataCache(prev => ({
+            ...prev,
+            [competitionId]: updatedData
+          }));
+
           // Save updated data to Firebase
           saveData('competitorsData', updatedData);
 
@@ -601,9 +638,13 @@ function App() {
         }
       }
 
-      // Update state and // localStorage removed for OBS compatibility
+      // Update state and cache
       setCompetitorsData(updatedData);
-      //setItem('competitorsData', JSON.stringify(updatedData));
+      // Update cache for this competition
+      setCompetitionsDataCache(prev => ({
+        ...prev,
+        [currentCompetitionId]: updatedData
+      }));
 
       // Update the project's event data in memory
       if (currentProject.eventData) {
@@ -650,6 +691,7 @@ function App() {
       setCurrentProject(null);
       setCurrentCompetitionId(null);
       setCompetitorsData({ men: [], women: [] });
+      setCompetitionsDataCache({});
 
       // Clear Firebase data as well
       await saveData('currentProjectId', null);
@@ -893,9 +935,10 @@ function App() {
                             setPollingInterval(null);
                           }
 
-                          // Clear old data before switching
+                          // Clear old data and cache before switching projects
                           setCompetitorsData({ men: [], women: [] });
                           setCurrentCompetitionId(null);
+                          setCompetitionsDataCache({});
 
                           setCurrentProject(project);
                           // Save current project ID to Firebase
@@ -912,6 +955,7 @@ function App() {
                           setCurrentProject(null);
                           setCurrentCompetitionId(null);
                           setCompetitorsData({ men: [], women: [] });
+                          setCompetitionsDataCache({});
                           await saveData('currentProjectId', null);
                           await saveData('currentCompetitionId', null);
                           await saveData('competitorsData', { men: [], women: [] });

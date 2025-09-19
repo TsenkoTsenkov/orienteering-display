@@ -250,8 +250,6 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data - extract name properly
-        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
-
         const competitors = scrapedData.competitors.map((comp, index) => {
           // The actual format from liveresults.it appears to be:
           // cells[0]: Start time
@@ -370,8 +368,6 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data
-        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
-
         // Process all competitors from results page - they should all have results
         // More lenient filtering - just need a valid rank
         const finishedCompetitors = scrapedData.competitors.filter(comp => {
@@ -495,8 +491,6 @@ class LiveResultsService {
 
       if (scrapedData.competitors && scrapedData.competitors.length > 0) {
         // Parse scraped data
-        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
-
         const competitors = scrapedData.competitors.map((comp, index) => {
           // Use actual scraped name
           let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
