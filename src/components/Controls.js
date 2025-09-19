@@ -30,6 +30,7 @@ const Controls = ({
 
   const scenes = [
     { id: 'start-list', name: customSceneNames['start-list'] || 'Start List', icon: <Users size={18} /> },
+    { id: 'runner-pre-start', name: customSceneNames['runner-pre-start'] || 'Runner - Pre Start', icon: <Timer size={18} /> },
     { id: 'current-runner', name: customSceneNames['current-runner'] || 'Current Runner', icon: <Timer size={18} /> },
     { id: 'split-1', name: customSceneNames['split-1'] || 'Control 1', icon: <MapPin size={18} /> },
     { id: 'split-2', name: customSceneNames['split-2'] || 'Control 2', icon: <MapPin size={18} /> },
@@ -195,7 +196,7 @@ const Controls = ({
         <p className="edit-hint">Double-click scene names to edit</p>
       </div>
 
-      {scene === 'current-runner' && (
+      {(scene === 'current-runner' || scene === 'runner-pre-start') && (
         <div className="control-section">
           <h4>Select Competitor by Start Number</h4>
           <select

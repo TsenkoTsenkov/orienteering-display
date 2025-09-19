@@ -3,6 +3,7 @@ import StartListPaginated from './components/StartListPaginated';
 import ResultsPaginated from './components/ResultsPaginated';
 import SplitTimesPaginated from './components/SplitTimesPaginated';
 import CurrentRunner from './components/CurrentRunner';
+import RunnerPreStart from './components/RunnerPreStart';
 import Controls from './components/Controls';
 import SimpleResizable from './components/SimpleResizable';
 import ProjectCreator from './components/ProjectCreator';
@@ -50,6 +51,7 @@ function App() {
   const [sceneConfigs, setSceneConfigs] = useState({
     'results': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'start-list': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'runner-pre-start': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'current-runner': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'split-1': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'split-2': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
@@ -65,6 +67,7 @@ function App() {
   const [customSceneNames, setCustomSceneNames] = useState({
     'results': 'Results',
     'start-list': 'Start List',
+    'runner-pre-start': 'Runner - Pre Start',
     'current-runner': 'Current Runner',
     'split-1': 'Control Point 1',
     'split-2': 'Control Point 2',
@@ -569,6 +572,13 @@ function App() {
         return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'results':
         return <ResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
+      case 'runner-pre-start':
+        return <RunnerPreStart
+          competitors={competitors}
+          category={categoryType}
+          sceneTitle={sceneTitle}
+          selectedCompetitorId={isLive ? liveSelectedCompetitorId : selectedCompetitorId}
+        />;
       case 'current-runner':
         return <CurrentRunner
           competitors={competitors}
