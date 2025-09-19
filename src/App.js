@@ -340,16 +340,30 @@ function App() {
           const classes = await liveResultsService.fetchClasses(eventId, competitionId);
           const { menClass, womenClass } = liveResultsService.findEliteClasses(classes);
 
-          // Fetch fresh data for both categories
+          // Fetch fresh data for both categories (includes both start list and results)
           const [menData, womenData] = await Promise.all([
-            menClass ? liveResultsService.fetchStartList(eventId, competitionId, menClass.id) : [],
-            womenClass ? liveResultsService.fetchStartList(eventId, competitionId, womenClass.id) : []
+            menClass ? liveResultsService.fetchCompetitors(eventId, competitionId, menClass.id) : [],
+            womenClass ? liveResultsService.fetchCompetitors(eventId, competitionId, womenClass.id) : []
           ]);
 
-          console.log('[App] Fetched competitors - Men:', menData.length, 'Women:', womenData.length);
+          // Transform the competitor data
+          const transformedMenData = menData.map((c, index) =>
+            liveResultsService.transformCompetitor(c, 'Men', index)
+          );
+          const transformedWomenData = womenData.map((c, index) =>
+            liveResultsService.transformCompetitor(c, 'Women', index)
+          );
+
+          console.log('[App] Fetched competitors - Men:', transformedMenData.length, 'Women:', transformedWomenData.length);
+
+          // Check how many have finished status
+          const menFinished = transformedMenData.filter(c => c.status === 'finished').length;
+          const womenFinished = transformedWomenData.filter(c => c.status === 'finished').length;
+          console.log('[App] Finished competitors - Men:', menFinished, 'Women:', womenFinished);
+
           const newCompetitorsData = {
-            men: menData,
-            women: womenData
+            men: transformedMenData,
+            women: transformedWomenData
           };
           setCompetitorsData(newCompetitorsData);
           // Save to Firebase for display mode
