@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StartListPaginated from './components/StartListPaginated';
 import ResultsPaginated from './components/ResultsPaginated';
+import PreliminaryResultsPaginated from './components/PreliminaryResultsPaginated';
 import SplitTimesPaginated from './components/SplitTimesPaginated';
 import CurrentRunner from './components/CurrentRunner';
 import RunnerPreStart from './components/RunnerPreStart';
@@ -55,6 +56,7 @@ function App() {
   // Scene configurations (size and position per scene)
   const [sceneConfigs, setSceneConfigs] = useState({
     'results': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
+    'preliminary-results': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'start-list': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'runner-pre-start': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
     'current-runner': { size: { width: 1920, height: 1080 }, position: { x: 0, y: 0 } },
@@ -71,6 +73,7 @@ function App() {
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const [customSceneNames, setCustomSceneNames] = useState({
     'results': 'Results',
+    'preliminary-results': 'Preliminary Results',
     'start-list': 'Start List',
     'runner-pre-start': 'Runner - Pre Start',
     'current-runner': 'Current Runner',
@@ -98,7 +101,7 @@ function App() {
         if (data) {
           console.log('[Display Mode] Live state updated:', data);
           // Validate scene before setting
-          const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+          const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
           const scene = validScenes.includes(data.scene) ? data.scene : 'start-list';
 
           // Batch update state to prevent intermediate renders
@@ -227,7 +230,7 @@ function App() {
     if (!autoRotate || rotationPaused || isDisplayMode) return;
 
     // Only auto-rotate for paginated scenes
-    const paginatedScenes = ['start-list', 'results', 'split-1', 'split-2', 'split-3', 'split-4'];
+    const paginatedScenes = ['start-list', 'results', 'preliminary-results', 'split-1', 'split-2', 'split-3', 'split-4'];
     if (!paginatedScenes.includes(liveScene)) {
       console.log('[Control] Scene', liveScene, 'does not support pagination, skipping auto-rotation');
       return;
@@ -307,7 +310,7 @@ function App() {
     console.log('[Control] Pushing to live - Scene:', previewScene, 'Category:', previewCategory);
 
     // Validate scene before pushing to live
-    const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+    const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
     if (!validScenes.includes(previewScene)) {
       console.error('[Control] Invalid scene attempted to push live:', previewScene);
       alert(`Cannot push invalid scene to live: ${previewScene}`);
@@ -746,7 +749,7 @@ function App() {
 
   const renderScene = (sceneType, categoryType, controlPt, isLive = false) => {
     // Add validation to ensure we only render valid scenes
-    const validScenes = ['start-list', 'results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
+    const validScenes = ['start-list', 'results', 'preliminary-results', 'runner-pre-start', 'current-runner', 'split-1', 'split-2', 'split-3', 'split-4'];
 
     if (!validScenes.includes(sceneType)) {
       console.warn(`[RenderScene] Invalid scene type: ${sceneType}, defaulting to start-list`);
@@ -763,6 +766,8 @@ function App() {
         return <StartListPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'results':
         return <ResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
+      case 'preliminary-results':
+        return <PreliminaryResultsPaginated competitors={competitors} category={categoryType} sceneTitle={sceneTitle} {...rotationProps} />;
       case 'runner-pre-start':
         return <RunnerPreStart
           competitors={competitors}

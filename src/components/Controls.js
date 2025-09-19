@@ -38,6 +38,7 @@ const Controls = ({
     { id: 'split-2', name: customSceneNames['split-2'] || 'Control 2', icon: <MapPin size={18} /> },
     { id: 'split-3', name: customSceneNames['split-3'] || 'Control 3', icon: <MapPin size={18} /> },
     { id: 'split-4', name: customSceneNames['split-4'] || 'Control 4', icon: <MapPin size={18} /> },
+    { id: 'preliminary-results', name: customSceneNames['preliminary-results'] || 'Preliminary Results', icon: <Trophy size={18} /> },
     { id: 'results', name: customSceneNames['results'] || 'Results', icon: <Trophy size={18} /> }
   ];
 
