@@ -145,7 +145,7 @@ function App() {
     // Listen to competitors data changes
     unsubscribers.push(
       listenToData('competitorsData', (data) => {
-        if (data) {
+        if (data && data.men && data.women) {
           console.log('[Display Mode] Competitors data updated - Men:', data.men?.length, 'Women:', data.women?.length);
           // Check for finished competitors
           const menFinished = data.men?.filter(c => c.status === 'finished').length || 0;
@@ -154,7 +154,8 @@ function App() {
 
           setCompetitorsData(data);
         } else {
-          console.log('[Display Mode] No competitors data in Firebase!');
+          console.log('[Display Mode] No competitors data in Firebase, clearing display');
+          setCompetitorsData({ men: [], women: [] });
         }
       })
     );
@@ -651,9 +652,11 @@ function App() {
       setCurrentProject(null);
       setCurrentCompetitionId(null);
       setCompetitorsData({ men: [], women: [] });
-      //removeItem('currentProject');
-      //removeItem('currentCompetitionId');
-      //removeItem('competitorsData');
+
+      // Clear Firebase data as well
+      await saveData('currentProjectId', null);
+      await saveData('currentCompetitionId', null);
+      await saveData('competitorsData', { men: [], women: [] });
 
       // Stop polling if active
       if (pollingInterval) {
@@ -713,12 +716,16 @@ function App() {
         })
       );
 
-      // Listen to saved competitor data
+      // Listen to saved competitor data - only load if we have a current project
       unsubscribers.push(
         listenToData('competitorsData', (data) => {
-          if (data) {
+          if (data && currentProject) {
             console.log('[Control] Loaded competitors data from Firebase - Men:', data.men?.length, 'Women:', data.women?.length);
             setCompetitorsData(data);
+          } else if (!currentProject) {
+            // No current project, ensure data is cleared
+            console.log('[Control] No current project, clearing competitors data');
+            setCompetitorsData({ men: [], women: [] });
           }
         })
       );
@@ -882,11 +889,38 @@ function App() {
                       onChange={async (e) => {
                         const project = projects.find(p => p.id === e.target.value);
                         if (project) {
+                          // Stop any existing polling first
+                          if (pollingInterval) {
+                            liveResultsService.stopPolling(pollingInterval);
+                            setPollingInterval(null);
+                          }
+
+                          // Clear old data before switching
+                          setCompetitorsData({ men: [], women: [] });
+                          setCurrentCompetitionId(null);
+
                           setCurrentProject(project);
                           // Save current project ID to Firebase
                           await saveData('currentProjectId', project.id);
                           if (project.eventData && project.eventData.competitions[0]) {
                             await handleCompetitionChange(project.eventData.competitions[0].id);
+                          } else {
+                            // No competitions, ensure Firebase is cleared
+                            await saveData('currentCompetitionId', null);
+                            await saveData('competitorsData', { men: [], women: [] });
+                          }
+                        } else {
+                          // No project selected, clear everything
+                          setCurrentProject(null);
+                          setCurrentCompetitionId(null);
+                          setCompetitorsData({ men: [], women: [] });
+                          await saveData('currentProjectId', null);
+                          await saveData('currentCompetitionId', null);
+                          await saveData('competitorsData', { men: [], women: [] });
+
+                          if (pollingInterval) {
+                            liveResultsService.stopPolling(pollingInterval);
+                            setPollingInterval(null);
                           }
                         }
                       }}
