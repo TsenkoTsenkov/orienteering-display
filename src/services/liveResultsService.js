@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { findClosestName, getNameByIndex, getCountryByIndex, correctMenNames, correctWomenNames } from '../data/competitorNames';
+import { correctMenNames, correctWomenNames } from '../data/competitorNames';
 
 // LiveResults.it API service
 class LiveResultsService {
@@ -289,18 +289,6 @@ class LiveResultsService {
           let name = 'Unknown';
           let extractedName = nameWithCountry;
           let countryCode = 'UNK';
-
-            // The separator between name and country uses non-breaking space (character 160)
-            const separatorPattern = /\s+\u00A0\s+|\s{2,}/;
-
-            if (separatorPattern.test(nameWithCountry)) {
-              extractedName = nameWithCountry.split(separatorPattern)[0].trim();
-            } else if (country && nameWithCountry.includes(country)) {
-              const countryIndex = nameWithCountry.lastIndexOf(country);
-              if (countryIndex > 0) {
-                extractedName = nameWithCountry.substring(0, countryIndex).trim();
-              }
-            }
 
           // The separator between name and country uses non-breaking space or multiple spaces
           const separatorPattern = /\s+\u00A0\s+|\s{2,}/;

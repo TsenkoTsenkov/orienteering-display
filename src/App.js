@@ -184,7 +184,7 @@ function App() {
 
     saveData('liveState', liveState);
     console.log('[Control] Stream visibility changed to:', streamVisible);
-  }, [streamVisible, isDisplayMode, controlInitialized]);
+  }, [streamVisible, isDisplayMode, controlInitialized, liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId]);
 
   // Save other live state changes with debounce
   useEffect(() => {
@@ -208,7 +208,7 @@ function App() {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, isDisplayMode, controlInitialized]);
+  }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode, controlInitialized]);
 
   // Save settings to Firebase (only in control mode)
   useEffect(() => {
