@@ -68,8 +68,10 @@ class SportIdentService {
     // Stop any existing polling for this control
     this.stopPolling(effectiveEventId, controlCode);
 
-    // Initialize last punch ID if not set
-    if (!this.lastPunchIds.has(pollingKey)) {
+    // Initialize last punch ID if not set (or reset for demo mode)
+    const isDemoMode = !eventId || eventId === 'demo';
+    if (!this.lastPunchIds.has(pollingKey) || isDemoMode) {
+      console.log(`[SportIdent] Initializing lastPunchId for ${pollingKey} to null`);
       this.lastPunchIds.set(pollingKey, null);
     }
 
@@ -290,6 +292,11 @@ export class SportIdentMockServer {
 
   // Initialize demo event with competitors
   initializeDemoEvent(competitors, controls = [33, 38]) {
+    console.log('[Mock Server] initializeDemoEvent called with', competitors.length, 'competitors');
+
+    // Reset punches for fresh start
+    this.punches = [];
+
     this.runners = competitors.map((comp, index) => {
       // Use the card number provided by the competitor object, or generate consistent one
       const card = comp.card || (8000000 + index * 100);
@@ -308,7 +315,7 @@ export class SportIdentMockServer {
 
     console.log('[Mock Server] Initialized with', this.runners.length, 'runners');
     console.log('[Mock Server] Controls:', controls);
-    console.log('[Mock Server] Sample runner:', this.runners[0]);
+    console.log('[Mock Server] Will generate punches starting from ID:', this.currentId);
   }
 
   // Parse start time to milliseconds from start
@@ -351,10 +358,12 @@ export class SportIdentMockServer {
   // Start simulation
   startSimulation(speedMultiplier = 10) {
     if (this.simulationInterval) {
+      console.log('[Mock Server] Simulation already running, clearing old interval');
       clearInterval(this.simulationInterval);
     }
 
     console.log('[Mock Server] Starting simulation with speed multiplier:', speedMultiplier);
+    console.log('[Mock Server] Runners:', this.runners.length, 'Controls:', this.controls);
 
     // For demo, start all runners immediately (ignore actual start times)
     const demoStartTime = Date.now() - 10 * 60 * 1000; // Started 10 minutes ago
