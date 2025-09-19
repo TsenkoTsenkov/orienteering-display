@@ -99,9 +99,12 @@ const LiveTracking = ({
 
       // Update tracked competitors
       setTrackedCompetitors(prev => {
+        console.log(`[LiveTracking] Current tracked: ${prev.length} competitors`);
+
         // Check if competitor already tracked
         const existing = prev.find(c => c.id === competitor.id);
         if (existing) {
+          console.log(`[LiveTracking] Updating existing entry for ${competitor.name}`);
           // Update existing entry
           return prev.map(c =>
             c.id === competitor.id
@@ -114,6 +117,7 @@ const LiveTracking = ({
           });
         }
 
+        console.log(`[LiveTracking] Adding new entry for ${competitor.name}`);
         // Add new entry
         const newEntry = {
           ...competitor,
@@ -134,6 +138,8 @@ const LiveTracking = ({
           comp.rank = index + 1;
         });
 
+        console.log(`[LiveTracking] Now tracking ${updated.length} competitors`);
+
         // Mark all others as not new after a delay
         setTimeout(() => {
           setTrackedCompetitors(current =>
@@ -149,16 +155,18 @@ const LiveTracking = ({
 
     // Start polling for this control
     console.log(`[LiveTracking] Starting polling for control ${controlCode} (${controlName}) on event ${effectiveEventId}`);
-    sportIdentService.startPolling(effectiveEventId, controlCode, handlePunch, 3000);
+    const pollingId = sportIdentService.startPolling(effectiveEventId, controlCode, handlePunch, 3000);
 
     return () => {
+      console.log(`[LiveTracking] Cleaning up polling for control ${controlCode}`);
       sportIdentService.stopPolling(effectiveEventId, controlCode);
       if (isDemoMode && mockServerRef.current) {
         mockServerRef.current.stopSimulation();
+        mockServerRef.current = null;
         sportIdentService.setDemoMode(false);
       }
     };
-  }, [sportIdentService, eventId, controlCode, controlName, competitors, category]);
+  }, [sportIdentService, eventId, controlCode, controlName]);
 
   // Parse split time string to seconds
   const parseSplitTime = (timeStr) => {
@@ -217,6 +225,11 @@ const LiveTracking = ({
   };
 
   const leaderTime = trackedCompetitors[0]?.splitTime;
+
+  console.log(`[LiveTracking] Rendering with ${trackedCompetitors.length} competitors`);
+  if (trackedCompetitors.length > 0) {
+    console.log(`[LiveTracking] First competitor:`, trackedCompetitors[0]);
+  }
 
   return (
     <div className="live-tracking-container">
