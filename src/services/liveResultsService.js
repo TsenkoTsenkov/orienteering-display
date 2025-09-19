@@ -498,8 +498,8 @@ class LiveResultsService {
         const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
 
         const competitors = scrapedData.competitors.map((comp, index) => {
-          // Use hardcoded name based on index
-          let name = getNameByIndex(index, isMenClass);
+          // Use actual scraped name
+          let name = comp.structured?.name || comp.cells?.[1] || 'Unknown';
 
           return {
             id: `comp_${index}`,
