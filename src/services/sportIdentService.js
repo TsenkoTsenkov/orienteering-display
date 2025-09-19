@@ -26,13 +26,20 @@ class SportIdentService {
   // Fetch punches from SportIdent API
   async fetchPunches(eventId, afterId = null) {
     try {
-      const url = `${this.baseUrl}/events/${eventId}/punches`;
-      const params = afterId ? { afterId } : {};
+      // Always use demo mode if eventId is demo or empty
+      const isDemoMode = !eventId || eventId === 'demo';
 
       // In demo mode, use mock server
-      if (this.demoMode && this.demoServer) {
-        return this.demoServer.fetchPunches(afterId);
+      if (isDemoMode || (this.demoMode && this.demoServer)) {
+        if (this.demoServer) {
+          return this.demoServer.fetchPunches(afterId);
+        }
+        console.warn('[SportIdent] Demo mode but no mock server initialized');
+        return [];
       }
+
+      const url = `${this.baseUrl}/events/${eventId}/punches`;
+      const params = afterId ? { afterId } : {};
 
       const response = await axios.get(url, {
         params,
@@ -51,10 +58,12 @@ class SportIdentService {
 
   // Start polling for a specific control point
   startPolling(eventId, controlCode, onPunchReceived, interval = 5000) {
-    const pollingKey = `${eventId}-${controlCode}`;
+    // Use demo mode if no eventId
+    const effectiveEventId = eventId || 'demo';
+    const pollingKey = `${effectiveEventId}-${controlCode}`;
 
     // Stop any existing polling for this control
-    this.stopPolling(eventId, controlCode);
+    this.stopPolling(effectiveEventId, controlCode);
 
     // Initialize last punch ID if not set
     if (!this.lastPunchIds.has(pollingKey)) {
@@ -70,7 +79,7 @@ class SportIdentService {
     const poll = async () => {
       try {
         const lastId = this.lastPunchIds.get(pollingKey);
-        const punches = await this.fetchPunches(eventId, lastId);
+        const punches = await this.fetchPunches(effectiveEventId, lastId);
 
         if (punches && punches.length > 0) {
           // Filter punches for the specific control code
@@ -115,12 +124,14 @@ class SportIdentService {
     const intervalId = setInterval(poll, interval);
     this.pollingIntervals.set(pollingKey, intervalId);
 
+    console.log(`[SportIdent] Started polling for control ${controlCode} on event ${effectiveEventId}`);
     return intervalId;
   }
 
   // Stop polling for a specific control point
   stopPolling(eventId, controlCode) {
-    const pollingKey = `${eventId}-${controlCode}`;
+    const effectiveEventId = eventId || 'demo';
+    const pollingKey = `${effectiveEventId}-${controlCode}`;
     const intervalId = this.pollingIntervals.get(pollingKey);
 
     if (intervalId) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import { countryFlags as flags } from '../data/flags';
+import { SportIdentMockServer } from '../services/sportIdentService';
 import './LiveTracking.css';
 
 const LiveTracking = ({
@@ -14,6 +15,7 @@ const LiveTracking = ({
   const [trackedCompetitors, setTrackedCompetitors] = useState([]);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const competitorMapRef = useRef(new Map());
+  const mockServerRef = useRef(null);
 
   // Build competitor map by card number
   useEffect(() => {
@@ -44,9 +46,39 @@ const LiveTracking = ({
     setTrackedCompetitors(initialTracked);
   }, [competitors, controlCode]);
 
+  // Initialize demo mode if needed
+  useEffect(() => {
+    const isDemoMode = !eventId || eventId === 'demo';
+
+    if (isDemoMode && !mockServerRef.current) {
+      console.log('[LiveTracking] Initializing demo mode for control', controlCode);
+      mockServerRef.current = new SportIdentMockServer();
+
+      // Initialize with current competitors
+      const competitorsWithCards = competitors.map((comp, index) => ({
+        ...comp,
+        card: comp.card || (8000000 + index * 100 + Math.floor(Math.random() * 99)),
+        category
+      }));
+
+      mockServerRef.current.initializeDemoEvent(competitorsWithCards, [controlCode]);
+      mockServerRef.current.startSimulation(20); // Speed up simulation for demo
+
+      // Set the mock server in the service
+      sportIdentService.setDemoMode(true, mockServerRef.current);
+    }
+
+    return () => {
+      if (isDemoMode && mockServerRef.current) {
+        mockServerRef.current.stopSimulation();
+        sportIdentService.setDemoMode(false);
+      }
+    };
+  }, [eventId, controlCode, competitors, category, sportIdentService]);
+
   // Handle incoming punch events
   useEffect(() => {
-    if (!sportIdentService || !eventId) return;
+    if (!sportIdentService) return;
 
     const handlePunch = (punch) => {
       // Find competitor by card number
@@ -112,11 +144,12 @@ const LiveTracking = ({
     };
 
     // Start polling for this control
-    console.log(`[LiveTracking] Starting polling for control ${controlCode} (${controlName})`);
-    sportIdentService.startPolling(eventId, controlCode, handlePunch, 3000);
+    const effectiveEventId = eventId || 'demo';
+    console.log(`[LiveTracking] Starting polling for control ${controlCode} (${controlName}) on event ${effectiveEventId}`);
+    sportIdentService.startPolling(effectiveEventId, controlCode, handlePunch, 3000);
 
     return () => {
-      sportIdentService.stopPolling(eventId, controlCode);
+      sportIdentService.stopPolling(effectiveEventId, controlCode);
     };
   }, [sportIdentService, eventId, controlCode, controlName]);
 
