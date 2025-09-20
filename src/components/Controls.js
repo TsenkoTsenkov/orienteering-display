@@ -222,14 +222,86 @@ const Controls = ({
 
         {/* SportIdent Live Tracking Configuration */}
         <div className="sportident-config-section">
-          <button
-            className="sportident-config-btn"
-            onClick={() => setShowSportIdentConfig(!showSportIdentConfig)}
-          >
-            <MapPin size={16} />
-            {showSportIdentConfig ? 'Hide' : 'Configure'} Live Tracking
-          </button>
+          <div className="sportident-header">
+            <h4>
+              <MapPin size={16} />
+              Live Tracking Control Points
+            </h4>
+            <button
+              className="sportident-toggle-btn"
+              onClick={() => setShowSportIdentConfig(!showSportIdentConfig)}
+              title={showSportIdentConfig ? 'Hide configuration' : 'Show configuration'}
+            >
+              {showSportIdentConfig ? '−' : '+'}
+            </button>
+          </div>
 
+          {/* Always show the list of control points */}
+          <div className="live-tracking-list">
+            {(liveTrackingScenes || []).length > 0 ? (
+              (liveTrackingScenes || []).map((scene, index) => (
+                <div key={scene.id} className="live-tracking-item">
+                  <span className="scene-name">{scene.name}</span>
+                  <span className="control-code">Control {scene.controlCode}</span>
+                  <button
+                    onClick={() => {
+                      const updated = liveTrackingScenes.filter(s => s.id !== scene.id);
+                      setLiveTrackingScenes(updated);
+                    }}
+                    className="remove-btn"
+                    title="Remove control point"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="no-control-points">
+                No control points configured
+              </div>
+            )}
+          </div>
+
+          {/* Always show the add control form */}
+          <div className="add-live-tracking">
+            <input
+              type="number"
+              value={newControlCode}
+              onChange={(e) => setNewControlCode(e.target.value)}
+              placeholder="Code"
+              className="control-code-input"
+              title="Enter control point code"
+            />
+            <input
+              type="text"
+              value={newControlName}
+              onChange={(e) => setNewControlName(e.target.value)}
+              placeholder="Control point name"
+              className="control-name-input"
+              title="Enter control point name"
+            />
+            <button
+              onClick={() => {
+                if (newControlCode && newControlName) {
+                  const newScene = {
+                    id: `live-tracking-${Date.now()}`,
+                    name: newControlName,
+                    controlCode: parseInt(newControlCode)
+                  };
+                  setLiveTrackingScenes([...(liveTrackingScenes || []), newScene]);
+                  setNewControlCode('');
+                  setNewControlName('');
+                }
+              }}
+              className="add-btn"
+              disabled={!newControlCode || !newControlName}
+              title="Add new control point"
+            >
+              + Add Control Point
+            </button>
+          </div>
+
+          {/* Show event ID configuration when expanded */}
           {showSportIdentConfig && (
             <div className="sportident-config-panel">
               <div className="form-group">
@@ -238,64 +310,10 @@ const Controls = ({
                   type="text"
                   value={sportIdentEventId || ''}
                   onChange={(e) => setSportIdentEventId(e.target.value)}
-                  placeholder="e.g., 20636"
+                  placeholder="e.g., 20636 (use 'demo' for testing)"
                   className="form-input"
                 />
-              </div>
-
-              <div className="form-group">
-                <label>Live Tracking Scenes</label>
-                <div className="live-tracking-list">
-                  {(liveTrackingScenes || []).map((scene, index) => (
-                    <div key={scene.id} className="live-tracking-item">
-                      <span className="scene-name">{scene.name}</span>
-                      <span className="control-code">Control {scene.controlCode}</span>
-                      <button
-                        onClick={() => {
-                          const updated = liveTrackingScenes.filter(s => s.id !== scene.id);
-                          setLiveTrackingScenes(updated);
-                        }}
-                        className="remove-btn"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="add-live-tracking">
-                  <input
-                    type="number"
-                    value={newControlCode}
-                    onChange={(e) => setNewControlCode(e.target.value)}
-                    placeholder="Control code"
-                    className="control-code-input"
-                  />
-                  <input
-                    type="text"
-                    value={newControlName}
-                    onChange={(e) => setNewControlName(e.target.value)}
-                    placeholder="Scene name"
-                    className="control-name-input"
-                  />
-                  <button
-                    onClick={() => {
-                      if (newControlCode && newControlName) {
-                        const newScene = {
-                          id: `live-tracking-${Date.now()}`,
-                          name: newControlName,
-                          controlCode: parseInt(newControlCode)
-                        };
-                        setLiveTrackingScenes([...(liveTrackingScenes || []), newScene]);
-                        setNewControlCode('');
-                        setNewControlName('');
-                      }
-                    }}
-                    className="add-btn"
-                  >
-                    + Add
-                  </button>
-                </div>
+                <small className="form-help">Enter 'demo' to use simulated data</small>
               </div>
             </div>
           )}

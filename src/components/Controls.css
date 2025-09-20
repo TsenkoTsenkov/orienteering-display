@@ -673,37 +673,64 @@
 /* SportIdent Configuration */
 .sportident-config-section {
   margin-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 15px;
-}
-
-.sportident-config-btn {
-  width: 100%;
-  padding: 10px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: none;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 6px;
-  color: white;
-  font-weight: 500;
+  padding: 12px;
+}
+.sportident-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.sportident-header h4 {
+  margin: 0;
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sportident-toggle-btn {
+  width: 24px;
+  height: 24px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 4px;
+  color: #10b981;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  font-size: 16px;
   transition: all 0.2s;
 }
-
-.sportident-config-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+.sportident-toggle-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+}
+.no-control-points {
+  padding: 16px;
+  text-align: center;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 13px;
+  font-style: italic;
+  background: rgba(30, 41, 59, 0.2);
+  border-radius: 4px;
+  border: 1px dashed rgba(148, 163, 184, 0.2);
+  margin-bottom: 10px;
 }
 
+
 .sportident-config-panel {
-  margin-top: 15px;
-  padding: 15px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(30, 41, 59, 0.3);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 10px;
 }
 
 .sportident-config-panel .form-group {
@@ -718,6 +745,13 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.form-help {
+  display: block;
+  margin-top: 4px;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 11px;
+  font-style: italic;
+}
 
 .sportident-config-panel .form-input {
   width: 100%;
@@ -730,9 +764,10 @@
 }
 
 .live-tracking-list {
-  margin-bottom: 10px;
-  max-height: 150px;
+  margin-bottom: 12px;
+  max-height: 180px;
   overflow-y: auto;
+  border-radius: 4px;
 }
 
 .live-tracking-item {
@@ -772,7 +807,12 @@
 
 .add-live-tracking {
   display: flex;
-  gap: 5px;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  margin-bottom: 8px;
 }
 
 .add-live-tracking .control-code-input {
@@ -796,16 +836,23 @@
 }
 
 .add-live-tracking .add-btn {
-  padding: 6px 12px;
-  background: rgba(16, 185, 129, 0.2);
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
   border: 1px solid rgba(16, 185, 129, 0.4);
   border-radius: 4px;
   color: #10b981;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.add-live-tracking .add-btn:hover {
-  background: rgba(16, 185, 129, 0.3);
+.add-live-tracking .add-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%);
+  transform: translateY(-1px);
+}
+
+.add-live-tracking .add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
