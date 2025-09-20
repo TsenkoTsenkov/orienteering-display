@@ -378,28 +378,55 @@ export class SportIdentMockServer {
     // Reset punches for fresh start
     this.punches = [];
 
+    // Generate initial punches for most competitors (simulate race already in progress)
+    // We want to show pagination immediately, so let's have 70% of competitors already passed
+    const competitorsAlreadyPassed = Math.floor(competitors.length * 0.7);
+
     this.runners = competitors.map((comp, index) => {
       // Use the card number provided by the competitor object, or generate consistent one
       const card = comp.card || (8000000 + index * 100);
-      // Each runner has a different time to reach the control
-      const timeToControl = (2 + index * 0.5 + Math.random() * 1) * 60 * 1000; // 2-7 minutes spread
-      console.log(`[Mock Server] Runner ${index}: ${comp.name} will reach control in ${Math.round(timeToControl/1000)}s`);
-      return {
+
+      // For demo variety: first 70% have already passed, rest will arrive gradually
+      const hasAlreadyPassed = index < competitorsAlreadyPassed;
+
+      // Base time: leaders around 5-6 minutes, spread out to 15+ minutes for slower runners
+      const baseTime = 5 + (index / competitors.length) * 10; // 5-15 minutes spread
+      const variation = (Math.random() - 0.5) * 2; // +/- 1 minute random variation
+      const splitTimeMinutes = Math.max(3, baseTime + variation);
+
+      // Convert to milliseconds for future arrivals
+      const timeToControl = hasAlreadyPassed
+        ? 0 // Already passed
+        : (splitTimeMinutes - 10) * 60 * 1000; // Will arrive later
+
+      const runner = {
         ...comp,
         card: card,
         startTimeMs: this.parseStartTime(comp.startTime),
-        currentPosition: 'start',
+        currentPosition: hasAlreadyPassed ? 'control' : 'start',
         controlsSplit: this.generateRandomSplits(controls.length),
-        timeToControl: timeToControl
+        timeToControl: timeToControl,
+        splitTimeMinutes: splitTimeMinutes,
+        hasAlreadyPassed: hasAlreadyPassed
       };
+
+      // Generate initial punch for those who have already passed
+      if (hasAlreadyPassed && controls.length > 0) {
+        const punch = this.generatePunch(runner, controls[0], 'BcControl', Date.now() - (15 - splitTimeMinutes) * 60 * 1000);
+        runner[`passed_control0`] = true;
+        console.log(`[Mock Server] Pre-generated punch for ${comp.name}: ${Math.round(splitTimeMinutes)}min`);
+      }
+
+      return runner;
     });
 
     this.controls = controls;
     this.startTime = Date.now();
 
     console.log('[Mock Server] Initialized with', this.runners.length, 'runners');
+    console.log(`[Mock Server] ${competitorsAlreadyPassed} competitors have already passed the checkpoint`);
     console.log('[Mock Server] Controls:', controls);
-    console.log('[Mock Server] Will generate punches starting from ID:', this.currentId);
+    console.log('[Mock Server] Total punches pre-generated:', this.punches.length);
   }
 
   // Parse start time to milliseconds from start
@@ -465,13 +492,16 @@ export class SportIdentMockServer {
       }
 
       this.runners.forEach((runner, runnerIndex) => {
+        // Skip runners who have already passed in the initial generation
+        if (runner.hasAlreadyPassed) return;
+
         // Use each runner's individual time to control
         if (elapsed >= runner.timeToControl && !runner[`passed_control0`]) {
           // Runner has reached the first control
           if (this.controls.length > 0) {
             const punch = this.generatePunch(runner, this.controls[0], 'BcControl', Date.now());
             runner[`passed_control0`] = true;
-            console.log(`[Mock] ${runner.name} reached control after ${Math.round(elapsed/1000)}s (simulated), punch ID: ${punch.id}`);
+            console.log(`[Mock] NEW ARRIVAL: ${runner.name} reached control after ${Math.round(elapsed/1000)}s (simulated), punch ID: ${punch.id}`);
           }
         }
       });
@@ -538,13 +568,14 @@ export class SportIdentMockServer {
     }
   }
 
-  // Reset simulation
+  // Reset the mock server
   reset() {
-    console.log('[Mock Server] Resetting simulation');
+    console.log('[Mock Server] Resetting...');
     this.stopSimulation();
     this.punches = [];
-    this.currentId = Date.now(); // Use timestamp to avoid ID conflicts
+    this.currentId = Date.now();
     this.runners = [];
+    this.startTime = null;
     this.eventCallbacks = [];
   }
 }
