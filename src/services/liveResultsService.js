@@ -65,6 +65,18 @@ class LiveResultsService {
       return cached.data;
     }
 
+    // In local development without proxy server, skip scraping
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+        !process.env.REACT_APP_PROXY_URL) {
+      console.log('Skipping scraping in local development without proxy server');
+      return {
+        competitors: [],
+        html: '',
+        rowCount: 0,
+        hasTable: false
+      };
+    }
+
     try {
       const scrapeUrl = `${this.scrapeUrl}${encodeURIComponent(url)}`;
       const response = await axios.get(scrapeUrl, { timeout: 25000 }); // 25 second timeout for Netlify functions
@@ -219,6 +231,18 @@ class LiveResultsService {
 
   // Try quick fetch first, fall back to scraping if needed
   async quickFetchOrScrape(url) {
+    // In local development without proxy, return empty data
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+        !process.env.REACT_APP_PROXY_URL) {
+      console.log('Skipping fetch in local development without proxy server');
+      return {
+        competitors: [],
+        html: '',
+        rowCount: 0,
+        hasTable: false
+      };
+    }
+
     // First try quick fetch for faster response
     try {
       if (this.quickFetchUrl) {
@@ -240,6 +264,14 @@ class LiveResultsService {
   // Fetch start list for a class
   async fetchStartList(eventId, competitionId, classId) {
     try {
+      // In local development without proxy, use mock data immediately
+      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+          !process.env.REACT_APP_PROXY_URL) {
+        const isMenClass = classId === 'Men' || (classId.toLowerCase().includes('men') && !classId.toLowerCase().includes('women'));
+        console.log('Using mock data for local development (start list)');
+        return this.getMockCompetitors('startlist', isMenClass);
+      }
+
       const encodedClass = encodeURIComponent(classId);
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/startlist`;
       console.log('Fetching start list from:', url);
@@ -358,6 +390,13 @@ class LiveResultsService {
   // Fetch results for a class
   async fetchResults(eventId, competitionId, classId) {
     try {
+      // In local development without proxy, return empty results
+      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+          !process.env.REACT_APP_PROXY_URL) {
+        console.log('Using empty results for local development');
+        return [];
+      }
+
       const encodedClass = encodeURIComponent(classId);
       const url = `https://app.liveresults.it/${eventId}/${competitionId}/${encodedClass}/results`;
       console.log('Fetching results from:', url);
