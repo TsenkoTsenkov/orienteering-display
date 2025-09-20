@@ -99,7 +99,7 @@ const SplitTimes = ({ competitors, category, controlPoint }) => {
       </div>
 
       <div className="scene-footer">
-        <div className="broadcast-logo">CX80 MTBO World Cup SPRINT</div>
+        <div className="broadcast-logo">CX80 MTBO World Cup LONG</div>
       </div>
     </div>
   );

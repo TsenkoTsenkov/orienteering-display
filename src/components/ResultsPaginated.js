@@ -183,7 +183,7 @@ const ResultsPaginated = ({ competitors, category, sceneTitle, autoRotate, rotat
       </div>
 
       <div className="scene-footer">
-        <div className="broadcast-logo">CX80 MTBO World Cup SPRINT</div>
+        <div className="broadcast-logo">CX80 MTBO World Cup LONG</div>
         {totalPages > 1 && (
           <div className="page-info">
             Page {pageToShow + 1} of {totalPages} (showing ranks {2 + startIndex}-{Math.min(finishedCompetitors.length, 1 + endIndex)})

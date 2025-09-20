@@ -149,7 +149,7 @@ const SplitTimesPaginated = ({ competitors, category, controlPoint, sceneTitle, 
       </div>
 
       <div className="scene-footer">
-        <div className="broadcast-logo">CX80 MTBO World Cup SPRINT</div>
+        <div className="broadcast-logo">CX80 MTBO World Cup LONG</div>
         {totalPages > 1 && (
           <div className="page-info">
             Page {pageToShow + 1} of {totalPages}

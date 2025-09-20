@@ -440,7 +440,7 @@ function App() {
         { id: 'live-tracking-demo-1', name: 'Live: Forest Entry (CP 33)', controlCode: 33 },
         { id: 'live-tracking-demo-2', name: 'Live: Hill Top (CP 38)', controlCode: 38 },
         { id: 'live-tracking-demo-3', name: 'Live: River Crossing (CP 45)', controlCode: 45 },
-        { id: 'live-tracking-demo-4', name: 'Live: Final Sprint (CP 52)', controlCode: 52 }
+        { id: 'live-tracking-demo-4', name: 'Live: Final Push (CP 52)', controlCode: 52 }
       ];
       setLiveTrackingScenes(demoLiveScenes);
 
