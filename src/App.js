@@ -446,9 +446,9 @@ function App() {
       setMockServer(server);
       sportIdentService.setDemoMode(true, server);
 
-      // Initialize demo with more competitors for better demonstration
+      // Initialize demo with MANY more competitors for proper pagination demonstration
       const demoCompetitors = [
-        // Men's category
+        // Men's category - 40 competitors for proper pagination
         { id: 'demo-m-1', name: 'Kjetil Johansen', country: 'NOR', startTime: '10:00:00', category: 'Men' },
         { id: 'demo-m-2', name: 'Emil Svensk', country: 'SWE', startTime: '10:01:00', category: 'Men' },
         { id: 'demo-m-3', name: 'Thierry Gueorgiou', country: 'FRA', startTime: '10:02:00', category: 'Men' },
@@ -457,7 +457,40 @@ function App() {
         { id: 'demo-m-6', name: 'Daniel Hubmann', country: 'SUI', startTime: '10:05:00', category: 'Men' },
         { id: 'demo-m-7', name: 'Gustav Bergman', country: 'SWE', startTime: '10:06:00', category: 'Men' },
         { id: 'demo-m-8', name: 'Magne Daehli', country: 'NOR', startTime: '10:07:00', category: 'Men' },
-        // Women's category
+        { id: 'demo-m-9', name: 'Frederic Tranchand', country: 'FRA', startTime: '10:08:00', category: 'Men' },
+        { id: 'demo-m-10', name: 'Ruslan Glibov', country: 'UKR', startTime: '10:09:00', category: 'Men' },
+        { id: 'demo-m-11', name: 'Albin Ridefelt', country: 'SWE', startTime: '10:10:00', category: 'Men' },
+        { id: 'demo-m-12', name: 'Joey Hadorn', country: 'SUI', startTime: '10:11:00', category: 'Men' },
+        { id: 'demo-m-13', name: 'Kasper Fosser', country: 'NOR', startTime: '10:12:00', category: 'Men' },
+        { id: 'demo-m-14', name: 'Milos Nykodym', country: 'CZE', startTime: '10:13:00', category: 'Men' },
+        { id: 'demo-m-15', name: 'Vojtech Kral', country: 'CZE', startTime: '10:14:00', category: 'Men' },
+        { id: 'demo-m-16', name: 'Rassmus Andersson', country: 'SWE', startTime: '10:15:00', category: 'Men' },
+        { id: 'demo-m-17', name: 'Yannick Michiels', country: 'BEL', startTime: '10:16:00', category: 'Men' },
+        { id: 'demo-m-18', name: 'Ralph Street', country: 'GBR', startTime: '10:17:00', category: 'Men' },
+        { id: 'demo-m-19', name: 'Timo Sild', country: 'EST', startTime: '10:18:00', category: 'Men' },
+        { id: 'demo-m-20', name: 'Lauri Ojanaho', country: 'FIN', startTime: '10:19:00', category: 'Men' },
+        { id: 'demo-m-21', name: 'Aleksi Niemi', country: 'FIN', startTime: '10:20:00', category: 'Men' },
+        { id: 'demo-m-22', name: 'Florian Howald', country: 'SUI', startTime: '10:21:00', category: 'Men' },
+        { id: 'demo-m-23', name: 'Lucas Basset', country: 'FRA', startTime: '10:22:00', category: 'Men' },
+        { id: 'demo-m-24', name: 'Pavel Kubat', country: 'CZE', startTime: '10:23:00', category: 'Men' },
+        { id: 'demo-m-25', name: 'Jannis Bonek', country: 'AUT', startTime: '10:24:00', category: 'Men' },
+        { id: 'demo-m-26', name: 'Robert Merl', country: 'AUT', startTime: '10:25:00', category: 'Men' },
+        { id: 'demo-m-27', name: 'Gernot Ymsén', country: 'AUT', startTime: '10:26:00', category: 'Men' },
+        { id: 'demo-m-28', name: 'Andris Jubelis', country: 'LAT', startTime: '10:27:00', category: 'Men' },
+        { id: 'demo-m-29', name: 'Rudolfs Zernis', country: 'LAT', startTime: '10:28:00', category: 'Men' },
+        { id: 'demo-m-30', name: 'Algirdas Bartkevicius', country: 'LTU', startTime: '10:29:00', category: 'Men' },
+        { id: 'demo-m-31', name: 'Jonas Vytautas', country: 'LTU', startTime: '10:30:00', category: 'Men' },
+        { id: 'demo-m-32', name: 'Michal Olejnik', country: 'POL', startTime: '10:31:00', category: 'Men' },
+        { id: 'demo-m-33', name: 'Piotr Parfianowicz', country: 'POL', startTime: '10:32:00', category: 'Men' },
+        { id: 'demo-m-34', name: 'Zsolt Lenkei', country: 'HUN', startTime: '10:33:00', category: 'Men' },
+        { id: 'demo-m-35', name: 'Csaba Geren', country: 'HUN', startTime: '10:34:00', category: 'Men' },
+        { id: 'demo-m-36', name: 'Riccardo Scalet', country: 'ITA', startTime: '10:35:00', category: 'Men' },
+        { id: 'demo-m-37', name: 'Davide Machado', country: 'ITA', startTime: '10:36:00', category: 'Men' },
+        { id: 'demo-m-38', name: 'Antonio Martinez', country: 'ESP', startTime: '10:37:00', category: 'Men' },
+        { id: 'demo-m-39', name: 'Aleix Domenech', country: 'ESP', startTime: '10:38:00', category: 'Men' },
+        { id: 'demo-m-40', name: 'Eduardo Gil', country: 'ESP', startTime: '10:39:00', category: 'Men' },
+
+        // Women's category - 35 competitors for proper pagination
         { id: 'demo-w-1', name: 'Tove Alexandersson', country: 'SWE', startTime: '10:00:30', category: 'Women' },
         { id: 'demo-w-2', name: 'Simona Aebersold', country: 'SUI', startTime: '10:01:30', category: 'Women' },
         { id: 'demo-w-3', name: 'Marika Teini', country: 'FIN', startTime: '10:02:30', category: 'Women' },
@@ -465,7 +498,34 @@ function App() {
         { id: 'demo-w-5', name: 'Sara Hagstrom', country: 'SWE', startTime: '10:04:30', category: 'Women' },
         { id: 'demo-w-6', name: 'Megan Carter Davies', country: 'GBR', startTime: '10:05:30', category: 'Women' },
         { id: 'demo-w-7', name: 'Andrine Benjaminsen', country: 'NOR', startTime: '10:06:30', category: 'Women' },
-        { id: 'demo-w-8', name: 'Elena Roos', country: 'SUI', startTime: '10:07:30', category: 'Women' }
+        { id: 'demo-w-8', name: 'Elena Roos', country: 'SUI', startTime: '10:07:30', category: 'Women' },
+        { id: 'demo-w-9', name: 'Hanna Lundberg', country: 'SWE', startTime: '10:08:30', category: 'Women' },
+        { id: 'demo-w-10', name: 'Venla Harju', country: 'FIN', startTime: '10:09:30', category: 'Women' },
+        { id: 'demo-w-11', name: 'Kamilla Olaussen', country: 'NOR', startTime: '10:10:30', category: 'Women' },
+        { id: 'demo-w-12', name: 'Marie Olaussen', country: 'NOR', startTime: '10:11:30', category: 'Women' },
+        { id: 'demo-w-13', name: 'Sabine Hauswirth', country: 'SUI', startTime: '10:12:30', category: 'Women' },
+        { id: 'demo-w-14', name: 'Paula Gross', country: 'SUI', startTime: '10:13:30', category: 'Women' },
+        { id: 'demo-w-15', name: 'Tereza Janosikova', country: 'CZE', startTime: '10:14:30', category: 'Women' },
+        { id: 'demo-w-16', name: 'Jana Knapova', country: 'CZE', startTime: '10:15:30', category: 'Women' },
+        { id: 'demo-w-17', name: 'Grace Molloy', country: 'GBR', startTime: '10:16:30', category: 'Women' },
+        { id: 'demo-w-18', name: 'Jo Shepherd', country: 'GBR', startTime: '10:17:30', category: 'Women' },
+        { id: 'demo-w-19', name: 'Evely Kaasiku', country: 'EST', startTime: '10:18:30', category: 'Women' },
+        { id: 'demo-w-20', name: 'Laura Ramstein', country: 'AUT', startTime: '10:19:30', category: 'Women' },
+        { id: 'demo-w-21', name: 'Anika Gassner', country: 'AUT', startTime: '10:20:30', category: 'Women' },
+        { id: 'demo-w-22', name: 'Lisa Schubnell', country: 'AUT', startTime: '10:21:30', category: 'Women' },
+        { id: 'demo-w-23', name: 'Cecile Calandry', country: 'FRA', startTime: '10:22:30', category: 'Women' },
+        { id: 'demo-w-24', name: 'Florence Hanauer', country: 'FRA', startTime: '10:23:30', category: 'Women' },
+        { id: 'demo-w-25', name: 'Isia Basset', country: 'FRA', startTime: '10:24:30', category: 'Women' },
+        { id: 'demo-w-26', name: 'Sandra Mairhofer', country: 'ITA', startTime: '10:25:30', category: 'Women' },
+        { id: 'demo-w-27', name: 'Carlotta Scalet', country: 'ITA', startTime: '10:26:30', category: 'Women' },
+        { id: 'demo-w-28', name: 'Sandra Grosberga', country: 'LAT', startTime: '10:27:30', category: 'Women' },
+        { id: 'demo-w-29', name: 'Liga Valdmane', country: 'LAT', startTime: '10:28:30', category: 'Women' },
+        { id: 'demo-w-30', name: 'Viktorija Cerniauskiene', country: 'LTU', startTime: '10:29:30', category: 'Women' },
+        { id: 'demo-w-31', name: 'Agne Grinevicius', country: 'LTU', startTime: '10:30:30', category: 'Women' },
+        { id: 'demo-w-32', name: 'Ursula Kadan', country: 'POL', startTime: '10:31:30', category: 'Women' },
+        { id: 'demo-w-33', name: 'Viktoria Bognar', country: 'HUN', startTime: '10:32:30', category: 'Women' },
+        { id: 'demo-w-34', name: 'Clara Alvarez', country: 'ESP', startTime: '10:33:30', category: 'Women' },
+        { id: 'demo-w-35', name: 'Marina Garcia', country: 'ESP', startTime: '10:34:30', category: 'Women' }
       ];
 
       // Add card numbers and bib numbers to demo competitors
