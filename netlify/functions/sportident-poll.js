@@ -1,9 +1,10 @@
-const axios = require('axios');
+const axios = require("axios");
 
 // SportIdent API configuration (matching sportident-server)
-const API_KEY = process.env.SPORTIDENT_API_KEY || 'a1faa424-1379-794c-3963-b9bf47f2ed09';
-const EVENT_ID = process.env.SPORTIDENT_EVENT_ID || '20636';
-const BASE_URL = 'https://center-origin.sportident.com';
+const API_KEY =
+  process.env.SPORTIDENT_API_KEY || "a1faa424-1379-794c-3963-b9bf47f2ed09";
+const EVENT_ID = process.env.SPORTIDENT_EVENT_ID || "20646";
+const BASE_URL = "https://center-origin.sportident.com";
 
 // Cache for storing punches with timestamps
 const punchCache = new Map();
@@ -11,26 +12,26 @@ const CACHE_DURATION = 10000; // 10 seconds cache, matching server polling inter
 
 exports.handler = async (event) => {
   // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
+  if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       },
-      body: ''
+      body: "",
     };
   }
 
   // Only allow GET requests
-  if (event.httpMethod !== 'GET') {
+  if (event.httpMethod !== "GET") {
     return {
       statusCode: 405,
       headers: {
-        'Access-Control-Allow-Origin': '*'
+        "Access-Control-Allow-Origin": "*",
       },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: "Method not allowed" }),
     };
   }
 
@@ -38,7 +39,7 @@ exports.handler = async (event) => {
     // Get query parameters
     const queryParams = event.queryStringParameters || {};
     const afterId = parseInt(queryParams.afterId) || 0;
-    const includeAll = queryParams.includeAll === 'true';
+    const includeAll = queryParams.includeAll === "true";
     const limit = parseInt(queryParams.limit) || 1000;
 
     // Check cache first
@@ -48,19 +49,19 @@ exports.handler = async (event) => {
     if (cachedData && !includeAll) {
       const age = Date.now() - cachedData.timestamp;
       if (age < CACHE_DURATION) {
-        console.log('Returning cached data, age:', age);
+        console.log("Returning cached data, age:", age);
         return {
           statusCode: 200,
           headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'max-age=10'
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "max-age=10",
           },
           body: JSON.stringify({
             ...cachedData.data,
             cached: true,
-            cacheAge: age
-          })
+            cacheAge: age,
+          }),
         };
       }
     }
@@ -72,18 +73,18 @@ exports.handler = async (event) => {
 
     const params = {
       afterId: afterId,
-      projection: 'simple',
-      limit: limit
+      projection: "simple",
+      limit: limit,
     };
 
     const response = await axios.get(url, {
       headers: {
-        'apikey': API_KEY,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=UTF-8'
+        apikey: API_KEY,
+        Accept: "application/json",
+        "Content-Type": "application/json;charset=UTF-8",
       },
       params: params,
-      timeout: 8000 // 8 second timeout to stay within Netlify limits
+      timeout: 8000, // 8 second timeout to stay within Netlify limits
     });
 
     let punches = [];
@@ -95,7 +96,10 @@ exports.handler = async (event) => {
 
       // Find max punch ID for next polling
       if (punches.length > 0) {
-        maxPunchId = Math.max(...punches.map(p => p.id || 0).filter(id => id > 0), afterId);
+        maxPunchId = Math.max(
+          ...punches.map((p) => p.id || 0).filter((id) => id > 0),
+          afterId,
+        );
         console.log(`Max punch ID: ${maxPunchId}`);
       }
     }
@@ -111,20 +115,28 @@ exports.handler = async (event) => {
       while (fetchCount < MAX_FETCHES) {
         const additionalResponse = await axios.get(url, {
           headers: {
-            'apikey': API_KEY,
-            'Accept': 'application/json'
+            apikey: API_KEY,
+            Accept: "application/json",
           },
           params: {
             afterId: currentAfterId,
-            projection: 'simple',
-            limit: limit
+            projection: "simple",
+            limit: limit,
           },
-          timeout: 5000
+          timeout: 5000,
         });
 
-        if (additionalResponse.data && Array.isArray(additionalResponse.data) && additionalResponse.data.length > 0) {
+        if (
+          additionalResponse.data &&
+          Array.isArray(additionalResponse.data) &&
+          additionalResponse.data.length > 0
+        ) {
           allPunches = allPunches.concat(additionalResponse.data);
-          currentAfterId = Math.max(...additionalResponse.data.map(p => p.id || 0).filter(id => id > 0));
+          currentAfterId = Math.max(
+            ...additionalResponse.data
+              .map((p) => p.id || 0)
+              .filter((id) => id > 0),
+          );
           fetchCount++;
 
           if (additionalResponse.data.length < limit) {
@@ -138,11 +150,11 @@ exports.handler = async (event) => {
 
     // Prepare response data
     const responseData = {
-      punches: allPunches.map(punch => ({
-        type: 'punch',
-        source: 'http-poll',
+      punches: allPunches.map((punch) => ({
+        type: "punch",
+        source: "http-poll",
         timestamp: new Date().toISOString(),
-        data: punch
+        data: punch,
       })),
       total: allPunches.length,
       lastPunchId: maxPunchId,
@@ -151,14 +163,14 @@ exports.handler = async (event) => {
       polling: {
         recommended: true,
         interval: 10000,
-        nextAfterId: maxPunchId
-      }
+        nextAfterId: maxPunchId,
+      },
     };
 
     // Cache the response
     punchCache.set(cacheKey, {
       timestamp: Date.now(),
-      data: responseData
+      data: responseData,
     });
 
     // Clean old cache entries
@@ -171,27 +183,26 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'max-age=10'
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "max-age=10",
       },
-      body: JSON.stringify(responseData)
+      body: JSON.stringify(responseData),
     };
-
   } catch (error) {
-    console.error('Error fetching punches:', error.message);
+    console.error("Error fetching punches:", error.message);
 
     return {
       statusCode: error.response?.status || 500,
       headers: {
-        'Access-Control-Allow-Origin': '*'
+        "Access-Control-Allow-Origin": "*",
       },
       body: JSON.stringify({
-        error: 'Failed to fetch punches',
+        error: "Failed to fetch punches",
         message: error.message,
         details: error.response?.data || null,
-        eventId: EVENT_ID
-      })
+        eventId: EVENT_ID,
+      }),
     };
   }
 };

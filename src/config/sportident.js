@@ -3,34 +3,36 @@
 
 const config = {
   // API credentials (same as sportident-server)
-  apiKey: process.env.REACT_APP_SPORTIDENT_API_KEY || 'a1faa424-1379-794c-3963-b9bf47f2ed09',
-  eventId: process.env.REACT_APP_SPORTIDENT_EVENT_ID || '20636',
+  apiKey:
+    process.env.REACT_APP_SPORTIDENT_API_KEY ||
+    "a1faa424-1379-794c-3963-b9bf47f2ed09",
+  eventId: process.env.REACT_APP_SPORTIDENT_EVENT_ID || "20646",
 
   // Endpoint configurations
   endpoints: {
     // When deployed to Netlify
     production: {
-      status: '/.netlify/functions/sportident/status',
-      punches: '/.netlify/functions/sportident/punches',
-      events: '/.netlify/functions/sportident/events',
-      health: '/.netlify/functions/sportident/health',
-      poll: '/.netlify/functions/sportident-poll'
+      status: "/.netlify/functions/sportident/status",
+      punches: "/.netlify/functions/sportident/punches",
+      events: "/.netlify/functions/sportident/events",
+      health: "/.netlify/functions/sportident/health",
+      poll: "/.netlify/functions/sportident-poll",
     },
     // For local development with Netlify CLI
     development: {
-      status: 'http://localhost:9999/.netlify/functions/sportident/status',
-      punches: 'http://localhost:9999/.netlify/functions/sportident/punches',
-      events: 'http://localhost:9999/.netlify/functions/sportident/events',
-      health: 'http://localhost:9999/.netlify/functions/sportident/health',
-      poll: 'http://localhost:9999/.netlify/functions/sportident-poll'
+      status: "http://localhost:9999/.netlify/functions/sportident/status",
+      punches: "http://localhost:9999/.netlify/functions/sportident/punches",
+      events: "http://localhost:9999/.netlify/functions/sportident/events",
+      health: "http://localhost:9999/.netlify/functions/sportident/health",
+      poll: "http://localhost:9999/.netlify/functions/sportident-poll",
     },
     // For standalone sportident-server
     server: {
-      status: 'http://localhost:3002/api/sportident/status',
-      punches: 'http://localhost:3002/api/sportident/punches',
-      events: 'http://localhost:3002/api/sportident/events',
-      health: 'http://localhost:3002/health'
-    }
+      status: "http://localhost:3002/api/sportident/status",
+      punches: "http://localhost:3002/api/sportident/punches",
+      events: "http://localhost:3002/api/sportident/events",
+      health: "http://localhost:3002/health",
+    },
   },
 
   // Polling configuration (matching server settings)
@@ -38,29 +40,32 @@ const config = {
     enabled: true,
     interval: 10000, // 10 seconds, as recommended by SportIdent
     maxReconnectAttempts: 10,
-    reconnectInterval: 5000
+    reconnectInterval: 5000,
   },
 
   // Request configuration
   request: {
     limit: 1000, // Max punches per request
-    projection: 'simple',
-    timeout: 8000 // 8 seconds
-  }
+    projection: "simple",
+    timeout: 8000, // 8 seconds
+  },
 };
 
 // Helper to get the appropriate endpoint based on environment
 export const getSportIdentEndpoints = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const useNetlifyFunctions = process.env.REACT_APP_USE_NETLIFY_FUNCTIONS !== 'false';
-  const useServer = process.env.REACT_APP_USE_SPORTIDENT_SERVER === 'true';
+  const isProduction = process.env.NODE_ENV === "production";
+  const useNetlifyFunctions =
+    process.env.REACT_APP_USE_NETLIFY_FUNCTIONS !== "false";
+  const useServer = process.env.REACT_APP_USE_SPORTIDENT_SERVER === "true";
 
   if (useServer) {
     return config.endpoints.server;
   }
 
   if (isProduction || useNetlifyFunctions) {
-    return isProduction ? config.endpoints.production : config.endpoints.development;
+    return isProduction
+      ? config.endpoints.production
+      : config.endpoints.development;
   }
 
   return config.endpoints.server;
@@ -75,7 +80,7 @@ export class SportIdentClient {
     this.listeners = {
       punch: [],
       error: [],
-      status: []
+      status: [],
     };
   }
 
@@ -89,14 +94,16 @@ export class SportIdentClient {
   // Remove event listener
   off(event, callback) {
     if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+      this.listeners[event] = this.listeners[event].filter(
+        (cb) => cb !== callback,
+      );
     }
   }
 
   // Emit event
   emit(event, data) {
     if (this.listeners[event]) {
-      this.listeners[event].forEach(callback => callback(data));
+      this.listeners[event].forEach((callback) => callback(data));
     }
   }
 
@@ -106,7 +113,7 @@ export class SportIdentClient {
       return; // Already polling
     }
 
-    console.log('Starting SportIdent polling...');
+    console.log("Starting SportIdent polling...");
 
     // Initial fetch
     await this.fetchPunches();
@@ -122,7 +129,7 @@ export class SportIdentClient {
     if (this.pollingTimer) {
       clearInterval(this.pollingTimer);
       this.pollingTimer = null;
-      console.log('Stopped SportIdent polling');
+      console.log("Stopped SportIdent polling");
     }
   }
 
@@ -133,7 +140,7 @@ export class SportIdentClient {
       const params = new URLSearchParams({
         afterId: this.lastPunchId,
         limit: config.request.limit,
-        projection: config.request.projection
+        projection: config.request.projection,
       });
 
       const response = await fetch(`${url}?${params}`);
@@ -148,8 +155,8 @@ export class SportIdentClient {
         console.log(`Received ${data.punches.length} punches`);
 
         // Emit each punch
-        data.punches.forEach(punch => {
-          this.emit('punch', punch);
+        data.punches.forEach((punch) => {
+          this.emit("punch", punch);
         });
 
         // Update lastPunchId
@@ -160,18 +167,17 @@ export class SportIdentClient {
       }
 
       // Emit status
-      this.emit('status', {
+      this.emit("status", {
         connected: true,
         punchesReceived: data.total || 0,
-        lastPunchId: this.lastPunchId
+        lastPunchId: this.lastPunchId,
       });
-
     } catch (error) {
-      console.error('Error fetching punches:', error);
-      this.emit('error', error);
-      this.emit('status', {
+      console.error("Error fetching punches:", error);
+      this.emit("error", error);
+      this.emit("status", {
         connected: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -187,7 +193,7 @@ export class SportIdentClient {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching status:', error);
+      console.error("Error fetching status:", error);
       throw error;
     }
   }
@@ -203,7 +209,7 @@ export class SportIdentClient {
 
       return await response.json();
     } catch (error) {
-      console.error('Health check failed:', error);
+      console.error("Health check failed:", error);
       throw error;
     }
   }

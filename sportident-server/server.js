@@ -240,7 +240,7 @@ app.use(express.json());
 // Your SportIdent credentials
 const API_KEY =
   process.env.SPORTIDENT_API_KEY || "a1faa424-1379-794c-3963-b9bf47f2ed09";
-const EVENT_ID = process.env.SPORTIDENT_EVENT_ID || "20636";
+const EVENT_ID = process.env.SPORTIDENT_EVENT_ID || "20646";
 
 // Store received events
 const receivedEvents = [];
