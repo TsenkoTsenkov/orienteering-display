@@ -8,10 +8,16 @@ const LiveTracking = ({
   controlCode,
   controlName,
   sportIdentService,
-  eventId
+  eventId,
+  autoRotate,
+  currentPageIndex,
+  rotationInterval,
+  setCurrentPageIndex,
+  itemsPerPage = 10
 }) => {
   const [trackedCompetitors, setTrackedCompetitors] = useState([]);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const [currentPage, setCurrentPage] = useState(0);
   const competitorMapRef = useRef(new Map());
 
   // Build competitor map by card number
@@ -202,6 +208,36 @@ const LiveTracking = ({
 
   const leaderTime = trackedCompetitors[0]?.splitTime;
 
+  // Calculate total pages
+  const totalPages = trackedCompetitors.length > 0
+    ? Math.ceil(trackedCompetitors.length / itemsPerPage)
+    : 1;
+
+  // Determine page to show based on mode
+  let pageToShow = 0;
+  if (currentPageIndex !== undefined) {
+    // External control mode (live)
+    pageToShow = Math.min(currentPageIndex, totalPages - 1);
+  } else {
+    // Internal control mode (preview)
+    pageToShow = currentPage % totalPages;
+  }
+
+  // Handle internal rotation for preview mode
+  useEffect(() => {
+    if (!autoRotate || currentPageIndex !== undefined || totalPages <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentPage(prev => (prev + 1) % totalPages);
+    }, rotationInterval || 15000);
+
+    return () => clearInterval(interval);
+  }, [autoRotate, totalPages, rotationInterval, currentPageIndex]);
+
+  // Get current page competitors
+  const startIndex = pageToShow * itemsPerPage;
+  const currentCompetitors = trackedCompetitors.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="live-tracking-container">
       <div className="scene-header">
@@ -224,34 +260,51 @@ const LiveTracking = ({
         </div>
 
         <div className="page-transition">
-          {trackedCompetitors.map((competitor, index) => (
-            <React.Fragment key={competitor.card || `comp-${index}`}>
-              <div
-                className={`competitor-row split-row large-row ${index === 0 ? 'leader' : ''} ${competitor.isNew ? 'new-punch' : ''}`}
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <span className="rank large-rank">
-                  <span className="rank-number">{index + 1}</span>
-                </span>
-                <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
-                <span className="competitor-country">
-                  <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
-                  <span className="country-code">{competitor.country}</span>
-                </span>
-                <span className="split-time large-time">{competitor.splitTime}</span>
-                <span className="time-diff large-diff">
-                  {getTimeDiff(competitor.splitTime, leaderTime)}
-                </span>
-              </div>
-              {/* Add separator line after leader */}
-              {index === 0 && trackedCompetitors.length > 1 && (
-                <div className="top-three-separator-line"></div>
-              )}
-            </React.Fragment>
-          ))}
+          {currentCompetitors.map((competitor, index) => {
+            const actualRank = startIndex + index + 1;
+            const isLeader = actualRank === 1;
+            return (
+              <React.Fragment key={competitor.card || `comp-${index}`}>
+                <div
+                  className={`competitor-row split-row large-row ${isLeader ? 'leader' : ''} ${competitor.isNew ? 'new-punch' : ''}`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <span className="rank large-rank">
+                    {isLeader && <span className="leader-icon">👑</span>}
+                    <span className="rank-number">{actualRank}</span>
+                  </span>
+                  <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>
+                  <span className="competitor-country">
+                    <span className="country-flag large-flag">{getFlag(competitor.country)}</span>
+                    <span className="country-code">{competitor.country}</span>
+                  </span>
+                  <span className="split-time large-time">{competitor.splitTime}</span>
+                  <span className="time-diff large-diff">
+                    {getTimeDiff(competitor.splitTime, leaderTime)}
+                  </span>
+                </div>
+                {/* Add separator line after leader */}
+                {isLeader && currentCompetitors.length > 1 && (
+                  <div className="top-three-separator-line"></div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
 
-        {trackedCompetitors.length === 0 && (
+        {/* Add pagination indicator */}
+        {totalPages > 1 && (
+          <div className="pagination-indicator">
+            {[...Array(totalPages)].map((_, i) => (
+              <span
+                key={i}
+                className={`page-dot ${i === pageToShow ? 'active' : ''}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {currentCompetitors.length === 0 && trackedCompetitors.length === 0 && (
           <div className="no-data">
             <p>Waiting for competitors to reach {controlName}...</p>
             <div className="pulse-indicator"></div>
@@ -259,12 +312,15 @@ const LiveTracking = ({
         )}
       </div>
 
-      <div className="tracking-footer">
+      <div className="scene-footer">
+        <div className="broadcast-logo">CX80 MTBO World Cup SPRINT</div>
+        {totalPages > 1 && (
+          <div className="page-info">
+            Page {pageToShow + 1} of {totalPages}
+          </div>
+        )}
         <div className="stats">
-          <span>{trackedCompetitors.length} / {competitors.length} passed</span>
-        </div>
-        <div className="control-info">
-          Control Code: {controlCode}
+          {trackedCompetitors.length} / {competitors.length} passed
         </div>
       </div>
     </div>

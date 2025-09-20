@@ -253,7 +253,8 @@ function App() {
 
     // Only auto-rotate for paginated scenes
     const paginatedScenes = ['start-list', 'results', 'preliminary-results', 'split-1', 'split-2', 'split-3', 'split-4'];
-    if (!paginatedScenes.includes(liveScene)) {
+    const isLiveTrackingScene = liveScene && liveScene.startsWith('live-tracking-');
+    if (!paginatedScenes.includes(liveScene) && !isLiveTrackingScene) {
       console.log('[Control] Scene', liveScene, 'does not support pagination, skipping auto-rotation');
       return;
     }
@@ -969,6 +970,11 @@ function App() {
               controlName={liveTrackingScene.name || sceneTitle}
               sportIdentService={sportIdentService}
               eventId={sportIdentEventId}
+              autoRotate={autoRotate && isLive}
+              currentPageIndex={isLive ? livePageIndex : undefined}
+              rotationInterval={rotationInterval}
+              setCurrentPageIndex={isLive ? setLivePageIndex : undefined}
+              itemsPerPage={itemsPerPage}
             />
           );
         }
