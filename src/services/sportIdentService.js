@@ -326,20 +326,15 @@ class SportIdentService {
       this.setDemoMode(true);
     }
 
-    // Only initialize if not already running for this control
-    if (!this.demoServer || !this.demoServer.simulationInterval || this.lastControlCode !== controlCode) {
-      console.log('[SportIdent] Initializing demo with', competitors.length, 'competitors for control', controlCode);
+    // Create mock server if it doesn't exist
+    if (!this.demoServer) {
+      console.log('[SportIdent] Creating new mock server');
+      this.demoServer = new SportIdentMockServer();
+    }
 
-      // Reset for new control
-      if (this.demoServer) {
-        this.demoServer.reset();
-      } else {
-        this.demoServer = new SportIdentMockServer();
-      }
-
-      // Clear cached punch IDs for demo
-      this.lastPunchIds.clear();
-      this.punchCache.clear();
+    // Check if this control is already initialized
+    if (!this.demoServer.hasControl(controlCode)) {
+      console.log('[SportIdent] Adding control', controlCode, 'to demo with', competitors.length, 'competitors');
 
       // Add consistent card numbers
       const competitorsWithCards = competitors.map((comp, index) => ({
@@ -347,9 +342,15 @@ class SportIdentService {
         card: comp.card || (8000000 + index * 100)
       }));
 
-      this.demoServer.initializeDemoEvent(competitorsWithCards, [controlCode]);
-      this.demoServer.startSimulation(5); // Slower speed for more realistic timing
-      this.lastControlCode = controlCode;
+      // Add this control to the existing simulation
+      this.demoServer.addControl(controlCode, competitorsWithCards);
+
+      // Start simulation if not already running
+      if (!this.demoServer.simulationInterval) {
+        this.demoServer.startSimulation(5); // Slower speed for more realistic timing
+      }
+    } else {
+      console.log('[SportIdent] Control', controlCode, 'already initialized in demo');
     }
   }
 
@@ -369,6 +370,7 @@ export class SportIdentMockServer {
     this.startTime = null;
     this.simulationInterval = null;
     this.eventCallbacks = [];
+    this.controlsData = new Map(); // Store data for each control separately
   }
 
   // Initialize demo event with competitors
@@ -583,6 +585,56 @@ export class SportIdentMockServer {
     this.runners = [];
     this.startTime = null;
     this.eventCallbacks = [];
+    this.controlsData.clear();
+  }
+
+  // Check if a control is already initialized
+  hasControl(controlCode) {
+    return this.controlsData.has(controlCode);
+  }
+
+  // Add a new control point to the simulation
+  addControl(controlCode, competitors) {
+    console.log(`[Mock Server] Adding control ${controlCode} with ${competitors.length} competitors`);
+
+    // Store control data
+    this.controlsData.set(controlCode, {
+      competitors: competitors,
+      initialized: true
+    });
+
+    // Generate initial punches for this control (70% already passed)
+    const competitorsAlreadyPassed = Math.floor(competitors.length * 0.7);
+
+    competitors.forEach((comp, index) => {
+      const hasAlreadyPassed = index < competitorsAlreadyPassed;
+
+      if (hasAlreadyPassed) {
+        // Generate time based on ranking
+        const baseTime = 5 + (index / competitors.length) * 10; // 5-15 minutes spread
+        const variation = (Math.random() - 0.5) * 2; // +/- 1 minute random variation
+        const splitTimeMinutes = Math.max(3, baseTime + variation);
+
+        // Generate punch for this control
+        const punch = {
+          id: this.currentId++,
+          modem: null,
+          card: comp.card,
+          time: Date.now() - (15 - splitTimeMinutes) * 60 * 1000,
+          code: controlCode,
+          mode: 'BcControl',
+          receptionTime: Date.now() - 500 + Math.random() * 1000,
+          runnerName: comp.name,
+          runnerCountry: comp.country,
+          runnerCategory: comp.category
+        };
+
+        this.punches.push(punch);
+        console.log(`[Mock Server] Pre-generated punch for ${comp.name} at control ${controlCode}: ${Math.round(splitTimeMinutes)}min`);
+      }
+    });
+
+    console.log(`[Mock Server] Added control ${controlCode} with ${this.punches.filter(p => p.code === controlCode).length} initial punches`);
   }
 }
 
