@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Fragment } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getFlag } from '../data/flags';
 import './LiveTracking.css';
 
@@ -141,14 +141,14 @@ const LiveTracking = ({
 
     // Start polling for this control
     console.log(`[LiveTracking] Starting polling for control ${controlCode} (${controlName}) on event ${effectiveEventId}`);
-    const pollingId = sportIdentService.startPolling(effectiveEventId, controlCode, handlePunch, 3000);
+    sportIdentService.startPolling(effectiveEventId, controlCode, handlePunch, 3000);
 
     return () => {
       console.log(`[LiveTracking] Cleaning up polling for control ${controlCode}`);
       sportIdentService.stopPolling(effectiveEventId, controlCode);
       // Don't stop the mock server - let it persist across component remounts
     };
-  }, [sportIdentService, eventId, controlCode, controlName]);
+  }, [sportIdentService, eventId, controlCode, controlName, competitors]);
 
   // Parse split time string to seconds
   const parseSplitTime = (timeStr) => {
@@ -176,13 +176,6 @@ const LiveTracking = ({
     const seconds = totalSeconds % 60;
 
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
-  };
-
-  // Format rank difference
-  const formatRankDiff = (diff) => {
-    if (!diff || diff === 0) return '';
-    if (diff > 0) return `+${diff}`;
-    return `${diff}`;
   };
 
   // Get time difference to leader
