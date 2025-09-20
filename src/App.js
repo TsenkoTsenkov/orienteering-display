@@ -853,6 +853,10 @@ function App() {
         [currentCompetitionId]: updatedData
       }));
 
+      // CRITICAL: Save to Firebase for display mode
+      await saveData('competitorsData', updatedData);
+      console.log('[Refetch] Saved competitors data to Firebase - Men:', updatedData.men.length, 'Women:', updatedData.women.length);
+
       // Update the project's event data in memory
       if (currentProject.eventData) {
         const competitionIndex = currentProject.eventData.competitions.findIndex(c => c.id === currentCompetitionId);
@@ -963,16 +967,12 @@ function App() {
         })
       );
 
-      // Listen to saved competitor data - only load if we have a current project
+      // Listen to saved competitor data
       unsubscribers.push(
         listenToData('competitorsData', (data) => {
-          if (data && currentProject) {
+          if (data) {
             console.log('[Control] Loaded competitors data from Firebase - Men:', data.men?.length, 'Women:', data.women?.length);
             setCompetitorsData(data);
-          } else if (!currentProject) {
-            // No current project, ensure data is cleared
-            console.log('[Control] No current project, clearing competitors data');
-            setCompetitorsData({ men: [], women: [] });
           }
         })
       );
