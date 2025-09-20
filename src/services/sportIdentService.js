@@ -12,6 +12,7 @@ class SportIdentService {
     this.baseUrl = 'https://center-origin.sportident.com/api/rest/v1/public';
     this.pollingIntervals = new Map();
     this.lastPunchIds = new Map();
+    this.globalLastPunchId = 0; // Track global last punch ID for API
     this.punchCache = new Map();
     this.listeners = new Map();
     this.pollCounts = new Map();
@@ -85,10 +86,10 @@ class SportIdentService {
       if (useNetlifyFunction && response.data) {
         console.log('[SportIdent] Netlify function response received');
 
-        // Update lastPunchId if provided
-        if (response.data.lastPunchId) {
-          const pollingKey = `${eventId}-all`;
-          this.lastPunchIds.set(pollingKey, response.data.lastPunchId);
+        // Update global lastPunchId if provided
+        if (response.data.lastPunchId && response.data.lastPunchId > this.globalLastPunchId) {
+          this.globalLastPunchId = response.data.lastPunchId;
+          console.log(`[SportIdent] Updated global lastPunchId to: ${this.globalLastPunchId}`);
         }
 
         // Extract punches from the response
@@ -115,13 +116,12 @@ class SportIdentService {
     // Stop any existing polling for this control
     this.stopPolling(effectiveEventId, controlCode);
 
-    // Initialize last punch ID if not set (or reset for demo mode)
+    // Initialize global last punch ID if needed
     const isDemoMode = !eventId || eventId === 'demo';
-    if (!this.lastPunchIds.has(pollingKey) || isDemoMode) {
+    if (isDemoMode && this.globalLastPunchId === 0) {
       // For demo mode, set initial ID to current timestamp to only get new punches
-      const initialId = isDemoMode ? Date.now() - 1 : null;
-      console.log(`[SportIdent] Initializing lastPunchId for ${pollingKey} to ${initialId}`);
-      this.lastPunchIds.set(pollingKey, initialId);
+      this.globalLastPunchId = Date.now() - 1;
+      console.log(`[SportIdent] Initializing global lastPunchId for demo mode to ${this.globalLastPunchId}`);
     }
 
     // Store the listener
@@ -145,13 +145,24 @@ class SportIdentService {
           this.lastHeartbeat = now;
         }
 
-        const lastId = this.lastPunchIds.get(pollingKey);
-        console.log(`[SportIdent] Polling #${currentCount} for control ${controlCode}, lastId: ${lastId}, time: ${new Date().toISOString()}`);
+        // Use global lastPunchId for API, not per-control
+        const lastId = this.globalLastPunchId;
+        console.log(`[SportIdent] Polling #${currentCount} for control ${controlCode}, global lastId: ${lastId}, time: ${new Date().toISOString()}`);
         const punches = await this.fetchPunches(effectiveEventId, lastId);
         console.log(`[SportIdent] Poll #${currentCount} returned ${punches ? punches.length : 0} punches`);
 
         if (punches && punches.length > 0) {
           console.log(`[SportIdent] NEW DATA: Received ${punches.length} punches for event ${effectiveEventId} at ${new Date().toISOString()}`);
+
+          // Always update global last punch ID from all punches received
+          const punchIds = punches.map(p => p.id).filter(id => id > 0);
+          if (punchIds.length > 0) {
+            const maxId = Math.max(...punchIds);
+            if (maxId > this.globalLastPunchId) {
+              this.globalLastPunchId = maxId;
+              console.log(`[SportIdent] Updated global lastPunchId to ${this.globalLastPunchId} after receiving ${punches.length} punches`);
+            }
+          }
 
           // Filter punches for the specific control code
           const relevantPunches = punches.filter(p =>
@@ -162,9 +173,6 @@ class SportIdentService {
           console.log(`[SportIdent] FILTERED: ${relevantPunches.length} relevant punches for control ${controlCode}`);
 
           if (relevantPunches.length > 0) {
-            // Update last punch ID
-            const maxId = Math.max(...punches.map(p => p.id));
-            this.lastPunchIds.set(pollingKey, maxId);
 
             // Cache punches
             if (!this.punchCache.has(pollingKey)) {
