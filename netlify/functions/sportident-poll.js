@@ -15,6 +15,12 @@ let lastHeartbeat = 0;
 const HEARTBEAT_INTERVAL = 30000; // Log every 30 seconds
 
 exports.handler = async (event) => {
+  // Log function invocation immediately
+  console.log(`[SPORTIDENT-POLL] Function invoked at ${new Date().toISOString()}`);
+  console.log(`[SPORTIDENT-POLL] Method: ${event.httpMethod}, Path: ${event.path}`);
+  console.log(`[SPORTIDENT-POLL] Query params:`, event.queryStringParameters);
+  console.log(`[SPORTIDENT-POLL] Event ID: ${EVENT_ID}, API Key present: ${!!API_KEY}`);
+
   // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -30,6 +36,7 @@ exports.handler = async (event) => {
 
   // Only allow GET requests
   if (event.httpMethod !== "GET") {
+    console.log(`[SPORTIDENT-POLL] Invalid method: ${event.httpMethod}`);
     return {
       statusCode: 405,
       headers: {
@@ -81,13 +88,17 @@ exports.handler = async (event) => {
     // Fetch fresh data from SportIdent API
     const url = `${BASE_URL}/api/rest/v1/public/events/${EVENT_ID}/punches`;
 
-    console.log(`[POLL] Fetching from: ${url} with afterId=${afterId} at ${new Date().toISOString()}`);
+    console.log(`[POLL] Starting API fetch from: ${url}`);
+    console.log(`[POLL] Parameters: afterId=${afterId}, limit=${limit}, includeAll=${includeAll}`);
+    console.log(`[POLL] Time: ${new Date().toISOString()}`);
 
     const params = {
       afterId: afterId,
       projection: "simple",
       limit: limit,
     };
+
+    console.log(`[POLL] Making axios request with API key: ${API_KEY.substring(0, 8)}...`);
 
     const response = await axios.get(url, {
       headers: {
@@ -98,6 +109,9 @@ exports.handler = async (event) => {
       params: params,
       timeout: 8000, // 8 second timeout to stay within Netlify limits
     });
+
+    console.log(`[POLL] Response status: ${response.status}`);
+    console.log(`[POLL] Response data type: ${typeof response.data}, isArray: ${Array.isArray(response.data)}`);
 
     let punches = [];
     let maxPunchId = afterId;
@@ -192,6 +206,8 @@ exports.handler = async (event) => {
       }
     }
 
+    console.log(`[POLL] SUCCESS: Returning ${responseData.punches.length} punches, lastPunchId: ${responseData.lastPunchId}`);
+
     return {
       statusCode: 200,
       headers: {
@@ -203,6 +219,11 @@ exports.handler = async (event) => {
     };
   } catch (error) {
     console.error(`[ERROR] Failed to fetch punches at ${new Date().toISOString()}:`, error.message);
+    console.error(`[ERROR] Full error:`, error);
+    if (error.response) {
+      console.error(`[ERROR] Response status: ${error.response.status}`);
+      console.error(`[ERROR] Response data:`, error.response.data);
+    }
 
     return {
       statusCode: error.response?.status || 500,

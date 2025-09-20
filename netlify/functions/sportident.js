@@ -10,8 +10,14 @@ const BASE_URL = "https://center-origin.sportident.com";
 let lastPunchId = 0;
 
 exports.handler = async (event) => {
+  // Log function invocation immediately
+  console.log(`[SPORTIDENT] Function invoked at ${new Date().toISOString()}`);
+  console.log(`[SPORTIDENT] Method: ${event.httpMethod}, Path: ${event.path}`);
+  console.log(`[SPORTIDENT] Event ID: ${EVENT_ID}, API Key present: ${!!API_KEY}`);
+
   // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
+    console.log(`[SPORTIDENT] Handling CORS preflight`);
     return {
       statusCode: 200,
       headers: {
@@ -25,6 +31,7 @@ exports.handler = async (event) => {
 
   // Only allow GET requests
   if (event.httpMethod !== "GET") {
+    console.log(`[SPORTIDENT] Invalid method: ${event.httpMethod}`);
     return {
       statusCode: 405,
       headers: {
@@ -36,13 +43,17 @@ exports.handler = async (event) => {
 
   // Parse path for different endpoints
   const path = event.path.replace("/.netlify/functions/sportident", "") || "/";
+  console.log(`[SPORTIDENT] Parsed path: '${path}'`);
 
   try {
     switch (path) {
       case "/status":
+        console.log(`[SPORTIDENT] Handling /status endpoint`);
         return handleStatus();
 
       case "/punches":
+        console.log(`[SPORTIDENT] Handling /punches endpoint`);
+        console.log(`[SPORTIDENT] Query params:`, event.queryStringParameters);
         return await handlePunches(event.queryStringParameters);
 
       case "/events":
@@ -50,9 +61,11 @@ exports.handler = async (event) => {
         return await handlePunches(event.queryStringParameters);
 
       case "/health":
+        console.log(`[SPORTIDENT] Handling /health endpoint`);
         return handleHealth();
 
       default:
+        console.log(`[SPORTIDENT] Default endpoint handler for path: '${path}'`);
         return {
           statusCode: 200,
           headers: {
@@ -71,7 +84,8 @@ exports.handler = async (event) => {
         };
     }
   } catch (error) {
-    console.error("Handler error:", error);
+    console.error(`[SPORTIDENT] Handler error at ${new Date().toISOString()}:`, error.message);
+    console.error(`[SPORTIDENT] Full error:`, error);
     return {
       statusCode: 500,
       headers: {
@@ -87,6 +101,7 @@ exports.handler = async (event) => {
 
 // Handle status endpoint
 function handleStatus() {
+  console.log(`[SPORTIDENT] Returning status: eventId=${EVENT_ID}, lastPunchId=${lastPunchId}`);
   return {
     statusCode: 200,
     headers: {
@@ -108,6 +123,7 @@ function handleStatus() {
 
 // Handle health check
 function handleHealth() {
+  console.log(`[SPORTIDENT] Health check OK at ${new Date().toISOString()}`);
   return {
     statusCode: 200,
     headers: {
@@ -124,16 +140,22 @@ function handleHealth() {
 
 // Handle punches endpoint - main SportIdent API integration
 async function handlePunches(queryParams = {}) {
+  console.log(`[SPORTIDENT-PUNCHES] Starting punch fetch at ${new Date().toISOString()}`);
+
   try {
     // Extract query parameters
     const afterId = parseInt(queryParams.afterId) || lastPunchId || 0;
     const limit = parseInt(queryParams.limit) || 1000;
     const projection = queryParams.projection || "simple";
 
+    console.log(`[SPORTIDENT-PUNCHES] Parameters: afterId=${afterId}, limit=${limit}, projection=${projection}`);
+
     // Correct endpoint structure as per SportIdent documentation
     const url = `${BASE_URL}/api/rest/v1/public/events/${EVENT_ID}/punches`;
 
-    console.log(`Fetching from: ${url} with afterId=${afterId}`);
+    console.log(`[SPORTIDENT-PUNCHES] Fetching from: ${url}`);
+    console.log(`[SPORTIDENT-PUNCHES] Request params:`, params);
+    console.log(`[SPORTIDENT-PUNCHES] Using API key: ${API_KEY.substring(0, 8)}...`);
 
     const params = {
       afterId: afterId,
@@ -151,11 +173,14 @@ async function handlePunches(queryParams = {}) {
       params: params,
     });
 
+    console.log(`[SPORTIDENT-PUNCHES] Response status: ${response.status}`);
+    console.log(`[SPORTIDENT-PUNCHES] Response data type: ${typeof response.data}, isArray: ${Array.isArray(response.data)}`);
+
     let punches = [];
 
     if (response.data && Array.isArray(response.data)) {
       punches = response.data;
-      console.log(`✅ Received ${punches.length} punches`);
+      console.log(`[SPORTIDENT-PUNCHES] ✅ Received ${punches.length} punches`);
 
       // Update lastPunchId for future requests
       if (punches.length > 0) {
@@ -164,14 +189,16 @@ async function handlePunches(queryParams = {}) {
         );
         if (maxId > lastPunchId) {
           lastPunchId = maxId;
-          console.log(`Updated lastPunchId to: ${lastPunchId}`);
+          console.log(`[SPORTIDENT-PUNCHES] Updated lastPunchId to: ${lastPunchId}`);
         }
       }
     } else {
-      console.log("No new punches received");
+      console.log(`[SPORTIDENT-PUNCHES] No new punches received`);
     }
 
     // Format response to match sportident-server
+    console.log(`[SPORTIDENT-PUNCHES] SUCCESS: Returning ${punches.length} punches, lastPunchId=${lastPunchId}`);
+
     return {
       statusCode: 200,
       headers: {
@@ -191,10 +218,11 @@ async function handlePunches(queryParams = {}) {
       }),
     };
   } catch (error) {
-    console.error("Error fetching punches:", error.message);
+    console.error(`[SPORTIDENT-PUNCHES] Error fetching punches at ${new Date().toISOString()}:`, error.message);
+    console.error(`[SPORTIDENT-PUNCHES] Full error:`, error);
     if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
+      console.error(`[SPORTIDENT-PUNCHES] Response status:`, error.response.status);
+      console.error(`[SPORTIDENT-PUNCHES] Response data:`, error.response.data);
     }
 
     return {
