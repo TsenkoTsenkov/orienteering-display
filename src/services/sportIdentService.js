@@ -1,7 +1,14 @@
 import axios from 'axios';
+import { getSportIdentEndpoints } from '../config/sportident';
 
 class SportIdentService {
   constructor() {
+    // Use Netlify functions endpoints instead of direct API
+    const endpoints = getSportIdentEndpoints();
+    this.pollEndpoint = endpoints.poll;
+    this.punchesEndpoint = endpoints.punches;
+
+    // For backward compatibility, keep baseUrl but use it only as fallback
     this.baseUrl = 'https://center-origin.sportident.com/api/rest/v1/public';
     this.pollingIntervals = new Map();
     this.lastPunchIds = new Map();
@@ -9,6 +16,8 @@ class SportIdentService {
     this.listeners = new Map();
     this.pollCounts = new Map();
     this.lastHeartbeat = Date.now();
+
+    console.log('[SportIdent] Service initialized with endpoints:', { poll: this.pollEndpoint, punches: this.punchesEndpoint });
 
     // For development/demo mode
     this.demoMode = false;
@@ -43,8 +52,26 @@ class SportIdentService {
         return [];
       }
 
-      const url = `${this.baseUrl}/events/${eventId}/punches`;
-      const params = afterId ? { afterId } : {};
+      // Use Netlify function endpoint if available
+      const useNetlifyFunction = this.pollEndpoint && !this.pollEndpoint.includes('localhost');
+      let url;
+      let params;
+
+      if (useNetlifyFunction) {
+        // Use Netlify function
+        url = this.pollEndpoint;
+        params = {
+          afterId: afterId || 0,
+          limit: 1000,
+          includeAll: false
+        };
+        console.log('[SportIdent] Using Netlify function:', url);
+      } else {
+        // Fallback to direct API
+        url = `${this.baseUrl}/events/${eventId}/punches`;
+        params = afterId ? { afterId } : {};
+        console.log('[SportIdent] Using direct API:', url);
+      }
 
       const response = await axios.get(url, {
         params,
@@ -53,6 +80,24 @@ class SportIdentService {
           'Accept': 'application/json'
         }
       });
+
+      // Handle Netlify function response format
+      if (useNetlifyFunction && response.data) {
+        console.log('[SportIdent] Netlify function response received');
+
+        // Update lastPunchId if provided
+        if (response.data.lastPunchId) {
+          const pollingKey = `${eventId}-all`;
+          this.lastPunchIds.set(pollingKey, response.data.lastPunchId);
+        }
+
+        // Extract punches from the response
+        if (response.data.punches && Array.isArray(response.data.punches)) {
+          // Return just the punch data (not the wrapper)
+          return response.data.punches.map(p => p.data || p);
+        }
+        return [];
+      }
 
       return response.data || [];
     } catch (error) {
