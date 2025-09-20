@@ -7,6 +7,8 @@ class SportIdentService {
     this.lastPunchIds = new Map();
     this.punchCache = new Map();
     this.listeners = new Map();
+    this.pollCounts = new Map();
+    this.lastHeartbeat = Date.now();
 
     // For development/demo mode
     this.demoMode = false;
@@ -85,13 +87,26 @@ class SportIdentService {
 
     const poll = async () => {
       try {
+        // Increment poll count
+        const currentCount = (this.pollCounts.get(pollingKey) || 0) + 1;
+        this.pollCounts.set(pollingKey, currentCount);
+
+        // Log heartbeat every 6 polls (30 seconds at 5-second intervals)
+        const now = Date.now();
+        if (currentCount % 6 === 0 || now - this.lastHeartbeat > 30000) {
+          console.log(`[HEARTBEAT] SportIdent Service Active - ${new Date().toISOString()}`);
+          console.log(`[HEARTBEAT] Active polls: ${this.pollingIntervals.size}, Event: ${effectiveEventId}, Control: ${controlCode}`);
+          console.log(`[HEARTBEAT] Poll count for ${pollingKey}: ${currentCount}, Listeners: ${(this.listeners.get(pollingKey) || []).length}`);
+          this.lastHeartbeat = now;
+        }
+
         const lastId = this.lastPunchIds.get(pollingKey);
-        console.log(`[SportIdent] Polling for control ${controlCode}, lastId: ${lastId}`);
+        console.log(`[SportIdent] Polling #${currentCount} for control ${controlCode}, lastId: ${lastId}, time: ${new Date().toISOString()}`);
         const punches = await this.fetchPunches(effectiveEventId, lastId);
-        console.log(`[SportIdent] Poll returned ${punches ? punches.length : 0} punches`);
+        console.log(`[SportIdent] Poll #${currentCount} returned ${punches ? punches.length : 0} punches`);
 
         if (punches && punches.length > 0) {
-          console.log(`[SportIdent] Received ${punches.length} punches for event ${effectiveEventId}`);
+          console.log(`[SportIdent] NEW DATA: Received ${punches.length} punches for event ${effectiveEventId} at ${new Date().toISOString()}`);
 
           // Filter punches for the specific control code
           const relevantPunches = punches.filter(p =>
@@ -99,7 +114,7 @@ class SportIdentService {
             (controlCode === 'all' || controlCode === null)
           );
 
-          console.log(`[SportIdent] ${relevantPunches.length} relevant punches for control ${controlCode}`);
+          console.log(`[SportIdent] FILTERED: ${relevantPunches.length} relevant punches for control ${controlCode}`);
 
           if (relevantPunches.length > 0) {
             // Update last punch ID
@@ -120,14 +135,17 @@ class SportIdentService {
 
             // Notify all listeners for this control
             const listeners = this.listeners.get(pollingKey) || [];
-            console.log(`[SportIdent] Notifying ${listeners.length} listeners`);
+            console.log(`[SportIdent] NOTIFY: Broadcasting to ${listeners.length} listeners for ${pollingKey}`);
             listeners.forEach(listener => {
-              relevantPunches.forEach(punch => listener(punch));
+              relevantPunches.forEach(punch => {
+                console.log(`[SportIdent] PUNCH: Card ${punch.card} at control ${punch.code}`);
+                listener(punch);
+              });
             });
           }
         }
       } catch (error) {
-        console.error(`Polling error for control ${controlCode}:`, error);
+        console.error(`[ERROR] Polling failed for control ${controlCode} at ${new Date().toISOString()}:`, error.message);
       }
     };
 
@@ -138,7 +156,8 @@ class SportIdentService {
     const intervalId = setInterval(poll, interval);
     this.pollingIntervals.set(pollingKey, intervalId);
 
-    console.log(`[SportIdent] Started polling for control ${controlCode} on event ${effectiveEventId}`);
+    console.log(`[SportIdent] ✅ Started polling for control ${controlCode} on event ${effectiveEventId} at ${new Date().toISOString()}`);
+    console.log(`[SportIdent] Polling interval: ${interval}ms, Initial lastId: ${this.lastPunchIds.get(pollingKey)}`);
     return intervalId;
   }
 
@@ -151,10 +170,17 @@ class SportIdentService {
     if (intervalId) {
       clearInterval(intervalId);
       this.pollingIntervals.delete(pollingKey);
+      const pollCount = this.pollCounts.get(pollingKey) || 0;
+      console.log(`[SportIdent] ⛔ Stopped polling for ${pollingKey} after ${pollCount} polls at ${new Date().toISOString()}`);
+      this.pollCounts.delete(pollingKey);
     }
 
     // Clear listeners
+    const listenerCount = (this.listeners.get(pollingKey) || []).length;
     this.listeners.delete(pollingKey);
+    if (listenerCount > 0) {
+      console.log(`[SportIdent] Cleared ${listenerCount} listeners for ${pollingKey}`);
+    }
   }
 
   // Stop all polling

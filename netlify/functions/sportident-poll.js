@@ -10,6 +10,10 @@ const BASE_URL = "https://center-origin.sportident.com";
 const punchCache = new Map();
 const CACHE_DURATION = 10000; // 10 seconds cache, matching server polling interval
 
+// Heartbeat logging
+let lastHeartbeat = 0;
+const HEARTBEAT_INTERVAL = 30000; // Log every 30 seconds
+
 exports.handler = async (event) => {
   // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
@@ -36,6 +40,14 @@ exports.handler = async (event) => {
   }
 
   try {
+    // Periodic heartbeat logging
+    const now = Date.now();
+    if (now - lastHeartbeat > HEARTBEAT_INTERVAL) {
+      console.log(`[HEARTBEAT] SportIdent poll service is active - Event ID: ${EVENT_ID}, Time: ${new Date().toISOString()}`);
+      console.log(`[HEARTBEAT] Cache size: ${punchCache.size}, Base URL: ${BASE_URL}`);
+      lastHeartbeat = now;
+    }
+
     // Get query parameters
     const queryParams = event.queryStringParameters || {};
     const afterId = parseInt(queryParams.afterId) || 0;
@@ -69,7 +81,7 @@ exports.handler = async (event) => {
     // Fetch fresh data from SportIdent API
     const url = `${BASE_URL}/api/rest/v1/public/events/${EVENT_ID}/punches`;
 
-    console.log(`Fetching from: ${url} with afterId=${afterId}`);
+    console.log(`[POLL] Fetching from: ${url} with afterId=${afterId} at ${new Date().toISOString()}`);
 
     const params = {
       afterId: afterId,
@@ -92,7 +104,7 @@ exports.handler = async (event) => {
 
     if (response.data && Array.isArray(response.data)) {
       punches = response.data;
-      console.log(`✅ Received ${punches.length} punches`);
+      console.log(`[POLL] ✅ Received ${punches.length} punches at ${new Date().toISOString()}`);
 
       // Find max punch ID for next polling
       if (punches.length > 0) {
@@ -100,7 +112,7 @@ exports.handler = async (event) => {
           ...punches.map((p) => p.id || 0).filter((id) => id > 0),
           afterId,
         );
-        console.log(`Max punch ID: ${maxPunchId}`);
+        console.log(`[POLL] Max punch ID: ${maxPunchId}, New punches: ${punches.length}`);
       }
     }
 
@@ -190,7 +202,7 @@ exports.handler = async (event) => {
       body: JSON.stringify(responseData),
     };
   } catch (error) {
-    console.error("Error fetching punches:", error.message);
+    console.error(`[ERROR] Failed to fetch punches at ${new Date().toISOString()}:`, error.message);
 
     return {
       statusCode: error.response?.status || 500,
