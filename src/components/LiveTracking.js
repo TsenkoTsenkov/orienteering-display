@@ -39,24 +39,32 @@ const LiveTracking = ({
       console.log(`[LiveTracking] Card ${card} -> ${comp.name} (${category}, ID: ${comp.id})`);
     });
 
-    // Initialize tracked competitors from existing data - only for this category
-    const initialTracked = competitors
-      .filter(comp => comp.splits && comp.splits[`control${controlCode}`])
-      .map(comp => ({
-        ...comp,
-        splitTime: comp.splits[`control${controlCode}`],
-        punchTime: Date.now() - 1000000, // Old punch
-        isNew: false,
-        category: category // Ensure category is set
-      }))
-      .sort((a, b) => {
-        // Sort by split time
-        const timeA = parseSplitTime(a.splitTime);
-        const timeB = parseSplitTime(b.splitTime);
-        return timeA - timeB;
-      });
+    // In demo mode, don't initialize from splits (they don't exist)
+    // The mock server will generate initial punches
+    const isDemoMode = !eventId || eventId === 'demo';
+    if (!isDemoMode) {
+      // Initialize tracked competitors from existing data - only for this category
+      const initialTracked = competitors
+        .filter(comp => comp.splits && comp.splits[`control${controlCode}`])
+        .map(comp => ({
+          ...comp,
+          splitTime: comp.splits[`control${controlCode}`],
+          punchTime: Date.now() - 1000000, // Old punch
+          isNew: false,
+          category: category // Ensure category is set
+        }))
+        .sort((a, b) => {
+          // Sort by split time
+          const timeA = parseSplitTime(a.splitTime);
+          const timeB = parseSplitTime(b.splitTime);
+          return timeA - timeB;
+        });
 
-    setTrackedCompetitors(initialTracked);
+      setTrackedCompetitors(initialTracked);
+    } else {
+      // Clear for demo mode - will be populated by mock server
+      setTrackedCompetitors([]);
+    }
   }, [competitors, controlCode, category]);
 
   // Initialize demo mode and handle polling
@@ -290,7 +298,6 @@ const LiveTracking = ({
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <span className="rank large-rank">
-                    {isLeader && <span className="leader-icon">👑</span>}
                     <span className="rank-number">{actualRank}</span>
                   </span>
                   <span className="competitor-name large-name">{competitor.name.toUpperCase()}</span>

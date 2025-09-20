@@ -119,9 +119,9 @@ class SportIdentService {
     // Initialize global last punch ID if needed
     const isDemoMode = !eventId || eventId === 'demo';
     if (isDemoMode && this.globalLastPunchId === 0) {
-      // For demo mode, set initial ID to current timestamp to only get new punches
-      this.globalLastPunchId = Date.now() - 1;
-      console.log(`[SportIdent] Initializing global lastPunchId for demo mode to ${this.globalLastPunchId}`);
+      // For demo mode, keep it at 0 to fetch all pre-generated punches on first poll
+      this.globalLastPunchId = 0;
+      console.log(`[SportIdent] Initializing global lastPunchId for demo mode to 0 (will fetch all initial punches)`);
     }
 
     // Store the listener
@@ -542,14 +542,20 @@ export class SportIdentMockServer {
 
     console.log(`[Mock Server] fetchPunches called with afterId: ${afterId}, punches available: ${this.punches.length}`);
 
-    // Return new punches since afterId (or none if no afterId)
-    const newPunches = afterId ? this.punches.filter(p => p.id > afterId) : [];
-
-    if (newPunches.length > 0) {
-      console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}:`,
-        newPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
+    // If afterId is 0 or null, return ALL punches (initial load)
+    // Otherwise return only new punches since afterId
+    let newPunches;
+    if (afterId === null || afterId === 0) {
+      newPunches = this.punches;
+      console.log(`[Mock Server] Initial load - returning ALL ${newPunches.length} punches`);
     } else {
-      console.log(`[Mock Server] No new punches to return`);
+      newPunches = this.punches.filter(p => p.id > afterId);
+      if (newPunches.length > 0) {
+        console.log(`[Mock Server] Returning ${newPunches.length} new punches after ID ${afterId}:`,
+          newPunches.map(p => `${p.runnerName}(${p.card})`).join(', '));
+      } else {
+        console.log(`[Mock Server] No new punches to return`);
+      }
     }
 
     return newPunches;
