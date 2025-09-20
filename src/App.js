@@ -92,8 +92,26 @@ function App() {
   });
 
   // SportIdent Live Tracking configuration
-  const [liveTrackingScenes, setLiveTrackingScenes] = useState([]);
-  const [sportIdentEventId, setSportIdentEventId] = useState('');
+  const [liveTrackingScenes, setLiveTrackingScenes] = useState(() => {
+    // Try to load from localStorage on initialization
+    try {
+      const saved = localStorage.getItem('liveTrackingScenes');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error loading liveTrackingScenes from localStorage:', e);
+      return [];
+    }
+  });
+  const [sportIdentEventId, setSportIdentEventId] = useState(() => {
+    // Try to load from localStorage on initialization
+    try {
+      const saved = localStorage.getItem('sportIdentEventId');
+      return saved || '';
+    } catch (e) {
+      console.error('Error loading sportIdentEventId from localStorage:', e);
+      return '';
+    }
+  });
   const [mockServer, setMockServer] = useState(null); // eslint-disable-line no-unused-vars
 
   // Current preview size and position
@@ -230,6 +248,40 @@ function App() {
 
     return () => clearTimeout(timeoutId);
   }, [liveCategory, liveScene, liveControlPoint, livePageIndex, itemsPerPage, liveSceneConfig, liveSelectedCompetitorId, streamVisible, isDisplayMode, controlInitialized]);
+
+  // Save liveTrackingScenes to localStorage and Firebase whenever they change
+  useEffect(() => {
+    // Save to localStorage
+    try {
+      localStorage.setItem('liveTrackingScenes', JSON.stringify(liveTrackingScenes));
+      console.log('[App] Saved liveTrackingScenes to localStorage:', liveTrackingScenes);
+    } catch (e) {
+      console.error('Error saving liveTrackingScenes to localStorage:', e);
+    }
+
+    // Save to Firebase if in control mode
+    if (!isDisplayMode && controlInitialized) {
+      saveData('liveTrackingScenes', liveTrackingScenes);
+      console.log('[App] Saved liveTrackingScenes to Firebase:', liveTrackingScenes);
+    }
+  }, [liveTrackingScenes, isDisplayMode, controlInitialized]);
+
+  // Save sportIdentEventId to localStorage and Firebase whenever it changes
+  useEffect(() => {
+    // Save to localStorage
+    try {
+      localStorage.setItem('sportIdentEventId', sportIdentEventId);
+      console.log('[App] Saved sportIdentEventId to localStorage:', sportIdentEventId);
+    } catch (e) {
+      console.error('Error saving sportIdentEventId to localStorage:', e);
+    }
+
+    // Save to Firebase if in control mode
+    if (!isDisplayMode && controlInitialized) {
+      saveData('sportIdentEventId', sportIdentEventId);
+      console.log('[App] Saved sportIdentEventId to Firebase:', sportIdentEventId);
+    }
+  }, [sportIdentEventId, isDisplayMode, controlInitialized]);
 
   // Save settings to Firebase (only in control mode)
   useEffect(() => {
@@ -880,6 +932,12 @@ function App() {
           if (data) {
             console.log('[Control] Loaded live tracking scenes from Firebase:', data);
             setLiveTrackingScenes(data);
+            // Also save to localStorage for next refresh
+            try {
+              localStorage.setItem('liveTrackingScenes', JSON.stringify(data));
+            } catch (e) {
+              console.error('Error saving liveTrackingScenes to localStorage:', e);
+            }
           }
         })
       );
@@ -890,6 +948,12 @@ function App() {
           if (data) {
             console.log('[Control] Loaded SportIdent event ID from Firebase:', data);
             setSportIdentEventId(data);
+            // Also save to localStorage for next refresh
+            try {
+              localStorage.setItem('sportIdentEventId', data);
+            } catch (e) {
+              console.error('Error saving sportIdentEventId to localStorage:', e);
+            }
           }
         })
       );
