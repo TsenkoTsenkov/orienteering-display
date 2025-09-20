@@ -18,33 +18,36 @@ const LiveTracking = ({
   const [trackedCompetitors, setTrackedCompetitors] = useState([]);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const [currentPage, setCurrentPage] = useState(0);
+  const [showNewCompetitorPage, setShowNewCompetitorPage] = useState(false);
+  const [newCompetitorPageIndex, setNewCompetitorPageIndex] = useState(0);
   const competitorMapRef = useRef(new Map());
 
-  // Build competitor map by card number
+  // Build competitor map by card number - filtered by category
   useEffect(() => {
     const map = new Map();
     competitors.forEach((comp, index) => {
       // Use existing card or generate consistent card for demo
       const cardNumber = comp.card || (8000000 + index * 100);
-      // Make sure to preserve the ID!
-      map.set(cardNumber, { ...comp, id: comp.id, card: cardNumber });
+      // Make sure to preserve the ID and category!
+      map.set(cardNumber, { ...comp, id: comp.id, card: cardNumber, category: category });
     });
     competitorMapRef.current = map;
-    console.log(`[LiveTracking] Built competitor map with ${map.size} entries`);
+    console.log(`[LiveTracking] Built competitor map for ${category} with ${map.size} entries`);
     // Log first few entries for debugging
     const entries = Array.from(map.entries()).slice(0, 3);
     entries.forEach(([card, comp]) => {
-      console.log(`[LiveTracking] Card ${card} -> ${comp.name} (ID: ${comp.id})`);
+      console.log(`[LiveTracking] Card ${card} -> ${comp.name} (${category}, ID: ${comp.id})`);
     });
 
-    // Initialize tracked competitors from existing data
+    // Initialize tracked competitors from existing data - only for this category
     const initialTracked = competitors
       .filter(comp => comp.splits && comp.splits[`control${controlCode}`])
       .map(comp => ({
         ...comp,
         splitTime: comp.splits[`control${controlCode}`],
         punchTime: Date.now() - 1000000, // Old punch
-        isNew: false
+        isNew: false,
+        category: category // Ensure category is set
       }))
       .sort((a, b) => {
         // Sort by split time
@@ -54,7 +57,7 @@ const LiveTracking = ({
       });
 
     setTrackedCompetitors(initialTracked);
-  }, [competitors, controlCode]);
+  }, [competitors, controlCode, category]);
 
   // Initialize demo mode and handle polling
   useEffect(() => {
@@ -126,12 +129,21 @@ const LiveTracking = ({
           comp.rank = index + 1;
         });
 
-        // Mark all others as not new after a delay
+        // Find which page the new competitor is on
+        const newCompIndex = updated.findIndex(c => c.card === newEntry.card);
+        const newCompPage = Math.floor(newCompIndex / itemsPerPage);
+
+        // Jump to the page with the new competitor
+        setNewCompetitorPageIndex(newCompPage);
+        setShowNewCompetitorPage(true);
+
+        // After showing the new competitor, resume normal rotation
         setTimeout(() => {
+          setShowNewCompetitorPage(false);
           setTrackedCompetitors(current =>
             current.map(c => ({ ...c, isNew: false }))
           );
-        }, 3000);
+        }, 5000); // Show new competitor for 5 seconds
 
         return updated;
       });
@@ -208,24 +220,39 @@ const LiveTracking = ({
 
   // Determine page to show based on mode
   let pageToShow = 0;
-  if (currentPageIndex !== undefined) {
-    // External control mode (live)
+
+  // If we have a new competitor, show their page temporarily
+  if (showNewCompetitorPage) {
+    pageToShow = newCompetitorPageIndex;
+  } else if (currentPageIndex !== undefined) {
+    // External control mode (live) - use the rotation system
     pageToShow = Math.min(currentPageIndex, totalPages - 1);
   } else {
     // Internal control mode (preview)
     pageToShow = currentPage % totalPages;
   }
 
-  // Handle internal rotation for preview mode
+  // Handle rotation - both for preview mode and when integrated with main rotation
   useEffect(() => {
-    if (!autoRotate || currentPageIndex !== undefined || totalPages <= 1) return;
+    // Don't rotate when showing a new competitor
+    if (showNewCompetitorPage) return;
+
+    // For external control (when currentPageIndex is provided)
+    if (currentPageIndex !== undefined && setCurrentPageIndex) {
+      // Report total pages to the parent for proper rotation
+      // This will be handled by the parent's rotation system
+      return;
+    }
+
+    // Internal rotation for preview mode only
+    if (!autoRotate || totalPages <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentPage(prev => (prev + 1) % totalPages);
     }, rotationInterval || 15000);
 
     return () => clearInterval(interval);
-  }, [autoRotate, totalPages, rotationInterval, currentPageIndex]);
+  }, [autoRotate, totalPages, rotationInterval, currentPageIndex, showNewCompetitorPage, setCurrentPageIndex]);
 
   // Get current page competitors
   const startIndex = pageToShow * itemsPerPage;
@@ -310,6 +337,7 @@ const LiveTracking = ({
         {totalPages > 1 && (
           <div className="page-info">
             Page {pageToShow + 1} of {totalPages}
+            {showNewCompetitorPage && <span style={{marginLeft: '10px', color: '#4CAF50'}}>• NEW</span>}
           </div>
         )}
         <div className="stats">
