@@ -414,7 +414,7 @@ export class SportIdentMockServer {
 
       // Generate initial punch for those who have already passed
       if (hasAlreadyPassed && controls.length > 0) {
-        const punch = this.generatePunch(runner, controls[0], 'BcControl', Date.now() - (15 - splitTimeMinutes) * 60 * 1000);
+        this.generatePunch(runner, controls[0], 'BcControl', Date.now() - (15 - splitTimeMinutes) * 60 * 1000);
         runner[`passed_control0`] = true;
         console.log(`[Mock Server] Pre-generated punch for ${comp.name}: ${Math.round(splitTimeMinutes)}min`);
       }

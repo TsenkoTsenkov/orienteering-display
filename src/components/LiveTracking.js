@@ -65,7 +65,7 @@ const LiveTracking = ({
       // Clear for demo mode - will be populated by mock server
       setTrackedCompetitors([]);
     }
-  }, [competitors, controlCode, category]);
+  }, [competitors, controlCode, category, eventId]);
 
   // Initialize demo mode and handle polling
   useEffect(() => {
@@ -168,7 +168,7 @@ const LiveTracking = ({
       sportIdentService.stopPolling(effectiveEventId, controlCode);
       // Don't stop the mock server - let it persist across component remounts
     };
-  }, [sportIdentService, eventId, controlCode, controlName, competitors]);
+  }, [sportIdentService, eventId, controlCode, controlName, competitors, itemsPerPage]);
 
   // Parse split time string to seconds
   const parseSplitTime = (timeStr) => {
